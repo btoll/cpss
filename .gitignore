@@ -1,3 +1,16 @@
 elm-stuff
 elm.js
 
+vendor
+
+# Goa v1 generated code...
+app
+client
+swagger
+tool
+# For Makefile.
+.__gen__
+
+# The binary build artifact.
+cpss
+
