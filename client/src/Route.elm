@@ -28,6 +28,7 @@ route : Parser (Route -> a) a
 route =
     oneOf
         [ Url.map Home (s "")
+        , Url.map Specialist (s "specialist")
 --        , Url.map Login (s "login")
 --        , Url.map Logout (s "logout")
 --        , Url.map Settings (s "settings")
@@ -98,8 +99,7 @@ modifyUrl =
 fromLocation : Location -> Maybe Route
 fromLocation location =
     if String.isEmpty location.hash then
---        Just Home
-        Just Specialist
+        Just Home
     else
         parseHash route location
 

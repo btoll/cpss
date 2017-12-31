@@ -11,15 +11,11 @@ import Views.Page as Page exposing (ActivePage)
 type Page
     = Blank
     | NotFound
+--    | Home Home.Model
 --    | Errored PageLoadError
 --    | Home Home.Model
     | Specialist Specialist.Model
 --    | Login Login.Model
-
-
-type PageState
-    = Loaded Page
-    | TransitioningFrom Page
 
 
 
@@ -29,14 +25,14 @@ type PageState
 type alias Model =
 --    { session : Session
     { session : {}
-    , pageState : PageState
+    , page : Page
     }
 
 
 init : Navigation.Location -> ( Model, Cmd Msg )
 init location =
     setRoute ( Route.fromLocation location )
-        { pageState = Loaded initialPage
+        { page = initialPage
 --        , session = { user = decodeUserFromJson val }
         , session = {}
         }
@@ -59,18 +55,21 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        SetRoute route ->
+            setRoute route model
+
         _ ->
-            ( model, Cmd.none )
+            model ! [ Cmd.none ]
 
 
 setRoute : Maybe Route -> Model -> ( Model, Cmd Msg )
 setRoute maybeRoute model =
     case maybeRoute of
         Just Route.Home ->
-            model ! []
+            { model | page = Blank } ! []
 
         Just Route.Specialist ->
-            model ! []
+            { model | page = Specialist Specialist.init } ! []
 
         _ ->
             model ! []
@@ -82,31 +81,17 @@ setRoute maybeRoute model =
 
 view : Model -> Html Msg
 view model =
-    case model.pageState of
-        Loaded page ->
---            viewPage model.session False page
-            viewPage False page
-
-        TransitioningFrom page ->
---            viewPage model.session True page
-            viewPage True page
-
-
---viewPage : Session -> Bool -> Page -> Html Msg
---viewPage session isLoading page =
-viewPage : Bool -> Page -> Html Msg
-viewPage isLoading page =
     let
         frame =
 --            Page.frame isLoading session.user
-            Page.frame isLoading
+            Page.frame
     in
-    case page of
+    case model.page of
         Blank ->
             -- This is for the very initial page load, while we are loading
             -- data via HTTP. We could also render a spinner here.
             Html.text ""
-                |> frame Page.Other
+                |> frame Page.Home
 
         NotFound ->
 --            NotFound.view session
@@ -117,19 +102,16 @@ viewPage isLoading page =
 --            Errored.view session subModel
 --                |> frame Page.Other
 
---        Specialist subModel ->
+        Specialist subModel ->
 --            Specialist.view session subModel
---                |> frame Page.Other
---                |> Html.map SpecialistMsg
+            Specialist.view subModel
+                |> frame Page.Specialist
+                |> Html.map SpecialistMsg
 
 --        Home subModel ->
 --            Home.view session subModel
 --                |> frame Page.Home
 --                |> Html.map HomeMsg
-
-        _ ->
-            div [] []
-
 
 
 

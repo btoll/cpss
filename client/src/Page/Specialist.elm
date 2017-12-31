@@ -9,16 +9,6 @@ import Time exposing (Time)
 
 
 
---main =
---  Html.program
---    { init = init missionSights
---    , update = update
---    , view = view
---    , subscriptions = \_ -> Sub.none
---    }
-
-
-
 -- MODEL
 
 
@@ -28,15 +18,11 @@ type alias Model =
   }
 
 
-init : List Sight -> ( Model, Cmd Msg )
-init sights =
-  let
-    model =
-      { sights = sights
-      , tableState = Table.initialSort "Year"
-      }
-  in
-    ( model, Cmd.none )
+init : Model
+init =
+    { sights = missionSights
+    , tableState = Table.initialSort "Year"
+    }
 
 
 

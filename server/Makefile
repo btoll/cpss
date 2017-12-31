@@ -1,10 +1,13 @@
+# TODO: Make sure `entr` is on system (http://www.entrproject.org/)
+#
 SHELL 		= /bin/sh
 CC      	= go
 GENERATED	= .__gen__
 GOADESIGN	= design/api.go design/foo.go
 TARGET		= cpss
+WATCHER		= entr
 
-.PHONY: build clean generate hooks serve
+.PHONY: build clean generate hooks serve watch
 
 $(GENERATED): $(GOADESIGN)
 	@echo [make] Generating Goa code, please be patient...
@@ -13,7 +16,7 @@ $(GENERATED): $(GOADESIGN)
 	# We only want to modify the generated file when successful.
 	@touch $(GENERATED)
 
-$(TARGET): main.go foo.go
+$(TARGET): *.go
 	-$(CC) build -o $(TARGET)
 
 build: $(TARGET)
@@ -30,5 +33,9 @@ hooks:
 		chmod 755 post-merge
 
 serve: $(TARGET)
-	-./$(TARGET)
+	./$(TARGET)
+
+watch:
+	@echo Watching filesystem for changes...
+	@ag -l --depth 0 --go | $(WATCHER) -s 'make serve'
 
