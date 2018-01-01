@@ -1,10 +1,13 @@
 module Main exposing (..)
 
+import Data.Specialist exposing (Specialist)
 import Html exposing (..)
+import Http
 import Navigation
 import Page.NotFound as NotFound
 import Page.Specialist as Specialist
 import Route exposing (Route)
+import Task
 import Views.Page as Page exposing (ActivePage)
 
 
@@ -49,17 +52,8 @@ initialPage =
 
 type Msg
     = SetRoute ( Maybe Route )
+    | SpecialistLoaded ( Result Http.Error Specialist.Model )
     | SpecialistMsg Specialist.Msg
-
-
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    case msg of
-        SetRoute route ->
-            setRoute route model
-
-        _ ->
-            model ! [ Cmd.none ]
 
 
 setRoute : Maybe Route -> Model -> ( Model, Cmd Msg )
@@ -69,10 +63,35 @@ setRoute maybeRoute model =
             { model | page = Blank } ! []
 
         Just Route.Specialist ->
-            { model | page = Specialist Specialist.init } ! []
+            ( model, Specialist.init |> Task.attempt SpecialistLoaded )
 
         _ ->
             model ! []
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    let
+        toPage toModel subUpdate subMsg subModel =
+            let
+                ( newModel, newCmd ) =
+                    subUpdate subMsg subModel
+            in
+                { model | page = toModel subModel } ! [ Cmd.none ]
+
+    in
+        case msg of
+            SetRoute route ->
+                setRoute route model
+
+            SpecialistLoaded ( Ok subModel ) ->
+                { model | page = Specialist subModel } ! [ Cmd.none ]
+
+            SpecialistLoaded ( Err err ) ->
+                model ! [ Cmd.none ]
+
+            _ ->
+                model ! [ Cmd.none ]
 
 
 
