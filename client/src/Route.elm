@@ -53,7 +53,7 @@ routeToString page =
                     []
 
                 Specialist ->
-                    [ "specialst" ]
+                    [ "specialist" ]
 
 --                Login ->
 --                    [ "login" ]
@@ -102,4 +102,5 @@ fromLocation location =
         Just Home
     else
         parseHash route location
+
 

@@ -11,6 +11,20 @@ type ActivePage
     | Specialist
 
 
+type alias SiteLink msg =
+    { page : ActivePage
+    , route : Route
+    , content : List ( Html msg )
+    }
+
+
+siteLinks : List ( SiteLink a )
+siteLinks =
+    [ SiteLink Home Route.Home [ text "Home" ]
+    , SiteLink Specialist Route.Specialist [ text "Specialist" ]
+    ]
+
+
 --frame : Bool -> Maybe User -> ActivePage -> Html msg -> Html msg
 --frame isLoading user page content =
 frame : ActivePage -> Html msg -> Html msg
@@ -31,7 +45,9 @@ viewHeader page =
             [ a [ class "navbar-brand", Route.href Route.Home ]
                 [ text "benjamintoll.com" ]
             , ul [ class "nav navbar-nav pull-xs-right" ] <|
-                [ navbarLink page Route.Home [ text "Home" ] ]
+                ( siteLinks
+                    |> List.map ( navbarLink <| page )
+                )
             ]
 
         ]
@@ -51,35 +67,11 @@ viewFooter =
         ]
 
 
-navbarLink : ActivePage -> Route -> List (Html msg) -> Html msg
-navbarLink page route linkContent =
-    li [ classList [ ( "nav-item", True ), ( "active", isActive page route ) ] ]
-        [ a [ class "nav-link", Route.href route ] linkContent ]
+navbarLink : ActivePage -> ( SiteLink a ) -> Html a
+navbarLink currentPage siteLink =
+    li [ classList [ ( "nav-item", True ), ( "active", (==) currentPage siteLink.page ) ] ]
+        [ a [ class "nav-link", Route.href siteLink.route ] siteLink.content ]
 
-
-isActive : ActivePage -> Route -> Bool
-isActive page route =
-    case ( page, route ) of
-        ( Home, Route.Home ) ->
-            True
-
---        ( Login, Route.Login ) ->
---            True
---
---        ( Register, Route.Register ) ->
---            True
---
---        ( Settings, Route.Settings ) ->
---            True
---
---        ( Profile pageUsername, Route.Profile routeUsername ) ->
---            pageUsername == routeUsername
---
---        ( NewArticle, Route.NewArticle ) ->
---            True
-
-        _ ->
-            False
 
 
 {-| This id comes from index.html.
@@ -91,4 +83,5 @@ in the pagination sense.
 bodyId : String
 bodyId =
     "page-body"
+
 
