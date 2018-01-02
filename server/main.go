@@ -18,9 +18,9 @@ func main() {
 	service.Use(middleware.ErrorHandler(service, true))
 	service.Use(middleware.Recover())
 
-	// Mount "Foo" controller
-	c := NewFooController(service)
-	app.MountFooController(service, c)
+	// Mount "Specialist" controller
+	c := NewSpecialistController(service)
+	app.MountSpecialistController(service, c)
 
 	// Start service
 	if err := service.ListenAndServe(":8080"); err != nil {

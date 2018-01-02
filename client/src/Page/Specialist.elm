@@ -93,12 +93,15 @@ view { specialists, tableState } =
 config : Table.Config Specialist Msg
 config =
     Table.customConfig
-    { toId = .name
+    { toId = .username
     , toMsg = SetTableState
     , columns =
         [ customColumn viewCheckbox
-        , Table.stringColumn "ID" .id
-        , Table.stringColumn "Name" .name
+        , Table.stringColumn "Username" .username
+        , Table.stringColumn "Password" .password
+        , Table.stringColumn "First Name" .firstname
+        , Table.stringColumn "Last Name" .lastname
+        , Table.stringColumn "Email" .email
         , customColumn viewButton
         ]
     , customizations =

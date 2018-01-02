@@ -3,7 +3,7 @@
 SHELL 		= /bin/sh
 CC      	= go
 GENERATED	= .__gen__
-GOADESIGN	= design/api.go design/foo.go
+GOADESIGN	= design/api.go design/specialist.go
 TARGET		= cpss
 WATCHER		= entr
 
@@ -11,15 +11,16 @@ WATCHER		= entr
 
 $(GENERATED): $(GOADESIGN)
 	@echo [make] Generating Goa code, please be patient...
-	# Don't suppress the error if the following operation fails!
+	@# Don't suppress the error if the following operation fails!
 	@$(CC) generate
-	# We only want to modify the generated file when successful.
+	@# We only want to modify the generated file when successful.
 	@touch $(GENERATED)
 
 $(TARGET): *.go
-	-$(CC) build -o $(TARGET)
+	$(CC) build -o $(TARGET)
+	@echo [make] Success!
 
-build: $(TARGET)
+build: $(TARGET) $(GENERATED)
 
 clean:
 	rm -rf cpss app client swagger tool
