@@ -1,7 +1,7 @@
 SHELL 		= /bin/sh
 CC      	= elm-make
 PORT		= 1975
-WEBSERVER	= elm-reactor
+WEBSERVER	= elm reactor
 TARGET  	= elm.js
 
 .PHONY: clean dev hooks prod production serve

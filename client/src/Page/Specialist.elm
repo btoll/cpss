@@ -1,15 +1,14 @@
 module Page.Specialist exposing (Model, Msg, init, update, view)
 
 import Data.Specialist exposing (Specialist)
-import Html exposing (Html, Attribute, button, div, h1, input, p, text)
-import Html.Attributes exposing (checked, style, type_)
-import Html.Events exposing (onClick)
+import Html exposing (Html, Attribute, button, div, form, h1, input, label, text)
+import Html.Attributes exposing (checked, disabled, for, id, style, type_, value)
+import Html.Events exposing (onClick, onInput, onSubmit)
 import Html.Lazy exposing (lazy)
 import Http
 import Request.Specialist
 import Table exposing (defaultCustomizations)
 import Task exposing (Task)
-import Time exposing (Time)
 
 
 
@@ -17,16 +16,22 @@ import Time exposing (Time)
 
 
 type alias Model =
+    -- NOTE: Order matters here (see `init`)!
     { tableState : Table.State
+    , action : Action
+    , editing : Maybe Specialist
     , specialists : List Specialist
     }
+
+
+type Action = None | Adding | Editing
 
 
 init : Task Http.Error Model
 init =
     Request.Specialist.get
         |> Http.toTask
-        |> Task.map ( Model ( Table.initialSort "ID" ) )
+        |> Task.map ( Model ( Table.initialSort "ID" ) None Nothing )
 
 
 
@@ -34,7 +39,13 @@ init =
 
 
 type Msg
-    = GetCompleted ( Result Http.Error ( List Specialist ) )
+    = AddSpecialist
+    | EditSpecialist Specialist
+    | CancelSpecialist
+    | SubmitSpecialist
+    | GetCompleted ( Result Http.Error ( List Specialist ) )
+    | PostSpecialist
+    | SetFormValue ( String -> Specialist ) String
     | SetTableState Table.State
     | ToggleSelected String
 
@@ -42,28 +53,52 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        AddSpecialist ->
+            { model |
+                action = Adding
+                , editing = Nothing
+            } ! []
+
+        CancelSpecialist ->
+            { model | action = None } ! []
+
+        EditSpecialist specialist ->
+            { model |
+                action = Editing
+                , editing = Just specialist
+            } ! []
+
+        SubmitSpecialist ->
+            { model | action = None } ! []
+
         GetCompleted ( Ok specialists ) ->
             { model |
                 specialists = specialists
                 , tableState = Table.initialSort "ID"
-            } ! [ Cmd.none ]
+            } ! []
 
         GetCompleted ( Err err ) ->
             { model |
                 specialists = []
                 , tableState = Table.initialSort "ID"
-            } ! [ Cmd.none ]
+            } ! []
+
+        PostSpecialist ->
+            model ! []
+
+        SetFormValue setFormValue s ->
+            { model | editing = Just ( setFormValue <| s ) } ! []
 
         ToggleSelected id ->
             { model |
                 specialists =
                     model.specialists
                         |> List.map ( toggle id )
-            } ! [ Cmd.none ]
+            } ! []
 
         SetTableState newState ->
             { model | tableState = newState
-            } ! [ Cmd.none ]
+            } ! []
 
 
 toggle : String -> Specialist -> Specialist
@@ -79,12 +114,68 @@ toggle id specialist =
 
 
 view : Model -> Html Msg
-view { specialists, tableState } =
+view model =
     div []
-        [ h1 [] [ text "Specialists" ]
-        , Table.view config tableState specialists
-        ]
+        ( (::)
+            ( h1 [] [ text "Specialists" ] )
+            ( drawView model )
+        )
 
+
+drawView : Model -> List ( Html Msg )
+drawView { action, editing, tableState, specialists } =
+    case action of
+        None ->
+            [ button [ onClick AddSpecialist ] [ text "Add Specialist" ]
+            , Table.view config tableState specialists
+            ]
+
+        -- Adding | Editing
+        _ ->
+            [ viewForm editing
+            ]
+
+
+viewForm : Maybe Specialist -> Html Msg
+viewForm specialist =
+    let
+        editable : Specialist
+        editable = case specialist of
+            Nothing ->
+                Specialist "-1" "" "" "" "" "" False
+
+            Just specialist ->
+                specialist
+
+        formRow : String -> String -> ( String -> Specialist ) -> Html Msg
+        formRow name v func =
+            let
+                -- Remove any spaces in name (`id` attr doesn't allow for spaces).
+                spacesRemoved : String
+                spacesRemoved =
+                    name
+                        |> String.words
+                        |> String.concat
+            in
+                div [] [
+                    label [ for spacesRemoved ] [ text name ]
+                    , input [ id spacesRemoved, onInput ( SetFormValue func ), type_ "text", value v ] []
+                ]
+    in
+        form [ onSubmit PostSpecialist ] [
+            div [] [
+                button [ onClick CancelSpecialist ] [ text "Back" ]
+            ]
+            , formRow "Username" editable.username (\v -> { editable | username = v } )
+            , formRow "Password" editable.password (\v -> { editable | password = v } )
+            , formRow "First Name" editable.firstname (\v -> { editable | firstname = v } )
+            , formRow "Last Name" editable.lastname (\v -> { editable | lastname = v } )
+            , formRow "Email" editable.email (\v -> { editable | email = v } )
+            , div [] [
+                input [ type_ "submit"] []
+                , button [ onClick CancelSpecialist ] [ text "Cancel" ]
+            ]
+        ]
 
 
 -- TABLE CONFIGURATION
@@ -127,9 +218,9 @@ customColumn viewElement =
 
 -- TODO: Dry!
 viewButton : Specialist -> Table.HtmlDetails Msg
-viewButton { selected } =
+viewButton specialist =
     Table.HtmlDetails []
-        [ button [] [ text "Edit" ]
+        [ button [ onClick ( EditSpecialist specialist ) ] [ text "Edit" ]
         ]
 
 
