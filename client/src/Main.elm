@@ -77,18 +77,21 @@ update msg model =
                 ( newModel, newCmd ) =
                     subUpdate subMsg subModel
             in
-                { model | page = toModel subModel } ! [ Cmd.none ]
+                { model | page = toModel newModel } ! [ Cmd.none ]
 
     in
-        case msg of
-            SetRoute route ->
+        case ( msg, model.page ) of
+            ( SetRoute route, _ ) ->
                 setRoute route model
 
-            SpecialistLoaded ( Ok subModel ) ->
+            ( SpecialistLoaded ( Ok subModel ), _ ) ->
                 { model | page = Specialist subModel } ! [ Cmd.none ]
 
-            SpecialistLoaded ( Err err ) ->
+            ( SpecialistLoaded ( Err err ), _ ) ->
                 model ! [ Cmd.none ]
+
+            ( SpecialistMsg subMsg, Specialist subModel ) ->
+                toPage Specialist Specialist.update subMsg subModel
 
             _ ->
                 model ! [ Cmd.none ]
