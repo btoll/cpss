@@ -1,12 +1,10 @@
-## Generating Goa v1 code
+## Client
 
-If generating code for the first time:
+Written in Elm
 
-    goagen bootstrap -d github.com/btoll/cpss/server/design
+## Server
 
-Everytime after that:
-
-    go generate
+Written in Go
 
 ## License
 

@@ -1,16 +1,18 @@
-elm-stuff
-elm.js
+client/elm-stuff
+client/elm.js
 
-vendor
+# Let's not version all the dependencies!
+server/vendor
 
 # Goa v1 generated code...
-app
-client
-swagger
-tool
+server/app
+server/client
+server/swagger
+server/tool
+
 # For Makefile.
-.__gen__
+server/.__gen__
 
 # The binary build artifact.
-cpss
+server/cpss
 
