@@ -1,7 +1,7 @@
 module Page.Specialist exposing (Model, Msg, init, update, view)
 
 import Data.Specialist exposing (Specialist)
-import Html exposing (Html, Attribute, div, h1, input, p, text)
+import Html exposing (Html, Attribute, button, div, h1, input, p, text)
 import Html.Attributes exposing (checked, style, type_)
 import Html.Events exposing (onClick)
 import Html.Lazy exposing (lazy)
@@ -54,11 +54,11 @@ update msg model =
                 , tableState = Table.initialSort "ID"
             } ! [ Cmd.none ]
 
-        ToggleSelected name ->
+        ToggleSelected id ->
             { model |
                 specialists =
                     model.specialists
-                        |> List.map ( toggle name )
+                        |> List.map ( toggle id )
             } ! [ Cmd.none ]
 
         SetTableState newState ->
@@ -67,8 +67,8 @@ update msg model =
 
 
 toggle : String -> Specialist -> Specialist
-toggle name specialist =
-    if specialist.name == name then
+toggle id specialist =
+    if specialist.id == id then
         { specialist | selected = not specialist.selected }
     else
         specialist
@@ -96,9 +96,10 @@ config =
     { toId = .name
     , toMsg = SetTableState
     , columns =
-        [ checkboxColumn
+        [ customColumn viewCheckbox
         , Table.stringColumn "ID" .id
         , Table.stringColumn "Name" .name
+        , customColumn viewButton
         ]
     , customizations =
         { defaultCustomizations | rowAttrs = toRowAttrs }
@@ -106,19 +107,27 @@ config =
 
 
 toRowAttrs : Specialist -> List ( Attribute Msg )
-toRowAttrs specialist =
-    [ onClick ( ToggleSelected specialist.name )
-    , style [ ( "background", if specialist.selected then "#CEFAF8" else "white" ) ]
+toRowAttrs { id, selected } =
+    [ onClick ( ToggleSelected id )
+    , style [ ( "background", if selected then "#CEFAF8" else "white" ) ]
     ]
 
 
-checkboxColumn : Table.Column Specialist Msg
-checkboxColumn =
+customColumn : ( Specialist -> Table.HtmlDetails Msg ) -> Table.Column Specialist Msg
+customColumn viewElement =
     Table.veryCustomColumn
         { name = ""
-        , viewData = viewCheckbox
+        , viewData = viewElement
         , sorter = Table.unsortable
         }
+
+
+-- TODO: Dry!
+viewButton : Specialist -> Table.HtmlDetails Msg
+viewButton { selected } =
+    Table.HtmlDetails []
+        [ button [] [ text "Edit" ]
+        ]
 
 
 viewCheckbox : Specialist -> Table.HtmlDetails Msg
@@ -126,5 +135,6 @@ viewCheckbox { selected } =
     Table.HtmlDetails []
         [ input [ type_ "checkbox", checked selected ] []
         ]
+------------
 
 

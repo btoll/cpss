@@ -68,9 +68,9 @@ viewFooter =
 
 
 navbarLink : ActivePage -> ( SiteLink a ) -> Html a
-navbarLink currentPage siteLink =
-    li [ classList [ ( "nav-item", True ), ( "active", (==) currentPage siteLink.page ) ] ]
-        [ a [ class "nav-link", Route.href siteLink.route ] siteLink.content ]
+navbarLink currentPage { page, route, content } =
+    li [ classList [ ( "nav-item", True ), ( "active", (==) currentPage page ) ] ]
+        [ a [ class "nav-link", Route.href route ] content ]
 
 
 

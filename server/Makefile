@@ -37,5 +37,5 @@ serve: $(TARGET)
 
 watch:
 	@echo Watching filesystem for changes...
-	@ag -l --depth 0 --go | $(WATCHER) -s 'make serve'
+	@ag -l --depth 0 --go | $(WATCHER) make serve
 
