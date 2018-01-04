@@ -26,7 +26,6 @@ type alias Model =
 
 type Action = None | Adding | Editing
 
-
 init : Task Http.Error Model
 init =
     Request.Specialist.get
@@ -39,94 +38,111 @@ init =
 
 
 type Msg
-    = AddSpecialist
-    | EditSpecialist Specialist
-    | CancelSpecialist
-    | SubmitSpecialist
-    | GetCompleted ( Result Http.Error ( List Specialist ) )
-    | PostSpecialist
+    = Add
+    | Cancel
+    | Delete Specialist
+    | Deleted ( Result Http.Error () )
+    | Edit Specialist
+    | Got ( Result Http.Error ( List Specialist ) )
+    | Post
+    | Posted ( Result Http.Error Specialist )
     | SetFormValue ( String -> Specialist ) String
     | SetTableState Table.State
-    | SpecialistPosted ( Result Http.Error Specialist )
+    | Submit
     | ToggleSelected String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        AddSpecialist ->
+        Add ->
             { model |
                 action = Adding
                 , editing = Nothing
             } ! []
 
-        CancelSpecialist ->
+        Cancel ->
             { model |
                 action = None
                 , editing = Nothing
             } ! []
 
-        EditSpecialist specialist ->
+        Delete specialist ->
+            let
+                subCmd =
+                    Request.Specialist.delete specialist
+                        |> Http.toTask
+                        |> Task.attempt Deleted
+            in
+                { model |
+                    action = None
+                    , editing = Nothing
+                } ! [ subCmd ]
+
+        Deleted ( Ok specialist ) ->
+            model ! []
+
+        Deleted ( Err err ) ->
+            let
+                gg = (Debug.log "err" err)
+            in
+            model ! []
+
+        Edit specialist ->
             { model |
                 action = Editing
                 , editing = Just specialist
             } ! []
 
-        SubmitSpecialist ->
-            { model | action = None } ! []
-
-        GetCompleted ( Ok specialists ) ->
+        Got ( Ok specialists ) ->
             { model |
                 specialists = specialists
                 , tableState = Table.initialSort "ID"
             } ! []
 
-        GetCompleted ( Err err ) ->
+        Got ( Err err ) ->
             { model |
                 specialists = []
                 , tableState = Table.initialSort "ID"
             } ! []
 
-        PostSpecialist ->
+        Post ->
             let
-                postCmd = case model.editing of
+                subCmd = case model.editing of
                     Nothing ->
                         Cmd.none
 
                     Just specialist ->
                         Request.Specialist.post specialist
                             |> Http.toTask
-                            |> Task.attempt SpecialistPosted
+                            |> Task.attempt Posted
             in
                 { model |
                     action = None
                     , editing = Nothing
-                } ! [ postCmd ]
+                } ! [ subCmd ]
+
+        Posted ( Ok specialist ) ->
+            model ! []
+
+        Posted ( Err err ) ->
+            model ! []
 
         SetFormValue setFormValue s ->
             { model | editing = Just ( setFormValue s ) } ! []
 
-        SpecialistPosted ( Ok specialist ) ->
-            let
-                s = (Debug.log "specialist" specialist)
-            in
-            model ! []
+        SetTableState newState ->
+            { model | tableState = newState
+            } ! []
 
-        SpecialistPosted ( Err err ) ->
-            let
-                e = (Debug.log "err" err)
-            in
-            model ! []
+        Submit ->
+            { model | action = None } ! []
 
         ToggleSelected id ->
             { model |
                 specialists =
                     model.specialists
                         |> List.map ( toggle id )
-            } ! []
-
-        SetTableState newState ->
-            { model | tableState = newState
             } ! []
 
 
@@ -155,13 +171,13 @@ drawView : Model -> List ( Html Msg )
 drawView { action, editing, tableState, specialists } =
     case action of
         None ->
-            [ button [ onClick AddSpecialist ] [ text "Add Specialist" ]
+            [ button [ onClick Add ] [ text "Add Specialist" ]
             , Table.view config tableState specialists
             ]
 
         -- Adding | Editing
         _ ->
-            [ viewForm editing
+            [ lazy viewForm editing
             ]
 
 
@@ -191,9 +207,9 @@ viewForm specialist =
                     , input [ id spacesRemoved, onInput ( SetFormValue func ), type_ "text", value v ] []
                 ]
     in
-        form [ onSubmit PostSpecialist ] [
+        form [ onSubmit Post ] [
             div [] [
-                button [ onClick CancelSpecialist ] [ text "Back" ]
+                button [ onClick Cancel ] [ text "Back" ]
             ]
             , formRow "Username" editable.username (\v -> { editable | username = v } )
             , formRow "Password" editable.password (\v -> { editable | password = v } )
@@ -202,7 +218,7 @@ viewForm specialist =
             , formRow "Email" editable.email (\v -> { editable | email = v } )
             , div [] [
                 input [ type_ "submit" ] []
-                , input [ onClick CancelSpecialist, type_ "button", value "Cancel" ] []
+                , input [ onClick Cancel, type_ "button", value "Cancel" ] []
             ]
         ]
 
@@ -213,7 +229,7 @@ viewForm specialist =
 config : Table.Config Specialist Msg
 config =
     Table.customConfig
-    { toId = .username
+    { toId = .id
     , toMsg = SetTableState
     , columns =
         [ customColumn viewCheckbox
@@ -223,6 +239,7 @@ config =
         , Table.stringColumn "Last Name" .lastname
         , Table.stringColumn "Email" .email
         , customColumn viewButton
+        , customColumn viewButton2
         ]
     , customizations =
         { defaultCustomizations | rowAttrs = toRowAttrs }
@@ -249,9 +266,14 @@ customColumn viewElement =
 viewButton : Specialist -> Table.HtmlDetails Msg
 viewButton specialist =
     Table.HtmlDetails []
-        [ button [ onClick ( EditSpecialist specialist ) ] [ text "Edit" ]
+        [ button [ onClick ( Edit specialist ) ] [ text "Edit" ]
         ]
 
+viewButton2 : Specialist -> Table.HtmlDetails Msg
+viewButton2 specialist =
+    Table.HtmlDetails []
+        [ button [ onClick ( Delete specialist ) ] [ text "Delete" ]
+        ]
 
 viewCheckbox : Specialist -> Table.HtmlDetails Msg
 viewCheckbox { selected } =

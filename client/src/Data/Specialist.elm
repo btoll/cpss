@@ -1,4 +1,4 @@
-module Data.Specialist exposing (Specialist, decoder, encoder, manyDecoder)
+module Data.Specialist exposing (Specialist, decoder, encoder, manyDecoder, succeed)
 
 import Json.Decode as Decode exposing (Decoder, bool, list, string)
 import Json.Decode.Pipeline exposing (decode, optional, required)
@@ -44,4 +44,7 @@ encoder specialist =
         , ( "email", Encode.string specialist.email )
         ]
 
+succeed : a -> Decoder a
+succeed =
+    Decode.succeed
 

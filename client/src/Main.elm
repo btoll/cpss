@@ -91,6 +91,9 @@ update msg model =
                 model ! []
 
             ( SpecialistMsg subMsg, Specialist subModel ) ->
+--                let
+--                    s = (Debug.log "subMsg" subMsg)
+--                in
                 toPage Specialist Specialist.update subMsg subModel
 
             _ ->

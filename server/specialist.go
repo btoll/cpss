@@ -7,16 +7,6 @@ import (
 	"github.com/goadesign/goa"
 )
 
-// SpecialistController implements the Specialist resource.
-type SpecialistController struct {
-	*goa.Controller
-}
-
-// NewSpecialistController creates a Specialist controller.
-func NewSpecialistController(service *goa.Service) *SpecialistController {
-	return &SpecialistController{Controller: service.NewController("SpecialistController")}
-}
-
 func fakeData() app.SpecialistMediaCollection {
 	data := [][]string{
 		{"btoll", "****", "Ben", "Toll", "ben@foo"},
@@ -36,6 +26,37 @@ func fakeData() app.SpecialistMediaCollection {
 		}
 	}
 	return res
+}
+
+// SpecialistController implements the Specialist resource.
+type SpecialistController struct {
+	*goa.Controller
+}
+
+// NewSpecialistController creates a Specialist controller.
+func NewSpecialistController(service *goa.Service) *SpecialistController {
+	return &SpecialistController{Controller: service.NewController("SpecialistController")}
+}
+
+// Create runs the create action.
+func (c *SpecialistController) Create(ctx *app.CreateSpecialistContext) error {
+	// SpecialistController_Create: start_implement
+
+	// Put your logic here
+
+	// SpecialistController_Create: end_implement
+	res := &app.SpecialistMediaTiny{}
+	return ctx.OKTiny(res)
+}
+
+// Delete runs the delete action.
+func (c *SpecialistController) Delete(ctx *app.DeleteSpecialistContext) error {
+	// SpecialistController_Delete: start_implement
+
+	// Put your logic here
+
+	// SpecialistController_Delete: end_implement
+	return nil
 }
 
 // List runs the list action.

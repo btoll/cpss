@@ -1,19 +1,21 @@
-module Request.Specialist exposing (get, post)
+module Request.Specialist exposing (delete, get, post)
 
 import Http
-import Data.Specialist exposing (Specialist, decoder, encoder, manyDecoder)
+import Data.Specialist exposing (Specialist, decoder, encoder, manyDecoder, succeed)
 
 
---get = Http.request
---    Http.request
---        { method = "GET"
---        , headers = []
---        , url = url
---        , body = Http.emptyBody
---        , expect = manyDecoder
---        , timeout = Nothing
---        , withCredentials = False
---        }
+
+delete : Specialist -> Http.Request ()
+delete specialist =
+    Http.request
+        { method = "DELETE"
+        , headers = []
+        , url = (++) "http://localhost:8080/cpss/specialist/" specialist.id
+        , body = Http.emptyBody
+        , expect = Http.expectJson (succeed ())
+        , timeout = Nothing
+        , withCredentials = False
+        }
 
 
 get : Http.Request ( List Specialist )
@@ -29,6 +31,6 @@ post specialist =
             encoder specialist
                 |> Http.jsonBody
     in
-        Http.post "http://localhost:8080/cpss/specialist" body decoder
+        Http.post "http://localhost:8080/cpss/specialist/" body decoder
 
 

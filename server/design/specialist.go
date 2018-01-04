@@ -11,6 +11,28 @@ var _ = Resource("Specialist", func() {
 	//	DefaultMedia(SpecialistMedia)
 	Description("Describes a specialist.")
 
+	Action("create", func() {
+		Routing(POST("/"))
+		Description("Create a new sport.")
+		Payload(SpecialistPayload)
+		Response(OK, func() {
+			Status(200)
+			Media(SpecialistMedia, "tiny")
+		})
+	})
+
+	Action("delete", func() {
+		Routing(DELETE("/:id"))
+		Params(func() {
+			Param("id", String, "Specialist ID")
+		})
+		Description("Delete a specialist by id.")
+		Response(OK, func() {
+			Status(200)
+		})
+		Response(NoContent)
+	})
+
 	Action("list", func() {
 		Routing(GET("/list"))
 		Description("Get all specialists")
