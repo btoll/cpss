@@ -1,4 +1,4 @@
-module Data.Specialist exposing (Specialist, manyDecoder)
+module Data.Specialist exposing (Specialist, decoder, encoder, manyDecoder)
 
 import Json.Decode as Decode exposing (Decoder, bool, list, string)
 import Json.Decode.Pipeline exposing (decode, optional, required)
@@ -17,8 +17,8 @@ type alias Specialist =
     }
 
 
-oneDecoder : Decoder Specialist
-oneDecoder =
+decoder : Decoder Specialist
+decoder =
     decode Specialist
         |> required "id" string
         |> required "username" string
@@ -31,13 +31,17 @@ oneDecoder =
 
 manyDecoder : Decoder ( List Specialist )
 manyDecoder =
-    list oneDecoder
+    list decoder
 
 
---encoder : Specialist -> Encode.Value
---encoder specialist =
---    Encode.object
---        [ ( "name", Encode.string sport.name )
---        ]
+encoder : Specialist -> Encode.Value
+encoder specialist =
+    Encode.object
+        [ ( "username", Encode.string specialist.username )
+        , ( "password", Encode.string specialist.password )
+        , ( "firstname", Encode.string specialist.firstname )
+        , ( "lastname", Encode.string specialist.lastname )
+        , ( "email", Encode.string specialist.email )
+        ]
 
 

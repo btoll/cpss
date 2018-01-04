@@ -2,7 +2,7 @@ module Page.Specialist exposing (Model, Msg, init, update, view)
 
 import Data.Specialist exposing (Specialist)
 import Html exposing (Html, Attribute, button, div, form, h1, input, label, text)
-import Html.Attributes exposing (checked, disabled, for, id, style, type_, value)
+import Html.Attributes exposing (action, checked, disabled, for, id, style, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Html.Lazy exposing (lazy)
 import Http
@@ -47,6 +47,7 @@ type Msg
     | PostSpecialist
     | SetFormValue ( String -> Specialist ) String
     | SetTableState Table.State
+    | SpecialistPosted ( Result Http.Error Specialist )
     | ToggleSelected String
 
 
@@ -60,7 +61,10 @@ update msg model =
             } ! []
 
         CancelSpecialist ->
-            { model | action = None } ! []
+            { model |
+                action = None
+                , editing = Nothing
+            } ! []
 
         EditSpecialist specialist ->
             { model |
@@ -84,10 +88,35 @@ update msg model =
             } ! []
 
         PostSpecialist ->
-            model ! []
+            let
+                postCmd = case model.editing of
+                    Nothing ->
+                        Cmd.none
+
+                    Just specialist ->
+                        Request.Specialist.post specialist
+                            |> Http.toTask
+                            |> Task.attempt SpecialistPosted
+            in
+                { model |
+                    action = None
+                    , editing = Nothing
+                } ! [ postCmd ]
 
         SetFormValue setFormValue s ->
-            { model | editing = Just ( setFormValue <| s ) } ! []
+            { model | editing = Just ( setFormValue s ) } ! []
+
+        SpecialistPosted ( Ok specialist ) ->
+            let
+                s = (Debug.log "specialist" specialist)
+            in
+            model ! []
+
+        SpecialistPosted ( Err err ) ->
+            let
+                e = (Debug.log "err" err)
+            in
+            model ! []
 
         ToggleSelected id ->
             { model |
@@ -172,8 +201,8 @@ viewForm specialist =
             , formRow "Last Name" editable.lastname (\v -> { editable | lastname = v } )
             , formRow "Email" editable.email (\v -> { editable | email = v } )
             , div [] [
-                input [ type_ "submit"] []
-                , button [ onClick CancelSpecialist ] [ text "Cancel" ]
+                input [ type_ "submit" ] []
+                , input [ onClick CancelSpecialist, type_ "button", value "Cancel" ] []
             ]
         ]
 

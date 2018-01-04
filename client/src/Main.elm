@@ -77,7 +77,8 @@ update msg model =
                 ( newModel, newCmd ) =
                     subUpdate subMsg subModel
             in
-                { model | page = toModel newModel } ! []
+                -- Mapping the newCmd to SpecialistMsg causes the Elm runtime to call `update` again with the subsequent newCmd!
+                { model | page = toModel newModel } ! [ Cmd.map SpecialistMsg newCmd ]
     in
         case ( msg, model.page ) of
             ( SetRoute route, _ ) ->
