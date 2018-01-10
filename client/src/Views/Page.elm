@@ -1,7 +1,7 @@
 module Views.Page exposing (ActivePage(..), frame)
 
-import Html exposing (..)
-import Html.Attributes exposing (..)
+import Html exposing (Html, a, div, footer, li, main_, nav, text, ul)
+import Html.Attributes exposing (class, classList, id)
 import Route exposing (Route)
 
 
@@ -29,7 +29,8 @@ siteLinks =
 --frame isLoading user page content =
 frame : ActivePage -> Html msg -> Html msg
 frame page content =
-    div [ class "page-frame" ]
+    -- Add a page id to be able to target the current page (see navbar.css).
+    main_ [ id ( ( toString page ) |> String.toLower ), class "page-frame" ]
         [ viewHeader page
         , content
         , viewFooter
@@ -40,11 +41,9 @@ frame page content =
 --viewHeader page user isLoading =
 viewHeader : ActivePage -> Html msg
 viewHeader page =
-    nav [ class "navbar navbar-light" ]
+    nav [ class "navbar" ]
         [ div [ class "container" ]
-            [ a [ class "navbar-brand", Route.href Route.Home ]
-                [ text "benjamintoll.com" ]
-            , ul [ class "nav navbar-nav pull-xs-right" ] <|
+            [ ul [ class "nav" ] <|
                 ( siteLinks
                     |> List.map ( navbarLink <| page )
                 )
@@ -56,14 +55,7 @@ viewHeader page =
 viewFooter : Html msg
 viewFooter =
     footer []
-        [ div [ class "container" ]
-            [ a [ class "logo-font", href "/" ] [ text "benjamintoll.com" ]
-            , span [ class "attribution" ]
-                [ text "An interactive learning project from "
-                , a [ href "http://www.benjamintoll.com" ] [ text "benjamintoll.com" ]
-                , text ". Code & design licensed under GPLv3."
-                ]
-            ]
+        [ div [ class "container" ] []
         ]
 
 
@@ -71,17 +63,5 @@ navbarLink : ActivePage -> ( SiteLink a ) -> Html a
 navbarLink currentPage { page, route, content } =
     li [ classList [ ( "nav-item", True ), ( "active", (==) currentPage page ) ] ]
         [ a [ class "nav-link", Route.href route ] content ]
-
-
-
-{-| This id comes from index.html.
-
-The Feed uses it to scroll to the top of the page (by ID) when switching pages
-in the pagination sense.
-
--}
-bodyId : String
-bodyId =
-    "page-body"
 
 

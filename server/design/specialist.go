@@ -67,8 +67,12 @@ var SpecialistPayload = Type("SpecialistPayload", func() {
 		Metadata("struct:tag:datastore", "email,noindex")
 		Metadata("struct:tag:json", "email,omitempty")
 	})
+	Attribute("payrate", Number, "Specialist payrate", func() {
+		Metadata("struct:tag:datastore", "payrate,noindex")
+		Metadata("struct:tag:json", "payrate,omitempty")
+	})
 
-	Required("username", "password", "firstname", "lastname", "email")
+	Required("username", "password", "firstname", "lastname", "email", "payrate")
 })
 
 var SpecialistMedia = MediaType("application/specialistapi.specialistentity", func() {
@@ -84,8 +88,9 @@ var SpecialistMedia = MediaType("application/specialistapi.specialistentity", fu
 		Attribute("firstname")
 		Attribute("lastname")
 		Attribute("email")
+		Attribute("payrate")
 
-		Required("id", "username", "password", "firstname", "lastname", "email")
+		Required("id", "username", "password", "firstname", "lastname", "email", "payrate")
 	})
 
 	View("default", func() {
@@ -95,6 +100,7 @@ var SpecialistMedia = MediaType("application/specialistapi.specialistentity", fu
 		Attribute("firstname")
 		Attribute("lastname")
 		Attribute("email")
+		Attribute("payrate")
 	})
 
 	View("tiny", func() {

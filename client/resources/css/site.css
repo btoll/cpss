@@ -1,0 +1,91 @@
+body {
+    margin: 0;
+    padding: 0;
+}
+
+main {
+    margin-top: 80px
+}
+
+nav {
+    background: #337ab7;
+    position: fixed;
+    top: 0;
+    width: 100%;
+}
+nav div.container {
+    margin-left: 5%;
+}
+nav ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+nav li {
+    float: left;
+}
+nav li a {
+    color: white;
+    display: block;
+    padding: 20px 10px;
+    text-decoration: none;
+}
+/* Highlight the link of the current page. */
+#home nav li a[href$="/"],
+#specialist nav li a[href$="specialist"] {
+    background: #265a88;
+}
+
+section {
+    margin-left: 2%;
+}
+
+table {
+    border-collapse: collapse;
+    margin: 20px 10px 10px;
+}
+th {
+    border-top: 2px solid #000;
+    border-bottom: 2px solid #000;
+    padding: 10px 0;
+}
+th span:hover { /* To call-out column sorting */
+    cursor: pointer;
+}
+tr {
+    border-bottom: 1px solid #000;
+}
+td {
+    padding: 10px;
+}
+
+form {
+}
+form > div {
+    margin: 5px;
+    padding: 5px;
+}
+form > div label {
+    display: inline-block;
+    margin-right: 5px;
+    text-align: right;
+    width: 230px;
+}
+form div.datepicker-wrapper {
+    display: inline;
+}
+form div.elm-datepicker--container {
+    display: inline;
+}
+/* The last child contains the form buttons. */
+form > div:last-child {
+    margin-left: 170px;
+}
+form > div:last-child input:last-child {
+    margin-left: 10px;
+}
+/* Reset for the Image form. */
+#image form > div:last-child {
+    margin-left: 0;
+}
+

@@ -1,7 +1,7 @@
 module Page.Specialist exposing (Model, Msg, init, update, view)
 
 import Data.Specialist exposing (Specialist)
-import Html exposing (Html, Attribute, button, div, form, h1, input, label, text)
+import Html exposing (Html, Attribute, button, div, form, h1, input, label, section, text)
 import Html.Attributes exposing (action, checked, disabled, for, id, style, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Html.Lazy exposing (lazy)
@@ -43,7 +43,7 @@ type Msg
     | Delete Specialist
     | Deleted ( Result Http.Error () )
     | Edit Specialist
-    | Got ( Result Http.Error ( List Specialist ) )
+    | Getted ( Result Http.Error ( List Specialist ) )
     | Post
     | Posted ( Result Http.Error Specialist )
     | SetFormValue ( String -> Specialist ) String
@@ -94,13 +94,13 @@ update msg model =
                 , editing = Just specialist
             } ! []
 
-        Got ( Ok specialists ) ->
+        Getted ( Ok specialists ) ->
             { model |
                 specialists = specialists
                 , tableState = Table.initialSort "ID"
             } ! []
 
-        Got ( Err err ) ->
+        Getted ( Err err ) ->
             { model |
                 specialists = []
                 , tableState = Table.initialSort "ID"
@@ -160,7 +160,7 @@ toggle id specialist =
 
 view : Model -> Html Msg
 view model =
-    div []
+    section []
         ( (::)
             ( h1 [] [ text "Specialists" ] )
             ( drawView model )

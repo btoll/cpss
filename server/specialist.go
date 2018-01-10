@@ -9,10 +9,10 @@ import (
 
 func fakeData() app.SpecialistMediaCollection {
 	data := [][]string{
-		{"btoll", "****", "Ben", "Toll", "ben@foo"},
-		{"gtoll", "****", "Ginger", "Toll", "ginger@foo"},
-		{"fmoseley", "****", "Fred", "Moseley", "fred@foo"},
-		{"tnelson", "****", "Trey", "Nelson", "trey@foo"},
+		{"btoll", "****", "Ben", "Toll", "ben@foo", "10.00"},
+		{"gtoll", "****", "Ginger", "Toll", "ginger@foo", "11.34"},
+		{"fmoseley", "****", "Fred", "Moseley", "fred@foo", "66.66"},
+		{"tnelson", "****", "Trey", "Nelson", "trey@foo", "17.42"},
 	}
 	res := make(app.SpecialistMediaCollection, len(data))
 	for i, d := range data {
@@ -23,9 +23,18 @@ func fakeData() app.SpecialistMediaCollection {
 			Firstname: d[2],
 			Lastname:  d[3],
 			Email:     d[4],
+			Payrate:   toFloat(d[5]),
 		}
 	}
 	return res
+}
+
+func toFloat(s string) float64 {
+	f, err := strconv.ParseFloat(s, 32)
+	if err != nil {
+		return 0.00
+	}
+	return f
 }
 
 // SpecialistController implements the Specialist resource.
