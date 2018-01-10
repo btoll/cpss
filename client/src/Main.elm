@@ -1,10 +1,12 @@
 module Main exposing (..)
 
+import Data.BillSheet exposing (BillSheet)
 import Data.Specialist exposing (Specialist)
 import Html exposing (..)
 import Http
 import Navigation
 import Page.NotFound as NotFound
+import Page.BillSheet as BillSheet
 import Page.Specialist as Specialist
 import Route exposing (Route)
 import Task
@@ -17,6 +19,7 @@ type Page
 --    | Home Home.Model
 --    | Errored PageLoadError
 --    | Home Home.Model
+    | BillSheet BillSheet.Model
     | Specialist Specialist.Model
 --    | Login Login.Model
 
@@ -52,6 +55,8 @@ initialPage =
 
 type Msg
     = SetRoute ( Maybe Route )
+    | BillSheetLoaded ( Result Http.Error BillSheet.Model )
+    | BillSheetMsg BillSheet.Msg
     | SpecialistLoaded ( Result Http.Error Specialist.Model )
     | SpecialistMsg Specialist.Msg
 
@@ -61,6 +66,9 @@ setRoute maybeRoute model =
     case maybeRoute of
         Just Route.Home ->
             { model | page = Blank } ! []
+
+        Just Route.BillSheet ->
+            ( model, BillSheet.init |> Task.attempt BillSheetLoaded )
 
         Just Route.Specialist ->
             ( model, Specialist.init |> Task.attempt SpecialistLoaded )
@@ -72,17 +80,26 @@ setRoute maybeRoute model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     let
-        toPage toModel subUpdate subMsg subModel =
+        toPage toModel toMsg subUpdate subMsg subModel =
             let
                 ( newModel, newCmd ) =
                     subUpdate subMsg subModel
             in
                 -- Mapping the newCmd to SpecialistMsg causes the Elm runtime to call `update` again with the subsequent newCmd!
-                { model | page = toModel newModel } ! [ Cmd.map SpecialistMsg newCmd ]
+                { model | page = toModel newModel } ! [ Cmd.map toMsg newCmd ]
     in
         case ( msg, model.page ) of
             ( SetRoute route, _ ) ->
                 setRoute route model
+
+            ( BillSheetLoaded ( Ok subModel ), _ ) ->
+                { model | page = BillSheet subModel } ! []
+
+            ( BillSheetLoaded ( Err err ), _ ) ->
+                model ! []
+
+            ( BillSheetMsg subMsg, BillSheet subModel ) ->
+                toPage BillSheet BillSheetMsg BillSheet.update subMsg subModel
 
             ( SpecialistLoaded ( Ok subModel ), _ ) ->
                 { model | page = Specialist subModel } ! []
@@ -91,10 +108,7 @@ update msg model =
                 model ! []
 
             ( SpecialistMsg subMsg, Specialist subModel ) ->
---                let
---                    s = (Debug.log "subMsg" subMsg)
---                in
-                toPage Specialist Specialist.update subMsg subModel
+                toPage Specialist SpecialistMsg Specialist.update subMsg subModel
 
             _ ->
                 model ! []
@@ -126,6 +140,12 @@ view model =
 --        Errored subModel ->
 --            Errored.view session subModel
 --                |> frame Page.Other
+
+        BillSheet subModel ->
+--            BillSheet.view session subModel
+            BillSheet.view subModel
+                |> frame Page.BillSheet
+                |> Html.map BillSheetMsg
 
         Specialist subModel ->
 --            Specialist.view session subModel

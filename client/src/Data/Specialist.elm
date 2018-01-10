@@ -1,6 +1,6 @@
 module Data.Specialist exposing (Specialist, decoder, encoder, manyDecoder, succeed)
 
-import Json.Decode as Decode exposing (Decoder, bool, list, string)
+import Json.Decode as Decode exposing (Decoder, bool, float, list, string)
 import Json.Decode.Pipeline exposing (decode, optional, required)
 import Json.Encode as Encode
 
@@ -13,6 +13,7 @@ type alias Specialist =
     , firstname : String
     , lastname : String
     , email : String
+    , payrate : Float
     , selected : Bool
     }
 
@@ -26,6 +27,7 @@ decoder =
         |> required "firstname" string
         |> required "lastname" string
         |> required "email" string
+        |> required "payrate" float
         |> optional "selected" bool False
 
 
@@ -42,9 +44,11 @@ encoder specialist =
         , ( "firstname", Encode.string specialist.firstname )
         , ( "lastname", Encode.string specialist.lastname )
         , ( "email", Encode.string specialist.email )
+        , ( "payrate", Encode.float specialist.payrate )
         ]
 
 succeed : a -> Decoder a
 succeed =
     Decode.succeed
+
 

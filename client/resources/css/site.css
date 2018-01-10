@@ -32,6 +32,7 @@ nav li a {
 }
 /* Highlight the link of the current page. */
 #home nav li a[href$="/"],
+#billsheet nav li a[href$="billsheet"],
 #specialist nav li a[href$="specialist"] {
     background: #265a88;
 }

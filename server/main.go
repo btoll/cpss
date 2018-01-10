@@ -21,6 +21,8 @@ func main() {
 	// Mount "Specialist" controller
 	c := NewSpecialistController(service)
 	app.MountSpecialistController(service, c)
+	d := NewBillSheetController(service)
+	app.MountBillSheetController(service, d)
 
 	// Start service
 	if err := service.ListenAndServe(":8080"); err != nil {

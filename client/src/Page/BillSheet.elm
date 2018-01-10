@@ -1,12 +1,12 @@
-module Page.Specialist exposing (Model, Msg, init, update, view)
+module Page.BillSheet exposing (Model, Msg, init, update, view)
 
-import Data.Specialist exposing (Specialist)
+import Data.BillSheet exposing (BillSheet)
 import Html exposing (Html, Attribute, button, div, form, h1, input, label, section, text)
 import Html.Attributes exposing (action, checked, disabled, for, id, style, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Html.Lazy exposing (lazy)
 import Http
-import Request.Specialist
+import Request.BillSheet
 import Table exposing (defaultCustomizations)
 import Task exposing (Task)
 import Util.Form as Form
@@ -20,8 +20,8 @@ type alias Model =
     -- NOTE: Order matters here (see `init`)!
     { tableState : Table.State
     , action : Action
-    , editing : Maybe Specialist
-    , specialists : List Specialist
+    , editing : Maybe BillSheet
+    , billsheets : List BillSheet
     }
 
 
@@ -29,7 +29,7 @@ type Action = None | Adding | Editing
 
 init : Task Http.Error Model
 init =
-    Request.Specialist.get
+    Request.BillSheet.get
         |> Http.toTask
         |> Task.map ( Model ( Table.initialSort "ID" ) None Nothing )
 
@@ -41,13 +41,13 @@ init =
 type Msg
     = Add
     | Cancel
-    | Delete Specialist
+    | Delete BillSheet
     | Deleted ( Result Http.Error () )
-    | Edit Specialist
-    | Getted ( Result Http.Error ( List Specialist ) )
+    | Edit BillSheet
+    | Getted ( Result Http.Error ( List BillSheet ) )
     | Post
-    | Posted ( Result Http.Error Specialist )
-    | SetFormValue ( String -> Specialist ) String
+    | Posted ( Result Http.Error BillSheet )
+    | SetFormValue ( String -> BillSheet ) String
     | SetTableState Table.State
     | Submit
     | ToggleSelected String
@@ -68,10 +68,10 @@ update msg model =
                 , editing = Nothing
             } ! []
 
-        Delete specialist ->
+        Delete billsheet ->
             let
                 subCmd =
-                    Request.Specialist.delete specialist
+                    Request.BillSheet.delete billsheet
                         |> Http.toTask
                         |> Task.attempt Deleted
             in
@@ -80,7 +80,7 @@ update msg model =
                     , editing = Nothing
                 } ! [ subCmd ]
 
-        Deleted ( Ok specialist ) ->
+        Deleted ( Ok billsheet ) ->
             model ! []
 
         Deleted ( Err err ) ->
@@ -89,21 +89,21 @@ update msg model =
             in
             model ! []
 
-        Edit specialist ->
+        Edit billsheet ->
             { model |
                 action = Editing
-                , editing = Just specialist
+                , editing = Just billsheet
             } ! []
 
-        Getted ( Ok specialists ) ->
+        Getted ( Ok billsheets ) ->
             { model |
-                specialists = specialists
+                billsheets = billsheets
                 , tableState = Table.initialSort "ID"
             } ! []
 
         Getted ( Err err ) ->
             { model |
-                specialists = []
+                billsheets = []
                 , tableState = Table.initialSort "ID"
             } ! []
 
@@ -113,8 +113,8 @@ update msg model =
                     Nothing ->
                         Cmd.none
 
-                    Just specialist ->
-                        Request.Specialist.post specialist
+                    Just billsheet ->
+                        Request.BillSheet.post billsheet
                             |> Http.toTask
                             |> Task.attempt Posted
             in
@@ -123,7 +123,7 @@ update msg model =
                     , editing = Nothing
                 } ! [ subCmd ]
 
-        Posted ( Ok specialist ) ->
+        Posted ( Ok billsheet ) ->
             model ! []
 
         Posted ( Err err ) ->
@@ -141,18 +141,18 @@ update msg model =
 
         ToggleSelected id ->
             { model |
-                specialists =
-                    model.specialists
+                billsheets =
+                    model.billsheets
                         |> List.map ( toggle id )
             } ! []
 
 
-toggle : String -> Specialist -> Specialist
-toggle id specialist =
-    if specialist.id == id then
-        { specialist | selected = not specialist.selected }
+toggle : String -> BillSheet -> BillSheet
+toggle id billsheet =
+    if billsheet.id == id then
+        { billsheet | selected = not billsheet.selected }
     else
-        specialist
+        billsheet
 
 
 
@@ -163,17 +163,17 @@ view : Model -> Html Msg
 view model =
     section []
         ( (::)
-            ( h1 [] [ text "Specialists" ] )
+            ( h1 [] [ text "Bill Sheet" ] )
             ( drawView model )
         )
 
 
 drawView : Model -> List ( Html Msg )
-drawView { action, editing, tableState, specialists } =
+drawView { action, editing, tableState, billsheets } =
     case action of
         None ->
-            [ button [ onClick Add ] [ text "Add Specialist" ]
-            , Table.view config tableState specialists
+            [ button [ onClick Add ] [ text "Add Bill Sheet" ]
+            , Table.view config tableState billsheets
             ]
 
         -- Adding | Editing
@@ -182,18 +182,18 @@ drawView { action, editing, tableState, specialists } =
             ]
 
 
-viewForm : Maybe Specialist -> Html Msg
-viewForm specialist =
+viewForm : Maybe BillSheet -> Html Msg
+viewForm billsheet =
     let
-        editable : Specialist
-        editable = case specialist of
+        editable : BillSheet
+        editable = case billsheet of
             Nothing ->
-                Specialist "-1" "" "" "" "" "" 0.00 False
+                BillSheet "" "" "" 0.00 "" "" "" "" "" "" "" False
 
-            Just specialist ->
-                specialist
+            Just billsheet ->
+                billsheet
 
-        formRow : String -> String -> ( String -> Specialist ) -> Html Msg
+        formRow : String -> String -> ( String -> BillSheet ) -> Html Msg
         formRow name v func =
             let
                 -- Remove any spaces in name (`id` attr doesn't allow for spaces).
@@ -210,12 +210,16 @@ viewForm specialist =
     in
         form [ onSubmit Post ] [
             Form.disabledTextRow "ID" editable.id ( SetFormValue (\v -> { editable | id = v }) )
-            , Form.textRow "Username" editable.username ( SetFormValue (\v -> { editable | username = v }) )
-            , Form.textRow "Password" editable.password ( SetFormValue (\v -> { editable | password = v }) )
-            , Form.textRow "First Name" editable.firstname ( SetFormValue (\v -> { editable | firstname = v }) )
-            , Form.textRow "Last Name" editable.lastname ( SetFormValue (\v -> { editable | lastname = v }) )
-            , Form.textRow "Email" editable.email ( SetFormValue (\v -> { editable | email = v }) )
-            , Form.stepRow "Pay Rate" ( toString editable.payrate ) ( SetFormValue (\v -> { editable | payrate = ( Result.withDefault 0.00 ( String.toFloat v ) ) }) )
+            , Form.textRow "Recipient ID" editable.recipientID ( SetFormValue (\v -> { editable | recipientID = v }) )
+            , Form.textRow "Service Date" editable.serviceDate ( SetFormValue (\v -> { editable | serviceDate = v }) )
+            , Form.stepRow "Billed Amount" ( toString editable.billedAmount ) ( SetFormValue (\v -> { editable | billedAmount = ( Result.withDefault 0.00 ( String.toFloat v ) ) }) )
+            , Form.textRow "Consumer" editable.consumer ( SetFormValue (\v -> { editable | consumer = v }) )
+            , Form.textRow "Status" editable.status ( SetFormValue (\v -> { editable | status = v }) )
+            , Form.textRow "Confirmation" editable.confirmation ( SetFormValue (\v -> { editable | confirmation = v }) )
+            , Form.textRow "Service" editable.service ( SetFormValue (\v -> { editable | service = v }) )
+            , Form.textRow "County" editable.county ( SetFormValue (\v -> { editable | county = v }) )
+            , Form.textRow "Specialist" editable.specialist ( SetFormValue (\v -> { editable | specialist = v }) )
+            , Form.textRow "Record Number" editable.recordNumber ( SetFormValue (\v -> { editable | recordNumber = v }) )
             , Form.submitRow False Cancel
         ]
 
@@ -223,7 +227,7 @@ viewForm specialist =
 -- TABLE CONFIGURATION
 
 
-config : Table.Config Specialist Msg
+config : Table.Config BillSheet Msg
 config =
     Table.customConfig
     { toId = .id
@@ -231,12 +235,16 @@ config =
     , columns =
         [ customColumn viewCheckbox
         , Table.stringColumn "ID" .id
-        , Table.stringColumn "Username" .username
-        , Table.stringColumn "Password" .password
-        , Table.stringColumn "First Name" .firstname
-        , Table.stringColumn "Last Name" .lastname
-        , Table.stringColumn "Email" .email
-        , Table.floatColumn "Pay Rate" .payrate
+        , Table.stringColumn "Recipient ID" .recipientID
+        , Table.stringColumn "Service Date" .serviceDate
+        , Table.floatColumn "Billed Amount" .billedAmount
+        , Table.stringColumn "Consumer" .consumer
+        , Table.stringColumn "Status" .status
+        , Table.stringColumn "Confirmation" .confirmation
+        , Table.stringColumn "Service" .service
+        , Table.stringColumn "County" .county
+        , Table.stringColumn "Specialist" .specialist
+        , Table.stringColumn "Record Number" .recordNumber
         , customColumn viewButton
         , customColumn viewButton2
         ]
@@ -245,14 +253,14 @@ config =
     }
 
 
-toRowAttrs : Specialist -> List ( Attribute Msg )
+toRowAttrs : BillSheet -> List ( Attribute Msg )
 toRowAttrs { id, selected } =
     [ onClick ( ToggleSelected id )
     , style [ ( "background", if selected then "#CEFAF8" else "white" ) ]
     ]
 
 
-customColumn : ( Specialist -> Table.HtmlDetails Msg ) -> Table.Column Specialist Msg
+customColumn : ( BillSheet -> Table.HtmlDetails Msg ) -> Table.Column BillSheet Msg
 customColumn viewElement =
     Table.veryCustomColumn
         { name = ""
@@ -262,19 +270,19 @@ customColumn viewElement =
 
 
 -- TODO: Dry!
-viewButton : Specialist -> Table.HtmlDetails Msg
-viewButton specialist =
+viewButton : BillSheet -> Table.HtmlDetails Msg
+viewButton billsheet =
     Table.HtmlDetails []
-        [ button [ onClick ( Edit specialist ) ] [ text "Edit" ]
+        [ button [ onClick ( Edit billsheet ) ] [ text "Edit" ]
         ]
 
-viewButton2 : Specialist -> Table.HtmlDetails Msg
-viewButton2 specialist =
+viewButton2 : BillSheet -> Table.HtmlDetails Msg
+viewButton2 billsheet =
     Table.HtmlDetails []
-        [ button [ onClick ( Delete specialist ) ] [ text "Delete" ]
+        [ button [ onClick ( Delete billsheet ) ] [ text "Delete" ]
         ]
 
-viewCheckbox : Specialist -> Table.HtmlDetails Msg
+viewCheckbox : BillSheet -> Table.HtmlDetails Msg
 viewCheckbox { selected } =
     Table.HtmlDetails []
         [ input [ type_ "checkbox", checked selected ] []
