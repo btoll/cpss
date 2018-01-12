@@ -1,8 +1,11 @@
 SHELL 		= /bin/sh
-CC      	= elm-make
+CC      	= elm make
+
+NATIVE  	= Native.js
+SNIPPET		= "const app = Elm.Main.fullscreen({ env: '{{BUILD}}' })"
 PORT		= 1975
-WEBSERVER	= elm reactor
 TARGET  	= elm.js
+WEBSERVER	= elm reactor
 
 .PHONY: clean dev hooks prod production serve
 
@@ -11,13 +14,19 @@ define compile
 		$(if $1,--debug)
 endef
 
+define concat
+	@echo $(if $1,$(subst {{BUILD}},dev,$(SNIPPET)), $(subst {{BUILD}},production,$(SNIPPET))) | \
+		cat - $(NATIVE) >> $(TARGET)
+endef
+
 $(TARGET):
 	$(call compile, dev)
 
 clean:
 	rm -f $(TARGET)
 
-dev: clean $(TARGET)
+dev: clean $(TARGET) $(NATIVE)
+	$(call concat, dev)
 
 hooks:
 	cd .git/hooks && \
@@ -26,9 +35,10 @@ hooks:
 
 prod: production
 
-production: clean
+production: clean $(NATIVE)
 	$(call compile)
+	$(call concat)
 
-serve: dev
+serve: $(TARGET)
 	$(WEBSERVER) -p $(PORT)
 

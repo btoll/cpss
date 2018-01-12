@@ -5,12 +5,12 @@ import Data.BillSheet exposing (BillSheet, decoder, encoder, manyDecoder, succee
 
 
 
-delete : BillSheet -> Http.Request ()
-delete billsheet =
+delete : String -> BillSheet -> Http.Request ()
+delete url billsheet =
     Http.request
         { method = "DELETE"
         , headers = []
-        , url = (++) "http://localhost:8080/cpss/billsheet/" billsheet.id
+        , url = (++) ( (++) url "/billsheet/" ) billsheet.id
         , body = Http.emptyBody
         , expect = Http.expectJson (succeed ())
         , timeout = Nothing
@@ -18,19 +18,21 @@ delete billsheet =
         }
 
 
-get : Http.Request ( List BillSheet )
-get =
-    Http.get "http://localhost:8080/cpss/billsheet/list" manyDecoder
+get : String -> Http.Request ( List BillSheet )
+get url =
+    manyDecoder
+        |> Http.get ( (++) url "/billsheet/list" )
 
 
-post : BillSheet -> Http.Request BillSheet
-post billsheet =
+post : String -> BillSheet -> Http.Request BillSheet
+post url billsheet =
     let
         body : Http.Body
         body =
             encoder billsheet
                 |> Http.jsonBody
     in
-        Http.post "http://localhost:8080/cpss/billsheet/" body decoder
+        decoder
+            |> Http.post ( (++) url "/billsheet/" ) body
 
 

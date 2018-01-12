@@ -27,9 +27,9 @@ type alias Model =
 
 type Action = None | Adding | Editing
 
-init : Task Http.Error Model
-init =
-    Request.BillSheet.get
+init : String -> Task Http.Error Model
+init url =
+    Request.BillSheet.get url
         |> Http.toTask
         |> Task.map ( Model ( Table.initialSort "ID" ) None Nothing )
 
@@ -53,8 +53,8 @@ type Msg
     | ToggleSelected String
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
+update : String -> Msg -> Model -> ( Model, Cmd Msg )
+update url msg model =
     case msg of
         Add ->
             { model |
@@ -71,7 +71,7 @@ update msg model =
         Delete billsheet ->
             let
                 subCmd =
-                    Request.BillSheet.delete billsheet
+                    Request.BillSheet.delete url billsheet
                         |> Http.toTask
                         |> Task.attempt Deleted
             in
@@ -114,7 +114,7 @@ update msg model =
                         Cmd.none
 
                     Just billsheet ->
-                        Request.BillSheet.post billsheet
+                        Request.BillSheet.post url billsheet
                             |> Http.toTask
                             |> Task.attempt Posted
             in

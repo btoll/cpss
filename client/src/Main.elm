@@ -8,9 +8,22 @@ import Navigation
 import Page.NotFound as NotFound
 import Page.BillSheet as BillSheet
 import Page.Specialist as Specialist
+import Ports exposing (fileContentRead, fileSelected)
 import Route exposing (Route)
 import Task
 import Views.Page as Page exposing (ActivePage)
+
+
+type alias Build =
+    {
+        url : String
+    }
+
+
+type alias Flags =
+    {
+        env : Maybe String
+    }
 
 
 type Page
@@ -31,17 +44,25 @@ type Page
 type alias Model =
 --    { session : Session
     { session : {}
+    , build : Build
     , page : Page
     }
 
 
-init : Navigation.Location -> ( Model, Cmd Msg )
-init location =
-    setRoute ( Route.fromLocation location )
-        { page = initialPage
---        , session = { user = decodeUserFromJson val }
-        , session = {}
-        }
+init : Flags -> Navigation.Location -> ( Model, Cmd Msg )
+init flags location =
+    let
+        url =
+            if ( Maybe.withDefault "dev" flags.env ) == "production"
+            then "https://www.benjamintoll.com/cpss"
+            else "http://localhost:8080/cpss"
+    in
+        setRoute ( Route.fromLocation location )
+            { page = initialPage
+    --        , session = { user = decodeUserFromJson val }
+            , build = { url = url }
+            , session = {}
+            }
 
 
 initialPage : Page
@@ -68,10 +89,10 @@ setRoute maybeRoute model =
             { model | page = Blank } ! []
 
         Just Route.BillSheet ->
-            ( model, BillSheet.init |> Task.attempt BillSheetLoaded )
+            ( model, BillSheet.init model.build.url |> Task.attempt BillSheetLoaded )
 
         Just Route.Specialist ->
-            ( model, Specialist.init |> Task.attempt SpecialistLoaded )
+            ( model, Specialist.init model.build.url |> Task.attempt SpecialistLoaded )
 
         _ ->
             model ! []
@@ -83,7 +104,7 @@ update msg model =
         toPage toModel toMsg subUpdate subMsg subModel =
             let
                 ( newModel, newCmd ) =
-                    subUpdate subMsg subModel
+                    subUpdate model.build.url subMsg subModel
             in
                 -- Mapping the newCmd to SpecialistMsg causes the Elm runtime to call `update` again with the subsequent newCmd!
                 { model | page = toModel newModel } ! [ Cmd.map toMsg newCmd ]
@@ -163,9 +184,9 @@ view model =
 -- MAIN --
 
 
-main : Program Never Model Msg
+main : Program Flags Model Msg
 main =
-    Navigation.program ( Route.fromLocation >> SetRoute )
+    Navigation.programWithFlags ( Route.fromLocation >> SetRoute )
         { init = init
         , update = update
         , view = view

@@ -5,12 +5,12 @@ import Data.Specialist exposing (Specialist, decoder, encoder, manyDecoder, succ
 
 
 
-delete : Specialist -> Http.Request ()
-delete specialist =
+delete : String -> Specialist -> Http.Request ()
+delete url specialist =
     Http.request
         { method = "DELETE"
         , headers = []
-        , url = (++) "http://localhost:8080/cpss/specialist/" specialist.id
+        , url = (++) ( (++) url "/specialist/" ) specialist.id
         , body = Http.emptyBody
         , expect = Http.expectJson (succeed ())
         , timeout = Nothing
@@ -18,19 +18,21 @@ delete specialist =
         }
 
 
-get : Http.Request ( List Specialist )
-get =
-    Http.get "http://localhost:8080/cpss/specialist/list" manyDecoder
+get : String -> Http.Request ( List Specialist )
+get url =
+    manyDecoder
+        |> Http.get ( (++) url "/specialist/list" )
 
 
-post : Specialist -> Http.Request Specialist
-post specialist =
+post : String -> Specialist -> Http.Request Specialist
+post url specialist =
     let
         body : Http.Body
         body =
             encoder specialist
                 |> Http.jsonBody
     in
-        Http.post "http://localhost:8080/cpss/specialist/" body decoder
+        decoder
+            |> Http.post ( (++) url "/specialist/" ) body
 
 
