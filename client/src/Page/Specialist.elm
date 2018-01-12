@@ -192,21 +192,6 @@ viewForm specialist =
 
             Just specialist ->
                 specialist
-
-        formRow : String -> String -> ( String -> Specialist ) -> Html Msg
-        formRow name v func =
-            let
-                -- Remove any spaces in name (`id` attr doesn't allow for spaces).
-                spacesRemoved : String
-                spacesRemoved =
-                    name
-                        |> String.words
-                        |> String.concat
-            in
-                div [] [
-                    label [ for spacesRemoved ] [ text name ]
-                    , input [ id spacesRemoved, onInput ( SetFormValue func ), type_ "text", value v ] []
-                ]
     in
         form [ onSubmit Post ] [
             Form.disabledTextRow "ID" editable.id ( SetFormValue (\v -> { editable | id = v }) )

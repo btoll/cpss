@@ -9,6 +9,8 @@ type ActivePage
     = Other
     | Home
     | BillSheet
+    | Login
+    | Logout
     | Specialist
 
 
@@ -19,12 +21,16 @@ type alias SiteLink msg =
     }
 
 
-siteLinks : List ( SiteLink a )
-siteLinks =
-    [ SiteLink Home Route.Home [ text "Home" ]
-    , SiteLink BillSheet Route.BillSheet [ text "Bill Sheet" ]
-    , SiteLink Specialist Route.Specialist [ text "Specialist" ]
-    ]
+siteLinks : ActivePage -> List ( SiteLink a )
+siteLinks page =
+    if ( (==) ( toString page ) "Login" ) then
+        [ SiteLink Login Route.Login [ text "Login" ] ]
+    else
+        [ SiteLink Home Route.Home [ text "Home" ]
+        , SiteLink BillSheet Route.BillSheet [ text "Bill Sheet" ]
+        , SiteLink Specialist Route.Specialist [ text "Specialist" ]
+        , SiteLink Logout Route.Logout [ text "Logout" ]
+        ]
 
 
 --frame : Bool -> Maybe User -> ActivePage -> Html msg -> Html msg
@@ -46,7 +52,7 @@ viewHeader page =
     nav [ class "navbar" ]
         [ div [ class "container" ]
             [ ul [ class "nav" ] <|
-                ( siteLinks
+                ( siteLinks page
                     |> List.map ( navbarLink <| page )
                 )
             ]

@@ -1,12 +1,14 @@
 module Main exposing (..)
 
 import Data.BillSheet exposing (BillSheet)
+import Data.Session exposing (Session)
 import Data.Specialist exposing (Specialist)
 import Html exposing (..)
 import Http
 import Navigation
-import Page.NotFound as NotFound
 import Page.BillSheet as BillSheet
+import Page.Login as Login
+import Page.NotFound as NotFound
 import Page.Specialist as Specialist
 import Ports exposing (fileContentRead, fileSelected)
 import Route exposing (Route)
@@ -31,10 +33,11 @@ type Page
     | NotFound
 --    | Home Home.Model
 --    | Errored PageLoadError
+    | Errored
 --    | Home Home.Model
     | BillSheet BillSheet.Model
+    | Login Login.Model
     | Specialist Specialist.Model
---    | Login Login.Model
 
 
 
@@ -42,8 +45,7 @@ type Page
 
 
 type alias Model =
---    { session : Session
-    { session : {}
+    { session : Session
     , build : Build
     , page : Page
     }
@@ -58,10 +60,9 @@ init flags location =
             else "http://localhost:8080/cpss"
     in
         setRoute ( Route.fromLocation location )
-            { page = initialPage
-    --        , session = { user = decodeUserFromJson val }
+            { session = { user = Nothing }
             , build = { url = url }
-            , session = {}
+            , page = initialPage
             }
 
 
@@ -78,6 +79,7 @@ type Msg
     = SetRoute ( Maybe Route )
     | BillSheetLoaded ( Result Http.Error BillSheet.Model )
     | BillSheetMsg BillSheet.Msg
+    | LoginMsg Login.Msg
     | SpecialistLoaded ( Result Http.Error Specialist.Model )
     | SpecialistMsg Specialist.Msg
 
@@ -86,13 +88,37 @@ setRoute : Maybe Route -> Model -> ( Model, Cmd Msg )
 setRoute maybeRoute model =
     case maybeRoute of
         Just Route.Home ->
-            { model | page = Blank } ! []
+            case model.session.user of
+                Nothing ->
+                    { model | page = Login Login.init } ! []
+
+                Just user ->
+                    { model | page = Blank } ! []
 
         Just Route.BillSheet ->
-            ( model, BillSheet.init model.build.url |> Task.attempt BillSheetLoaded )
+            case model.session.user of
+                Nothing ->
+                    { model | page = Login Login.init } ! []
+
+                Just user ->
+                    ( model, BillSheet.init model.build.url |> Task.attempt BillSheetLoaded )
+
+        Just Route.Logout ->
+            let
+                session = model.session
+            in
+            { model |
+                page = Login Login.init
+                , session = { session | user = Nothing }
+            } ! []
 
         Just Route.Specialist ->
-            ( model, Specialist.init model.build.url |> Task.attempt SpecialistLoaded )
+            case model.session.user of
+                Nothing ->
+                    { model | page = Login Login.init } ! []
+
+                Just user ->
+                    ( model, Specialist.init model.build.url |> Task.attempt SpecialistLoaded )
 
         _ ->
             model ! []
@@ -121,6 +147,28 @@ update msg model =
 
             ( BillSheetMsg subMsg, BillSheet subModel ) ->
                 toPage BillSheet BillSheetMsg BillSheet.update subMsg subModel
+
+            ( LoginMsg subMsg, Login subModel ) ->
+                let
+                    ( ( pageModel, cmd ), msgFromPage ) =
+                        Login.update model.build.url subMsg subModel
+
+                    newModel =
+                        case msgFromPage of
+                            Login.NoOp ->
+                                { model | page = Login pageModel }
+
+                            Login.SetUser user ->
+                                let
+                                    session =
+                                        model.session
+                                in
+                                    { model |
+                                        session = { user = Just user }
+                                        , page = Blank
+                                    }
+                in
+                    newModel ! [ Cmd.map LoginMsg cmd ]
 
             ( SpecialistLoaded ( Ok subModel ), _ ) ->
                 { model | page = Specialist subModel } ! []
@@ -153,20 +201,26 @@ view model =
             Html.text ""
                 |> frame Page.Home
 
-        NotFound ->
---            NotFound.view session
-            NotFound.view
-                |> frame Page.Other
-
---        Errored subModel ->
---            Errored.view session subModel
---                |> frame Page.Other
-
         BillSheet subModel ->
 --            BillSheet.view session subModel
             BillSheet.view subModel
                 |> frame Page.BillSheet
                 |> Html.map BillSheetMsg
+
+        Errored ->
+            Html.text "Errored"
+--            Errored.view session subModel
+                |> frame Page.Other
+
+        Login subModel ->
+            Login.view subModel
+                |> frame Page.Login
+                |> Html.map LoginMsg
+
+        NotFound ->
+--            NotFound.view session
+            NotFound.view
+                |> frame Page.Other
 
         Specialist subModel ->
 --            Specialist.view session subModel

@@ -1,4 +1,4 @@
-module Util.Form exposing (checkboxRow, disabledTextRow, selectRow, stepRow, submitRow, textRow)
+module Util.Form exposing (checkboxRow, disabledTextRow, passwordRow, selectRow, stepRow, submitRow, textRow)
 
 import Html exposing (Html, div, input, label, option, select, text)
 import Html.Attributes exposing (checked, class, disabled, for, id, selected, step, type_, value)
@@ -19,6 +19,14 @@ disabledTextRow name val fn =
     div [] [
         label [ prepareId name |> for ] [ text name ]
         , input [ disabled True, prepareId name |> id, onInput fn, type_ "text", value val ] []
+    ]
+
+
+passwordRow : String -> String -> ( String -> msg ) -> Html msg
+passwordRow name val fn =
+    div [] [
+        label [ prepareId name |> for ] [ text name ]
+        , input [ disabled False, prepareId name |> id, onInput fn, type_ "password", value val ] []
     ]
 
 
