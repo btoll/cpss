@@ -111,10 +111,10 @@ setRoute maybeRoute model =
                     let
                         loginModel = Login.init
                     in
-                    { model |
-                        page = Login loginModel
-                        , onLogin = maybeRoute
-                    } ! []
+                        { model |
+                            page = Login loginModel
+                            , onLogin = maybeRoute
+                        } ! []
 
                 Just user ->
                     ( model, BillSheet.init model.build.url |> Task.attempt BillSheetLoaded )
@@ -134,10 +134,11 @@ setRoute maybeRoute model =
             let
                 session = model.session
             in
-            { model |
-                page = Login Login.init
-                , session = { session | user = Nothing }
-            } ! []
+                { model |
+                    session = { session | user = Nothing }
+                    , page = Login Login.init
+                    , onLogin = Just Route.Home
+                } ! [ Route.Home |> Route.modifyUrl ]  -- Change url hash from `logout` to `/` (note, this doesn't actually go to the page).
 
         Just Route.Specialist ->
             case model.session.user of
