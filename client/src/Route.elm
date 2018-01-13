@@ -14,6 +14,7 @@ import UrlParser as Url exposing ((</>), Parser, oneOf, parseHash, s, string)
 type Route
     = Home
     | BillSheet
+    | Consumer
     | Login
     | Logout
     | Specialist
@@ -24,6 +25,7 @@ route =
     oneOf
         [ Url.map Home (s "")
         , Url.map BillSheet (s "billsheet")
+        , Url.map Consumer (s "consumer")
         , Url.map Login (s "login")
         , Url.map Logout (s "logout")
         , Url.map Specialist (s "specialist")
@@ -44,6 +46,9 @@ routeToString page =
 
                 BillSheet ->
                     [ "billsheet" ]
+
+                Consumer ->
+                    [ "consumer" ]
 
                 Login ->
                     [ "login" ]

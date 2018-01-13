@@ -1,12 +1,12 @@
-module Page.Specialist exposing (Model, Msg, init, update, view)
+module Page.Consumer exposing (Model, Msg, init, update, view)
 
-import Data.Specialist exposing (Specialist)
+import Data.Consumer exposing (Consumer)
 import Html exposing (Html, Attribute, button, div, form, h1, input, label, section, text)
 import Html.Attributes exposing (action, checked, disabled, for, id, style, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Html.Lazy exposing (lazy)
 import Http
-import Request.Specialist
+import Request.Consumer
 import Table exposing (defaultCustomizations)
 import Task exposing (Task)
 import Util.Form as Form
@@ -20,8 +20,8 @@ type alias Model =
     -- NOTE: Order matters here (see `init`)!
     { tableState : Table.State
     , action : Action
-    , editing : Maybe Specialist
-    , specialists : List Specialist
+    , editing : Maybe Consumer
+    , consumers : List Consumer
     }
 
 
@@ -29,7 +29,7 @@ type Action = None | Adding | Editing
 
 init : String -> Task Http.Error Model
 init url =
-    Request.Specialist.get url
+    Request.Consumer.get url
         |> Http.toTask
         |> Task.map ( Model ( Table.initialSort "ID" ) None Nothing )
 
@@ -41,13 +41,13 @@ init url =
 type Msg
     = Add
     | Cancel
-    | Delete Specialist
+    | Delete Consumer
     | Deleted ( Result Http.Error () )
-    | Edit Specialist
-    | Getted ( Result Http.Error ( List Specialist ) )
+    | Edit Consumer
+    | Getted ( Result Http.Error ( List Consumer ) )
     | Post
-    | Posted ( Result Http.Error Specialist )
-    | SetFormValue ( String -> Specialist ) String
+    | Posted ( Result Http.Error Consumer )
+    | SetFormValue ( String -> Consumer ) String
     | SetTableState Table.State
     | Submit
     | ToggleSelected String
@@ -68,10 +68,10 @@ update url msg model =
                 , editing = Nothing
             } ! []
 
-        Delete specialist ->
+        Delete consumer ->
             let
                 subCmd =
-                    Request.Specialist.delete url specialist
+                    Request.Consumer.delete url consumer
                         |> Http.toTask
                         |> Task.attempt Deleted
             in
@@ -80,7 +80,7 @@ update url msg model =
                     , editing = Nothing
                 } ! [ subCmd ]
 
-        Deleted ( Ok specialist ) ->
+        Deleted ( Ok consumer ) ->
             model ! []
 
         Deleted ( Err err ) ->
@@ -89,21 +89,21 @@ update url msg model =
             in
             model ! []
 
-        Edit specialist ->
+        Edit consumer ->
             { model |
                 action = Editing
-                , editing = Just specialist
+                , editing = Just consumer
             } ! []
 
-        Getted ( Ok specialists ) ->
+        Getted ( Ok consumers ) ->
             { model |
-                specialists = specialists
+                consumers = consumers
                 , tableState = Table.initialSort "ID"
             } ! []
 
         Getted ( Err err ) ->
             { model |
-                specialists = []
+                consumers = []
                 , tableState = Table.initialSort "ID"
             } ! []
 
@@ -113,8 +113,8 @@ update url msg model =
                     Nothing ->
                         Cmd.none
 
-                    Just specialist ->
-                        Request.Specialist.post url specialist
+                    Just consumer ->
+                        Request.Consumer.post url consumer
                             |> Http.toTask
                             |> Task.attempt Posted
             in
@@ -123,7 +123,7 @@ update url msg model =
                     , editing = Nothing
                 } ! [ subCmd ]
 
-        Posted ( Ok specialist ) ->
+        Posted ( Ok consumer ) ->
             model ! []
 
         Posted ( Err err ) ->
@@ -141,18 +141,18 @@ update url msg model =
 
         ToggleSelected id ->
             { model |
-                specialists =
-                    model.specialists
+                consumers =
+                    model.consumers
                         |> List.map ( toggle id )
             } ! []
 
 
-toggle : String -> Specialist -> Specialist
-toggle id specialist =
-    if specialist.id == id then
-        { specialist | selected = not specialist.selected }
+toggle : String -> Consumer -> Consumer
+toggle id consumer =
+    if consumer.id == id then
+        { consumer | selected = not consumer.selected }
     else
-        specialist
+        consumer
 
 
 
@@ -163,17 +163,17 @@ view : Model -> Html Msg
 view model =
     section []
         ( (::)
-            ( h1 [] [ text "Specialists" ] )
+            ( h1 [] [ text "Consumer" ] )
             ( drawView model )
         )
 
 
 drawView : Model -> List ( Html Msg )
-drawView { action, editing, tableState, specialists } =
+drawView { action, editing, tableState, consumers } =
     case action of
         None ->
-            [ button [ onClick Add ] [ text "Add Specialist" ]
-            , Table.view config tableState specialists
+            [ button [ onClick Add ] [ text "Add Consumer" ]
+            , Table.view config tableState consumers
             ]
 
         -- Adding | Editing
@@ -182,25 +182,33 @@ drawView { action, editing, tableState, specialists } =
             ]
 
 
-viewForm : Maybe Specialist -> Html Msg
-viewForm specialist =
+viewForm : Maybe Consumer -> Html Msg
+viewForm consumer =
     let
-        editable : Specialist
-        editable = case specialist of
+        editable : Consumer
+        editable = case consumer of
             Nothing ->
-                Specialist "-1" "" "" "" "" "" 0.00 False
+                Consumer "" "" "" True "" "" "" "" "" "" "" "" 0.00 "" "" False
 
-            Just specialist ->
-                specialist
+            Just consumer ->
+                consumer
     in
         form [ onSubmit Post ] [
             Form.disabledTextRow "ID" editable.id ( SetFormValue (\v -> { editable | id = v }) )
-            , Form.textRow "Username" editable.username ( SetFormValue (\v -> { editable | username = v }) )
-            , Form.textRow "Password" editable.password ( SetFormValue (\v -> { editable | password = v }) )
             , Form.textRow "First Name" editable.firstname ( SetFormValue (\v -> { editable | firstname = v }) )
             , Form.textRow "Last Name" editable.lastname ( SetFormValue (\v -> { editable | lastname = v }) )
-            , Form.textRow "Email" editable.email ( SetFormValue (\v -> { editable | email = v }) )
-            , Form.floatRow "Pay Rate" ( toString editable.payrate ) ( SetFormValue (\v -> { editable | payrate = ( Result.withDefault 0.00 ( String.toFloat v ) ) }) )
+--            , Form.textRow "Active" editable.active ( SetFormValue (\v -> { editable | active = v }) )
+            , Form.textRow "County Name" editable.countyName ( SetFormValue (\v -> { editable | countyName = v }) )
+            , Form.textRow "County Code" editable.countyCode ( SetFormValue (\v -> { editable | countyCode = v }) )
+            , Form.textRow "Funding Source" editable.fundingSource ( SetFormValue (\v -> { editable | fundingSource = v }) )
+            , Form.textRow "Zip Code" editable.zip ( SetFormValue (\v -> { editable | zip = v }) )
+            , Form.textRow "BSU" editable.bsu ( SetFormValue (\v -> { editable | bsu = v }) )
+            , Form.textRow "Recipient ID" editable.recipientID ( SetFormValue (\v -> { editable | recipientID = v }) )
+            , Form.textRow "DIA Code" editable.diaCode ( SetFormValue (\v -> { editable | diaCode = v }) )
+            , Form.textRow "Consumer ID" editable.consumerID ( SetFormValue (\v -> { editable | consumerID = v }) )
+            , Form.floatRow "Copay" ( toString editable.copay ) ( SetFormValue (\v -> { editable | copay = ( Result.withDefault 0.00 ( String.toFloat v ) ) }) )
+            , Form.textRow "Discharge Date" editable.dischargeDate ( SetFormValue (\v -> { editable | dischargeDate = v }) )
+            , Form.textRow "Other" editable.other ( SetFormValue (\v -> { editable | other = v }) )
             , Form.submitRow False Cancel
         ]
 
@@ -208,7 +216,7 @@ viewForm specialist =
 -- TABLE CONFIGURATION
 
 
-config : Table.Config Specialist Msg
+config : Table.Config Consumer Msg
 config =
     Table.customConfig
     { toId = .id
@@ -216,12 +224,20 @@ config =
     , columns =
         [ customColumn viewCheckbox
         , Table.stringColumn "ID" .id
-        , Table.stringColumn "Username" .username
-        , Table.stringColumn "Password" .password
         , Table.stringColumn "First Name" .firstname
         , Table.stringColumn "Last Name" .lastname
-        , Table.stringColumn "Email" .email
-        , Table.floatColumn "Pay Rate" .payrate
+--        , Table.stringColumn "Active" .active
+        , Table.stringColumn "County Name" .countyName
+        , Table.stringColumn "County Code" .countyCode
+        , Table.stringColumn "Funding Source" .fundingSource
+        , Table.stringColumn "Zip Code" .zip
+        , Table.stringColumn "BSU" .bsu
+        , Table.stringColumn "Recipient ID" .recipientID
+        , Table.stringColumn "DIA Code" .diaCode
+        , Table.stringColumn "Consumer ID" .consumerID
+        , Table.floatColumn "Copay" .copay
+        , Table.stringColumn "Discharge Date" .dischargeDate
+        , Table.stringColumn "Other" .other
         , customColumn viewButton
         , customColumn viewButton2
         ]
@@ -230,14 +246,14 @@ config =
     }
 
 
-toRowAttrs : Specialist -> List ( Attribute Msg )
+toRowAttrs : Consumer -> List ( Attribute Msg )
 toRowAttrs { id, selected } =
     [ onClick ( ToggleSelected id )
     , style [ ( "background", if selected then "#CEFAF8" else "white" ) ]
     ]
 
 
-customColumn : ( Specialist -> Table.HtmlDetails Msg ) -> Table.Column Specialist Msg
+customColumn : ( Consumer -> Table.HtmlDetails Msg ) -> Table.Column Consumer Msg
 customColumn viewElement =
     Table.veryCustomColumn
         { name = ""
@@ -247,19 +263,19 @@ customColumn viewElement =
 
 
 -- TODO: Dry!
-viewButton : Specialist -> Table.HtmlDetails Msg
-viewButton specialist =
+viewButton : Consumer -> Table.HtmlDetails Msg
+viewButton consumer =
     Table.HtmlDetails []
-        [ button [ onClick ( Edit specialist ) ] [ text "Edit" ]
+        [ button [ onClick ( Edit consumer ) ] [ text "Edit" ]
         ]
 
-viewButton2 : Specialist -> Table.HtmlDetails Msg
-viewButton2 specialist =
+viewButton2 : Consumer -> Table.HtmlDetails Msg
+viewButton2 consumer =
     Table.HtmlDetails []
-        [ button [ onClick ( Delete specialist ) ] [ text "Delete" ]
+        [ button [ onClick ( Delete consumer ) ] [ text "Delete" ]
         ]
 
-viewCheckbox : Specialist -> Table.HtmlDetails Msg
+viewCheckbox : Consumer -> Table.HtmlDetails Msg
 viewCheckbox { selected } =
     Table.HtmlDetails []
         [ input [ type_ "checkbox", checked selected ] []

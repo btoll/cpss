@@ -9,6 +9,7 @@ type ActivePage
     = Other
     | Home
     | BillSheet
+    | Consumer
     | Login
     | Logout
     | Specialist
@@ -28,6 +29,7 @@ siteLinks page =
     else
         [ SiteLink Home Route.Home [ text "Home" ]
         , SiteLink BillSheet Route.BillSheet [ text "Bill Sheet" ]
+        , SiteLink Consumer Route.Consumer [ text "Consumer" ]
         , SiteLink Specialist Route.Specialist [ text "Specialist" ]
         , SiteLink Logout Route.Logout [ text "Logout" ]
         ]

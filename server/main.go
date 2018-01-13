@@ -23,6 +23,8 @@ func main() {
 	app.MountSpecialistController(service, c)
 	d := NewBillSheetController(service)
 	app.MountBillSheetController(service, d)
+	e := NewConsumerController(service)
+	app.MountConsumerController(service, e)
 
 	// Start service
 	if err := service.ListenAndServe(":8080"); err != nil {

@@ -1,12 +1,14 @@
 module Main exposing (..)
 
 import Data.BillSheet exposing (BillSheet)
+import Data.Consumer exposing (Consumer)
 import Data.Session exposing (Session)
 import Data.Specialist exposing (Specialist)
 import Html exposing (..)
 import Http
 import Navigation
 import Page.BillSheet as BillSheet
+import Page.Consumer as Consumer
 import Page.Login as Login
 import Page.NotFound as NotFound
 import Page.Specialist as Specialist
@@ -36,6 +38,7 @@ type Page
     | Errored
 --    | Home Home.Model
     | BillSheet BillSheet.Model
+    | Consumer Consumer.Model
     | Login Login.Model
     | Specialist Specialist.Model
 
@@ -81,6 +84,8 @@ type Msg
     = SetRoute ( Maybe Route )
     | BillSheetLoaded ( Result Http.Error BillSheet.Model )
     | BillSheetMsg BillSheet.Msg
+    | ConsumerLoaded ( Result Http.Error Consumer.Model )
+    | ConsumerMsg Consumer.Msg
     | LoginMsg Login.Msg
     | SpecialistLoaded ( Result Http.Error Specialist.Model )
     | SpecialistMsg Specialist.Msg
@@ -113,6 +118,17 @@ setRoute maybeRoute model =
 
                 Just user ->
                     ( model, BillSheet.init model.build.url |> Task.attempt BillSheetLoaded )
+
+        Just Route.Consumer ->
+            case model.session.user of
+                Nothing ->
+                    { model |
+                        page = Login Login.init
+                        , onLogin = maybeRoute
+                    } ! []
+
+                Just user ->
+                    ( model, Consumer.init model.build.url |> Task.attempt ConsumerLoaded )
 
         Just Route.Logout ->
             let
@@ -161,6 +177,15 @@ update msg model =
 
             ( BillSheetMsg subMsg, BillSheet subModel ) ->
                 toPage BillSheet BillSheetMsg BillSheet.update subMsg subModel
+
+            ( ConsumerLoaded ( Ok subModel ), _ ) ->
+                { model | page = Consumer subModel } ! []
+
+            ( ConsumerLoaded ( Err err ), _ ) ->
+                model ! []
+
+            ( ConsumerMsg subMsg, Consumer subModel ) ->
+                toPage Consumer ConsumerMsg Consumer.update subMsg subModel
 
             ( LoginMsg subMsg, Login subModel ) ->
                 let
@@ -221,6 +246,12 @@ view model =
             BillSheet.view subModel
                 |> frame Page.BillSheet
                 |> Html.map BillSheetMsg
+
+        Consumer subModel ->
+--            Consumer.view session subModel
+            Consumer.view subModel
+                |> frame Page.Consumer
+                |> Html.map ConsumerMsg
 
         Errored ->
             Html.text "Errored"
