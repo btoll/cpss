@@ -71,7 +71,7 @@ update url msg model =
 
 view : Model -> Html Msg
 view model =
-    form [ onSubmit ( Authenticate ( User model.username "foo@example.com" "" "" ) ) ] [
+    form [ onSubmit ( Authenticate ( User model.username "foo@example.com" 0 ) ) ] [
         Form.textRow "Username" model.username ( SetFormValue (\v -> { model | username = v }) )
         , Form.passwordRow "Password" model.password ( SetFormValue (\v -> { model | password = v }) )
         , Form.submitRow ( (||) ( model.username |> String.isEmpty ) ( model.password |> String.isEmpty ) ) Cancel

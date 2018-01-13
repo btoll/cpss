@@ -4,7 +4,7 @@ import Data.BillSheet exposing (BillSheet)
 import Data.Consumer exposing (Consumer)
 import Data.Session exposing (Session)
 import Data.Specialist exposing (Specialist)
-import Html exposing (..)
+import Html exposing (Html, text)
 import Http
 import Navigation
 import Page.BillSheet as BillSheet
@@ -34,8 +34,7 @@ type Page
     = Blank
     | NotFound
 --    | Home Home.Model
---    | Errored PageLoadError
-    | Errored
+    | Errored String
 --    | Home Home.Model
     | BillSheet BillSheet.Model
     | Consumer Consumer.Model
@@ -93,18 +92,10 @@ type Msg
 
 setRoute : Maybe Route -> Model -> ( Model, Cmd Msg )
 setRoute maybeRoute model =
+    let
+        m = (Debug.log "maybeRoute" maybeRoute)
+    in
     case maybeRoute of
-        Just Route.Home ->
-            case model.session.user of
-                Nothing ->
-                    { model |
-                        page = Login Login.init
-                        , onLogin = maybeRoute
-                    } ! []
-
-                Just user ->
-                    { model | page = Blank } ! []
-
         Just Route.BillSheet ->
             case model.session.user of
                 Nothing ->
@@ -117,7 +108,12 @@ setRoute maybeRoute model =
                         } ! []
 
                 Just user ->
-                    ( model, BillSheet.init model.build.url |> Task.attempt BillSheetLoaded )
+                    case user.authLevel of
+                        0 ->
+                            ( model, BillSheet.init model.build.url |> Task.attempt BillSheetLoaded )
+
+                        _ ->
+                            { model | page = Errored "You are not authorized to view this page" } ! []
 
         Just Route.Consumer ->
             case model.session.user of
@@ -128,7 +124,35 @@ setRoute maybeRoute model =
                     } ! []
 
                 Just user ->
-                    ( model, Consumer.init model.build.url |> Task.attempt ConsumerLoaded )
+                    case user.authLevel of
+                        0 ->
+                            ( model, Consumer.init model.build.url |> Task.attempt ConsumerLoaded )
+
+                        _ ->
+                            { model | page = Errored "You are not authorized to view this page" } ! []
+
+        Just Route.Home ->
+            case model.session.user of
+                Nothing ->
+                    { model |
+                        page = Login Login.init
+                        , onLogin = maybeRoute
+                    } ! []
+
+                Just user ->
+                    { model | page = Blank } ! []
+
+        Just Route.Login ->
+            case model.session.user of
+                Nothing ->
+                    { model |
+                        page = Login Login.init
+                        , onLogin = Just Route.Home
+                    } ! []
+
+                -- TODO: Not sure it ever matches Just!!
+                Just user ->
+                    { model | page = Blank } ! [ Route.Home |> Route.modifyUrl ]
 
         Just Route.Logout ->
             let
@@ -138,7 +162,7 @@ setRoute maybeRoute model =
                     session = { session | user = Nothing }
                     , page = Login Login.init
                     , onLogin = Just Route.Home
-                } ! [ Route.Home |> Route.modifyUrl ]  -- Change url hash from `logout` to `/` (note, this doesn't actually go to the page).
+                } ! [ Route.Login |> Route.modifyUrl ]
 
         Just Route.Specialist ->
             case model.session.user of
@@ -149,10 +173,20 @@ setRoute maybeRoute model =
                     } ! []
 
                 Just user ->
-                    ( model, Specialist.init model.build.url |> Task.attempt SpecialistLoaded )
+                    case user.authLevel of
+                        0 ->
+                            ( model, Specialist.init model.build.url |> Task.attempt SpecialistLoaded )
 
-        _ ->
-            { model | page = Login Login.init } ! []
+                        _ ->
+                            { model | page = Errored "You are not authorized to view this page" } ! []
+
+        Nothing ->
+            case model.session.user of
+                Nothing ->
+                    { model | page = Login Login.init } ! []
+
+                Just _ ->
+                    { model | page = Errored "404: Page not found." } ! []
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -239,40 +273,35 @@ view model =
         Blank ->
             -- This is for the very initial page load, while we are loading
             -- data via HTTP. We could also render a spinner here.
-            Html.text ""
-                |> frame Page.Home
+            text ""
+                |> frame model.session.user Page.Home
 
         BillSheet subModel ->
---            BillSheet.view session subModel
             BillSheet.view subModel
-                |> frame Page.BillSheet
+                |> frame model.session.user Page.BillSheet
                 |> Html.map BillSheetMsg
 
         Consumer subModel ->
---            Consumer.view session subModel
             Consumer.view subModel
-                |> frame Page.Consumer
+                |> frame model.session.user Page.Consumer
                 |> Html.map ConsumerMsg
 
-        Errored ->
-            Html.text "Errored"
---            Errored.view session subModel
-                |> frame Page.Other
+        Errored err ->
+            text err
+                |> frame model.session.user Page.Other
 
         Login subModel ->
             Login.view subModel
-                |> frame Page.Login
+                |> frame model.session.user Page.Login
                 |> Html.map LoginMsg
 
         NotFound ->
---            NotFound.view session
             NotFound.view
-                |> frame Page.Other
+                |> frame model.session.user Page.Other
 
         Specialist subModel ->
---            Specialist.view session subModel
             Specialist.view subModel
-                |> frame Page.Specialist
+                |> frame model.session.user Page.Specialist
                 |> Html.map SpecialistMsg
 
 --        Home subModel ->
