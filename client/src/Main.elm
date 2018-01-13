@@ -48,6 +48,7 @@ type alias Model =
     { session : Session
     , build : Build
     , page : Page
+    , onLogin : Maybe Route     -- Capture the route with which to redirect the user after login.
     }
 
 
@@ -63,6 +64,7 @@ init flags location =
             { session = { user = Nothing }
             , build = { url = url }
             , page = initialPage
+            , onLogin = Nothing
             }
 
 
@@ -90,7 +92,10 @@ setRoute maybeRoute model =
         Just Route.Home ->
             case model.session.user of
                 Nothing ->
-                    { model | page = Login Login.init } ! []
+                    { model |
+                        page = Login Login.init
+                        , onLogin = maybeRoute
+                    } ! []
 
                 Just user ->
                     { model | page = Blank } ! []
@@ -98,7 +103,13 @@ setRoute maybeRoute model =
         Just Route.BillSheet ->
             case model.session.user of
                 Nothing ->
-                    { model | page = Login Login.init } ! []
+                    let
+                        loginModel = Login.init
+                    in
+                    { model |
+                        page = Login loginModel
+                        , onLogin = maybeRoute
+                    } ! []
 
                 Just user ->
                     ( model, BillSheet.init model.build.url |> Task.attempt BillSheetLoaded )
@@ -115,13 +126,16 @@ setRoute maybeRoute model =
         Just Route.Specialist ->
             case model.session.user of
                 Nothing ->
-                    { model | page = Login Login.init } ! []
+                    { model |
+                        page = Login Login.init
+                        , onLogin = maybeRoute
+                    } ! []
 
                 Just user ->
                     ( model, Specialist.init model.build.url |> Task.attempt SpecialistLoaded )
 
         _ ->
-            model ! []
+            { model | page = Login Login.init } ! []
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -153,10 +167,10 @@ update msg model =
                     ( ( pageModel, cmd ), msgFromPage ) =
                         Login.update model.build.url subMsg subModel
 
-                    newModel =
+                    ( newModel, newCmd )  =
                         case msgFromPage of
                             Login.NoOp ->
-                                { model | page = Login pageModel }
+                                ( { model | page = Login pageModel }, Cmd.none )
 
                             Login.SetUser user ->
                                 let
@@ -166,9 +180,10 @@ update msg model =
                                     { model |
                                         session = { user = Just user }
                                         , page = Blank
-                                    }
+                                        , onLogin = Nothing
+                                    } |> setRoute model.onLogin -- Redirect after having had logged in.
                 in
-                    newModel ! [ Cmd.map LoginMsg cmd ]
+                    ( newModel, newCmd )
 
             ( SpecialistLoaded ( Ok subModel ), _ ) ->
                 { model | page = Specialist subModel } ! []
