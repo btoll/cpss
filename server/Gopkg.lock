@@ -20,6 +20,12 @@
   version = "v5.0.0"
 
 [[projects]]
+  name = "github.com/go-sql-driver/mysql"
+  packages = ["."]
+  revision = "a0583e0143b1624142adab07e0e97fe106d99561"
+  version = "v1.3"
+
+[[projects]]
   name = "github.com/goadesign/goa"
   packages = [".","client","cors","design","design/apidsl","dslengine","goatest","middleware","uuid"]
   revision = "5646a430cdeb66983d5ace3384e0a667c185abc7"
@@ -82,6 +88,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "337d1d987a6f11677a6d92732ab98feedc7c39620253d9b51c1cdcce0118394d"
+  inputs-digest = "b6c2684e865a8785eb5e9b054e6351ebb441f73f4e344d38e8fb0fca124f19c8"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"github.com/btoll/cpss/server/app"
+	"github.com/btoll/cpss/server/sql"
 	"github.com/goadesign/goa"
 )
 
@@ -72,6 +73,7 @@ func (c *SpecialistController) Delete(ctx *app.DeleteSpecialistContext) error {
 func (c *SpecialistController) List(ctx *app.ListSpecialistContext) error {
 	// SpecialistController_List: start_implement
 
+	sql.Foo()
 	return ctx.OK(fakeData())
 
 	// SpecialistController_List: end_implement
