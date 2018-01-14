@@ -14,6 +14,7 @@ func NewSpecialist() *Specialist {
 	return &Specialist{
 		Stmt: map[string]string{
 			"COUNT":  "SELECT COUNT(*) FROM specialist",
+			"DELETE": "DELETE FROM specialist WHERE id=?",
 			"INSERT": "INSERT specialist SET username=?,password=?,firstname=?,lastname=?,email=?,payrate=?",
 			"SELECT": "SELECT * FROM specialist",
 		},
@@ -34,6 +35,15 @@ func (s *Specialist) Create(db *mysql.DB, payload *app.SpecialistPayload) (int64
 		return -1, err
 	}
 	return id, err
+}
+
+func (s *Specialist) Delete(db *mysql.DB, id int64) error {
+	stmt, err := db.Prepare(s.Stmt["DELETE"])
+	if err != nil {
+		return err
+	}
+	_, err = stmt.Exec(&id)
+	return err
 }
 
 func (s *Specialist) List(db *mysql.DB) (*app.SpecialistMediaCollection, error) {

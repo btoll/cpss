@@ -29,8 +29,8 @@ var _ = Resource("Consumer", func() {
 		Description("Delete a consumer by id.")
 		Response(OK, func() {
 			Status(200)
+			Media(ConsumerMedia, "tiny")
 		})
-		Response(NoContent)
 	})
 
 	Action("list", func() {

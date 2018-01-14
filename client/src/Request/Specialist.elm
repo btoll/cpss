@@ -5,14 +5,14 @@ import Data.Specialist exposing (Specialist, decoder, encoder, manyDecoder, succ
 
 
 
-delete : String -> Specialist -> Http.Request ()
+delete : String -> Specialist -> Http.Request Specialist
 delete url specialist =
     Http.request
         { method = "DELETE"
         , headers = []
         , url = (++) ( (++) url "/specialist/" ) ( toString specialist.id )
         , body = Http.emptyBody
-        , expect = Http.expectJson (succeed ())
+        , expect = Http.expectJson ( succeed specialist )
         , timeout = Nothing
         , withCredentials = False
         }

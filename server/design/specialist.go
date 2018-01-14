@@ -24,13 +24,13 @@ var _ = Resource("Specialist", func() {
 	Action("delete", func() {
 		Routing(DELETE("/:id"))
 		Params(func() {
-			Param("id", String, "Specialist ID")
+			Param("id", Integer, "Specialist ID")
 		})
 		Description("Delete a specialist by id.")
 		Response(OK, func() {
 			Status(200)
+			Media(SpecialistMedia, "tiny")
 		})
-		Response(NoContent)
 	})
 
 	Action("list", func() {

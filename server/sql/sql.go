@@ -32,6 +32,15 @@ func Create(payload interface{}) (int, error) {
 	return int(id), nil
 }
 
+func Delete(id int) error {
+	db, err := connect()
+	if err != nil {
+		panic(err)
+	}
+	s := NewSpecialist()
+	return s.Delete(db, int64(id))
+}
+
 func List() (*app.SpecialistMediaCollection, error) {
 	db, err := connect()
 	if err != nil {

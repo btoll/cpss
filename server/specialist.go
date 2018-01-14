@@ -31,11 +31,12 @@ func (c *SpecialistController) Create(ctx *app.CreateSpecialistContext) error {
 // Delete runs the delete action.
 func (c *SpecialistController) Delete(ctx *app.DeleteSpecialistContext) error {
 	// SpecialistController_Delete: start_implement
-
-	// Put your logic here
-
+	err := sql.Delete(ctx.ID)
+	if err != nil {
+		panic(err)
+	}
+	return ctx.OKTiny(&app.SpecialistMediaTiny{ctx.ID})
 	// SpecialistController_Delete: end_implement
-	return nil
 }
 
 // List runs the list action.

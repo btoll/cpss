@@ -29,8 +29,8 @@ var _ = Resource("BillSheet", func() {
 		Description("Delete a billsheet by id.")
 		Response(OK, func() {
 			Status(200)
+			Media(BillSheetMedia, "tiny")
 		})
-		Response(NoContent)
 	})
 
 	Action("list", func() {

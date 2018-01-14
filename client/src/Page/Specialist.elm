@@ -42,7 +42,7 @@ type Msg
     = Add
     | Cancel
     | Delete Specialist
-    | Deleted ( Result Http.Error () )
+    | Deleted ( Result Http.Error Specialist )
     | Edit Specialist
     | Getted ( Result Http.Error ( List Specialist ) )
     | Post
@@ -80,13 +80,12 @@ update url msg model =
                     , editing = Nothing
                 } ! [ subCmd ]
 
-        Deleted ( Ok specialist ) ->
-            model ! []
+        Deleted ( Ok deletedSpecialist ) ->
+            { model |
+                specialists = model.specialists |> List.filter ( \m -> deletedSpecialist.id /= m.id )
+            } ! []
 
         Deleted ( Err err ) ->
-            let
-                gg = (Debug.log "err" err)
-            in
             model ! []
 
         Edit specialist ->
