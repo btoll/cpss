@@ -16,7 +16,7 @@ $(GENERATED): $(GOADESIGN)
 	@# We only want to modify the generated file when successful.
 	@touch $(GENERATED)
 
-$(TARGET): *.go
+$(TARGET): *.go sql/*.go
 	$(CC) build -o $(TARGET)
 	@echo [make] Success!
 
