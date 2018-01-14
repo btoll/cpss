@@ -1,42 +1,12 @@
 package main
 
 import (
-	"strconv"
+	mysql "database/sql"
 
 	"github.com/btoll/cpss/server/app"
-	"github.com/btoll/cpss/server/sql"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/goadesign/goa"
 )
-
-func fakeData() app.SpecialistMediaCollection {
-	data := [][]string{
-		{"btoll", "****", "Ben", "Toll", "ben@foo", "10.00"},
-		{"gtoll", "****", "Ginger", "Toll", "ginger@foo", "11.34"},
-		{"fmoseley", "****", "Fred", "Moseley", "fred@foo", "66.66"},
-		{"tnelson", "****", "Trey", "Nelson", "trey@foo", "17.42"},
-	}
-	res := make(app.SpecialistMediaCollection, len(data))
-	for i, d := range data {
-		res[i] = &app.SpecialistMedia{
-			ID:        strconv.Itoa(i),
-			Username:  d[0],
-			Password:  d[1],
-			Firstname: d[2],
-			Lastname:  d[3],
-			Email:     d[4],
-			Payrate:   toFloat(d[5]),
-		}
-	}
-	return res
-}
-
-func toFloat(s string) float64 {
-	f, err := strconv.ParseFloat(s, 32)
-	if err != nil {
-		return 0.00
-	}
-	return f
-}
 
 // SpecialistController implements the Specialist resource.
 type SpecialistController struct {
@@ -52,11 +22,26 @@ func NewSpecialistController(service *goa.Service) *SpecialistController {
 func (c *SpecialistController) Create(ctx *app.CreateSpecialistContext) error {
 	// SpecialistController_Create: start_implement
 
-	// Put your logic here
-
-	// SpecialistController_Create: end_implement
-	res := &app.SpecialistMediaTiny{}
+	payload := ctx.Payload
+	db, err := mysql.Open("mysql", "derp:12345@/herp?charset=utf8")
+	if err != nil {
+		panic(err)
+	}
+	stmt, err := db.Prepare("INSERT specialist SET username=?,password=?,firstname=?,lastname=?,email=?,payrate=?")
+	if err != nil {
+		panic(err)
+	}
+	r, err := stmt.Exec(payload.Username, payload.Password, payload.Firstname, payload.Lastname, payload.Email, payload.Payrate)
+	if err != nil {
+		panic(err)
+	}
+	id, err := r.LastInsertId()
+	if err != nil {
+		panic(err)
+	}
+	res := &app.SpecialistMediaTiny{int(id)}
 	return ctx.OKTiny(res)
+	// SpecialistController_Create: end_implement
 }
 
 // Delete runs the delete action.
@@ -73,8 +58,51 @@ func (c *SpecialistController) Delete(ctx *app.DeleteSpecialistContext) error {
 func (c *SpecialistController) List(ctx *app.ListSpecialistContext) error {
 	// SpecialistController_List: start_implement
 
-	sql.Foo()
-	return ctx.OK(fakeData())
+	db, err := mysql.Open("mysql", "derp:12345@/herp?charset=utf8")
+	if err != nil {
+		panic(err)
+	}
+	rows, err := db.Query("SELECT COUNT(*) FROM specialist")
+	if err != nil {
+		panic(err)
+	}
+	var count int
+	for rows.Next() {
+		err = rows.Scan(&count)
+		if err != nil {
+			panic(err)
+		}
+	}
+	rows, err = db.Query("SELECT * FROM specialist")
+	if err != nil {
+		panic(err)
+	}
+	collection := make(app.SpecialistMediaCollection, count)
+	i := 0
+	for rows.Next() {
+		var id int
+		var username string
+		var password string
+		var firstname string
+		var lastname string
+		var email string
+		var payrate float64
+		err = rows.Scan(&id, &username, &password, &firstname, &lastname, &email, &payrate)
+		if err != nil {
+			panic(err)
+		}
+		collection[i] = &app.SpecialistMedia{
+			ID:        id,
+			Username:  username,
+			Password:  password,
+			Firstname: firstname,
+			Lastname:  lastname,
+			Email:     email,
+			Payrate:   payrate,
+		}
+		i++
+	}
+	return ctx.OK(collection)
 
 	// SpecialistController_List: end_implement
 }

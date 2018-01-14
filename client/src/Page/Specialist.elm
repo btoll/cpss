@@ -50,7 +50,7 @@ type Msg
     | SetFormValue ( String -> Specialist ) String
     | SetTableState Table.State
     | Submit
-    | ToggleSelected String
+    | ToggleSelected Int
 
 
 update : String -> Msg -> Model -> ( Model, Cmd Msg )
@@ -120,14 +120,30 @@ update url msg model =
             in
                 { model |
                     action = None
-                    , editing = Nothing
                 } ! [ subCmd ]
 
         Posted ( Ok specialist ) ->
-            model ! []
+            -- Note that the POST request just returns the new row id, so all other fields
+            -- in the `specialist` model are only defaults! ( See Data.Specialist )
+            let
+                specialists =
+                    case model.editing of
+                        Nothing ->
+                            model.specialists
+
+                        Just newSpecialist ->
+                            model.specialists
+                                |> (::) { newSpecialist | id = specialist.id }
+            in
+                { model |
+                    specialists = specialists
+                    , editing = Nothing
+                } ! []
 
         Posted ( Err err ) ->
-            model ! []
+            { model |
+                editing = Nothing
+            } ! []
 
         SetFormValue setFormValue s ->
             { model | editing = Just ( setFormValue s ) } ! []
@@ -143,13 +159,13 @@ update url msg model =
             { model |
                 specialists =
                     model.specialists
-                        |> List.map ( toggle id )
+                        |> List.map ( toggle ( toString id ) )
             } ! []
 
 
 toggle : String -> Specialist -> Specialist
 toggle id specialist =
-    if specialist.id == id then
+    if ( (==) ( toString specialist.id ) id ) then
         { specialist | selected = not specialist.selected }
     else
         specialist
@@ -188,13 +204,13 @@ viewForm specialist =
         editable : Specialist
         editable = case specialist of
             Nothing ->
-                Specialist "-1" "" "" "" "" "" 0.00 False
+                Specialist -1 "" "" "" "" "" 0.00 False
 
             Just specialist ->
                 specialist
     in
         form [ onSubmit Post ] [
-            Form.disabledTextRow "ID" editable.id ( SetFormValue (\v -> { editable | id = v }) )
+            Form.disabledTextRow "ID" ( toString editable.id ) ( SetFormValue (\v -> { editable | id = ( Result.withDefault -1 ( String.toInt v ) ) }) )
             , Form.textRow "Username" editable.username ( SetFormValue (\v -> { editable | username = v }) )
             , Form.textRow "Password" editable.password ( SetFormValue (\v -> { editable | password = v }) )
             , Form.textRow "First Name" editable.firstname ( SetFormValue (\v -> { editable | firstname = v }) )
@@ -211,11 +227,13 @@ viewForm specialist =
 config : Table.Config Specialist Msg
 config =
     Table.customConfig
-    { toId = .id
+    -- TODO: Figure out why .id is giving me trouble!
+--    { toId = .id
+    { toId = .username
     , toMsg = SetTableState
     , columns =
         [ customColumn viewCheckbox
-        , Table.stringColumn "ID" .id
+        , Table.intColumn "ID" .id
         , Table.stringColumn "Username" .username
         , Table.stringColumn "Password" .password
         , Table.stringColumn "First Name" .firstname

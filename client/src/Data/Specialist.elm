@@ -1,13 +1,13 @@
 module Data.Specialist exposing (Specialist, decoder, encoder, manyDecoder, succeed)
 
-import Json.Decode as Decode exposing (Decoder, bool, float, list, string)
+import Json.Decode as Decode exposing (Decoder, bool, float, int, list, string)
 import Json.Decode.Pipeline exposing (decode, optional, required)
 import Json.Encode as Encode
 
 
 
 type alias Specialist =
-    { id : String
+    { id : Int
     , username : String
     , password : String
     , firstname : String
@@ -21,13 +21,13 @@ type alias Specialist =
 decoder : Decoder Specialist
 decoder =
     decode Specialist
-        |> required "id" string
-        |> required "username" string
-        |> required "password" string
-        |> required "firstname" string
-        |> required "lastname" string
-        |> required "email" string
-        |> required "payrate" float
+        |> required "id" int
+        |> optional "username" string ""
+        |> optional "password" string ""
+        |> optional "firstname" string ""
+        |> optional "lastname" string ""
+        |> optional "email" string ""
+        |> optional "payrate" float 0.00
         |> optional "selected" bool False
 
 

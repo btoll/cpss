@@ -10,7 +10,7 @@ delete url specialist =
     Http.request
         { method = "DELETE"
         , headers = []
-        , url = (++) ( (++) url "/specialist/" ) specialist.id
+        , url = (++) ( (++) url "/specialist/" ) ( toString specialist.id )
         , body = Http.emptyBody
         , expect = Http.expectJson (succeed ())
         , timeout = Nothing

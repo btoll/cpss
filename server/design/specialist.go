@@ -43,7 +43,7 @@ var _ = Resource("Specialist", func() {
 var SpecialistPayload = Type("SpecialistPayload", func() {
 	Description("Specialist Description.")
 
-	Attribute("id", String, "ID", func() {
+	Attribute("id", Integer, "ID", func() {
 		Metadata("struct:tag:datastore", "id,noindex")
 		Metadata("struct:tag:json", "id,omitempty")
 	})
