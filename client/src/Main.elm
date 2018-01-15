@@ -83,7 +83,6 @@ type Msg
     = SetRoute ( Maybe Route )
     | BillSheetLoaded ( Result Http.Error BillSheet.Model )
     | BillSheetMsg BillSheet.Msg
-    | ConsumerLoaded ( Result Http.Error Consumer.Model )
     | ConsumerMsg Consumer.Msg
     | LoginMsg Login.Msg
     | SpecialistLoaded ( Result Http.Error Specialist.Model )
@@ -126,7 +125,13 @@ setRoute maybeRoute model =
                 Just user ->
                     case user.authLevel of
                         0 ->
-                            ( model, Consumer.init model.build.url |> Task.attempt ConsumerLoaded )
+                            let
+                                ( subModel, subMsg ) =
+                                    Consumer.init model.build.url
+                            in
+                                { model |
+                                    page = Consumer subModel
+                                } ! [ Cmd.map ConsumerMsg subMsg ]
 
                         _ ->
                             { model | page = Errored "You are not authorized to view this page" } ! []
@@ -213,12 +218,6 @@ update msg model =
             ( BillSheetMsg subMsg, BillSheet subModel ) ->
                 toPage BillSheet BillSheetMsg BillSheet.update subMsg subModel
 
-            ( ConsumerLoaded ( Ok subModel ), _ ) ->
-                { model | page = Consumer subModel } ! []
-
-            ( ConsumerLoaded ( Err err ), _ ) ->
-                model ! []
-
             ( ConsumerMsg subMsg, Consumer subModel ) ->
                 toPage Consumer ConsumerMsg Consumer.update subMsg subModel
 
@@ -256,8 +255,6 @@ update msg model =
 
             _ ->
                 model ! []
-
-
 
 -- VIEW
 

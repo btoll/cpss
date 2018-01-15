@@ -1,7 +1,16 @@
 module Page.Consumer exposing (Model, Msg, init, update, view)
 
+import Css
 import Data.Consumer exposing (Consumer)
-import Html exposing (Html, Attribute, button, div, form, h1, input, label, section, text)
+import Date exposing (Date)
+import Date.Extra.Config.Config_en_us exposing (config)
+import Date.Extra.Format
+import DateParser
+import DateTimePicker
+import DateTimePicker.Config exposing (Config, DatePickerConfig, TimePickerConfig, defaultDateTimePickerConfig)
+import DateTimePicker.Css
+import Dict exposing (Dict)
+import Html exposing (Html, Attribute, button, div, form, h1, input, label, node, section, text)
 import Html.Attributes exposing (action, checked, disabled, for, id, style, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Html.Lazy exposing (lazy)
@@ -16,23 +25,30 @@ import Util.Form as Form
 -- MODEL
 
 
+-- NOTE: Order matters here, the `consumers` field must be last b/c of partial application (see `init`)!
 type alias Model =
-    -- NOTE: Order matters here (see `init`)!
     { tableState : Table.State
     , action : Action
     , editing : Maybe Consumer
+    , date : Dict String Date -- The key is actually a DemoPicker
+    , datePickerState : Dict String DateTimePicker.State -- The key is actually a DemoPicker
     , consumers : List Consumer
     }
 
 
+type DemoPicker
+    = AnalogDateTimePicker
+
+
 type Action = None | Adding | Editing
 
-init : String -> Task Http.Error Model
-init url =
-    Request.Consumer.get url
-        |> Http.toTask
-        |> Task.map ( Model ( Table.initialSort "ID" ) None Nothing )
 
+init : String -> ( Model, Cmd Msg )
+init url =
+    (Model ( Table.initialSort "ID" ) None Nothing Dict.empty Dict.empty [] ) !
+        [ Request.Consumer.get url |> Http.send Getted
+        , DateTimePicker.initialCmd DatePickerChanged DateTimePicker.initialState
+        ]
 
 
 -- UPDATE
@@ -41,6 +57,7 @@ init url =
 type Msg
     = Add
     | Cancel
+    | DatePickerChanged DateTimePicker.State ( Maybe Date )
     | Delete Consumer
     | Deleted ( Result Http.Error () )
     | Edit Consumer
@@ -67,6 +84,28 @@ update url msg model =
                 action = None
                 , editing = Nothing
             } ! []
+
+        DatePickerChanged state value ->
+            let
+                editable : Consumer
+                editable = case model.editing of
+                    Nothing ->
+                        Consumer "" "" "" True "" "" "" "" "" "" "" "" 0.00 "" "" False
+
+                    Just consumer ->
+                        consumer
+            in
+                { model
+                    | date =
+                        case value of
+                            Nothing ->
+                                Dict.remove ( toString AnalogDateTimePicker ) model.date
+
+                            Just date ->
+                                Dict.insert ( toString AnalogDateTimePicker ) date model.date
+                    , datePickerState = Dict.insert ( toString AnalogDateTimePicker ) state model.datePickerState
+                    , editing = Just ( { editable | dischargeDate = value |> toString } )
+                } ! []
 
         Delete consumer ->
             let
@@ -159,6 +198,18 @@ toggle id consumer =
 -- VIEW
 
 
+analogDateTimePickerConfig : Config ( DatePickerConfig TimePickerConfig ) Msg
+analogDateTimePickerConfig =
+    let
+        defaultDateTimeConfig =
+            defaultDateTimePickerConfig DatePickerChanged
+    in
+        { defaultDateTimeConfig
+            | timePickerType = DateTimePicker.Config.Analog
+            , allowYearNavigation = False
+        }
+
+
 view : Model -> Html Msg
 view model =
     section []
@@ -169,7 +220,7 @@ view model =
 
 
 drawView : Model -> List ( Html Msg )
-drawView { action, editing, tableState, consumers } =
+drawView ( { action, editing, tableState, consumers } as model ) =
     case action of
         None ->
             [ button [ onClick Add ] [ text "Add Consumer" ]
@@ -178,23 +229,28 @@ drawView { action, editing, tableState, consumers } =
 
         -- Adding | Editing
         _ ->
-            [ lazy viewForm editing
+--            [ lazy viewForm editing model
+            [ viewForm model
             ]
 
 
-viewForm : Maybe Consumer -> Html Msg
-viewForm consumer =
+viewForm : Model -> Html Msg
+viewForm ( { editing, date, datePickerState } as model ) =
     let
         editable : Consumer
-        editable = case consumer of
+        editable = case editing of
             Nothing ->
                 Consumer "" "" "" True "" "" "" "" "" "" "" "" 0.00 "" "" False
 
             Just consumer ->
                 consumer
+
+        { css } =
+            Css.compile [ DateTimePicker.Css.css ]
     in
         form [ onSubmit Post ] [
-            Form.disabledTextRow "ID" editable.id ( SetFormValue (\v -> { editable | id = v }) )
+            node "style" [] [ text css ]
+            , Form.disabledTextRow "ID" editable.id ( SetFormValue (\v -> { editable | id = v }) )
             , Form.textRow "First Name" editable.firstname ( SetFormValue (\v -> { editable | firstname = v }) )
             , Form.textRow "Last Name" editable.lastname ( SetFormValue (\v -> { editable | lastname = v }) )
 --            , Form.textRow "Active" editable.active ( SetFormValue (\v -> { editable | active = v }) )
@@ -207,10 +263,11 @@ viewForm consumer =
             , Form.textRow "DIA Code" editable.diaCode ( SetFormValue (\v -> { editable | diaCode = v }) )
             , Form.textRow "Consumer ID" editable.consumerID ( SetFormValue (\v -> { editable | consumerID = v }) )
             , Form.floatRow "Copay" ( toString editable.copay ) ( SetFormValue (\v -> { editable | copay = ( Result.withDefault 0.00 ( String.toFloat v ) ) }) )
-            , Form.textRow "Discharge Date" editable.dischargeDate ( SetFormValue (\v -> { editable | dischargeDate = v }) )
+            , Form.dateTimePickerRow "Discharge Date" "AnalogDateTimePicker" model analogDateTimePickerConfig
             , Form.textRow "Other" editable.other ( SetFormValue (\v -> { editable | other = v }) )
             , Form.submitRow False Cancel
         ]
+
 
 
 -- TABLE CONFIGURATION

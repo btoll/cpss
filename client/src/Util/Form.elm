@@ -1,5 +1,9 @@
-module Util.Form exposing (checkboxRow, disabledTextRow, passwordRow, selectRow, floatRow, submitRow, textRow)
+module Util.Form exposing (checkboxRow, dateTimePickerRow, disabledTextRow, passwordRow, selectRow, floatRow, submitRow, textRow)
 
+import Date exposing (Date)
+import DateTimePicker
+import DateTimePicker.Config exposing (Config, DatePickerConfig, TimePickerConfig, defaultDateTimePickerConfig)
+import Dict exposing (Dict)
 import Html exposing (Html, div, input, label, option, select, text)
 import Html.Attributes exposing (checked, class, disabled, for, id, selected, step, type_, value)
 import Html.Events exposing (onCheck, onClick, onInput)
@@ -12,6 +16,27 @@ checkboxRow name val fn =
         label [ prepareId name |> for ] [ text name ]
         , input [ checked val, disabled False, prepareId name |> id, type_ "checkbox" ] []
     ]
+
+
+dateTimePickerRow : String
+    -> String
+    -> { r | date : Dict String Date, datePickerState : Dict String DateTimePicker.State }
+    -> Config ( DatePickerConfig TimePickerConfig ) msg
+    -> Html msg
+dateTimePickerRow name which { date, datePickerState } analogDateTimePickerConfig =
+    div []
+        [ label [] [ text name ]
+        , DateTimePicker.dateTimePickerWithConfig
+            analogDateTimePickerConfig
+            []
+            ( datePickerState
+                |> Dict.get which
+                |> Maybe.withDefault DateTimePicker.initialState
+            )
+            ( date
+                |> Dict.get which
+            )
+        ]
 
 
 disabledTextRow : String -> String -> ( String -> msg ) -> Html msg
