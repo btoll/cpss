@@ -48,6 +48,8 @@ type Msg
     | Getted ( Result Http.Error ( List Specialist ) )
     | Post
     | Posted ( Result Http.Error Specialist )
+    | Put
+    | Putted ( Result Http.Error Specialist )
     | SetFormValue ( String -> Specialist ) String
     | SetTableState Table.State
     | Submit
@@ -145,6 +147,55 @@ update url msg model =
                 editing = Nothing
             } ! []
 
+        Put ->
+            let
+                subCmd = case model.editing of
+                    Nothing ->
+                        Cmd.none
+
+                    Just specialist ->
+                        Request.Specialist.post url specialist
+                            |> Http.toTask
+                            |> Task.attempt Putted
+            in
+                { model |
+                    action = None
+                } ! [ subCmd ]
+
+        Putted ( Ok specialist ) ->
+            -- Note that the PUT request just returns the new row id, so all other fields
+            -- in the `specialist` model are only defaults! ( See Data.Specialist )
+            let
+                specialists =
+                    case model.editing of
+                        Nothing ->
+                            model.specialists
+
+                        Just newSpecialist ->
+                            model.specialists
+                                |> (::) { newSpecialist | id = specialist.id }
+                newSpecialist =
+                    case model.editing of
+                        -- TODO
+                        Nothing ->
+                            Specialist -1 "" "" "" "" "" 0.00 False
+
+                        Just specialist ->
+                            specialist
+            in
+                { model |
+                    specialists =
+                        model.specialists
+                            |> List.filter ( \m -> newSpecialist.id /= m.id )
+                            |> (::) newSpecialist
+                    , editing = Nothing
+                } ! []
+
+        Putted ( Err err ) ->
+            { model |
+                editing = Nothing
+            } ! []
+
         SetFormValue setFormValue s ->
             { model |
                 editing = Just ( setFormValue s )
@@ -191,21 +242,7 @@ view model =
 
 
 drawView : Model -> List ( Html Msg )
-drawView ( { action, editing, tableState, specialists } as model ) =
-    case action of
-        None ->
-            [ button [ onClick Add ] [ text "Add Specialist" ]
-            , Table.view config tableState specialists
-            ]
-
-        -- Adding | Editing
-        _ ->
-            [ lazy viewForm model
-            ]
-
-
-viewForm : Model -> Html Msg
-viewForm { disabled, editing } =
+drawView { action, disabled, editing, tableState, specialists } =
     let
         editable : Specialist
         editable = case editing of
@@ -215,16 +252,36 @@ viewForm { disabled, editing } =
             Just specialist ->
                 specialist
     in
-        form [ onSubmit Post ] [
-            Form.disabledTextRow "ID" ( toString editable.id ) ( SetFormValue (\v -> { editable | id = ( Result.withDefault -1 ( String.toInt v ) ) }) )
-            , Form.textRow "Username" editable.username ( SetFormValue (\v -> { editable | username = v }) )
-            , Form.textRow "Password" editable.password ( SetFormValue (\v -> { editable | password = v }) )
-            , Form.textRow "First Name" editable.firstname ( SetFormValue (\v -> { editable | firstname = v }) )
-            , Form.textRow "Last Name" editable.lastname ( SetFormValue (\v -> { editable | lastname = v }) )
-            , Form.textRow "Email" editable.email ( SetFormValue (\v -> { editable | email = v }) )
-            , Form.floatRow "Pay Rate" ( toString editable.payrate ) ( SetFormValue (\v -> { editable | payrate = ( Result.withDefault 0.00 ( String.toFloat v ) ) }) )
-            , Form.submitRow disabled Cancel
-        ]
+        case action of
+            None ->
+                [ button [ onClick Add ] [ text "Add Specialist" ]
+                , Table.view config tableState specialists
+                ]
+
+            Adding ->
+                [ form [ onSubmit Post ] [
+                    Form.textRow "Username" editable.username ( SetFormValue (\v -> { editable | username = v }) )
+                    , Form.textRow "Password" editable.password ( SetFormValue (\v -> { editable | password = v }) )
+                    , Form.textRow "First Name" editable.firstname ( SetFormValue (\v -> { editable | firstname = v }) )
+                    , Form.textRow "Last Name" editable.lastname ( SetFormValue (\v -> { editable | lastname = v }) )
+                    , Form.textRow "Email" editable.email ( SetFormValue (\v -> { editable | email = v }) )
+                    , Form.floatRow "Pay Rate" ( toString editable.payrate ) ( SetFormValue (\v -> { editable | payrate = ( Result.withDefault 0.00 ( String.toFloat v ) ) }) )
+                    , Form.submitRow disabled Cancel
+                    ]
+                ]
+
+            Editing ->
+                [ form [ onSubmit Put ] [
+                    Form.disabledTextRow "ID" ( toString editable.id ) ( SetFormValue (\v -> { editable | id = ( Result.withDefault -1 ( String.toInt v ) ) }) )
+                    , Form.textRow "Username" editable.username ( SetFormValue (\v -> { editable | username = v }) )
+                    , Form.disabledTextRow "Password" editable.password ( SetFormValue (\v -> { editable | password = v }) )
+                    , Form.textRow "First Name" editable.firstname ( SetFormValue (\v -> { editable | firstname = v }) )
+                    , Form.textRow "Last Name" editable.lastname ( SetFormValue (\v -> { editable | lastname = v }) )
+                    , Form.textRow "Email" editable.email ( SetFormValue (\v -> { editable | email = v }) )
+                    , Form.floatRow "Pay Rate" ( toString editable.payrate ) ( SetFormValue (\v -> { editable | payrate = ( Result.withDefault 0.00 ( String.toFloat v ) ) }) )
+                    , Form.submitRow disabled Cancel
+                    ]
+                ]
 
 
 -- TABLE CONFIGURATION

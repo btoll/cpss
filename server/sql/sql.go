@@ -32,6 +32,22 @@ func Create(payload interface{}) (int, error) {
 	return int(id), nil
 }
 
+func Update(payload interface{}) error {
+	switch p := payload.(type) {
+	case *app.SpecialistPayload:
+		db, err := connect()
+		if err != nil {
+			return err
+		}
+		s := NewSpecialist()
+		err = s.Update(db, p)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func Delete(id int) error {
 	db, err := connect()
 	if err != nil {

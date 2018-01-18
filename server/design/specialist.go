@@ -21,6 +21,19 @@ var _ = Resource("Specialist", func() {
 		})
 	})
 
+	Action("update", func() {
+		Routing(PUT("/:id"))
+		Payload(SpecialistPayload)
+		Params(func() {
+			Param("id", String, "Specialist ID")
+		})
+		Description("Update a specialist by id.")
+		Response(OK, func() {
+			Status(200)
+			Media(SpecialistMedia, "tiny")
+		})
+	})
+
 	Action("delete", func() {
 		Routing(DELETE("/:id"))
 		Params(func() {

@@ -17,6 +17,7 @@ func NewSpecialist() *Specialist {
 			"DELETE": "DELETE FROM specialist WHERE id=?",
 			"INSERT": "INSERT specialist SET username=?,password=?,firstname=?,lastname=?,email=?,payrate=?",
 			"SELECT": "SELECT * FROM specialist",
+			"UPDATE": "UPDATE specialist SET username=?,password=?,firstname=?,lastname=?,email=?,payrate=? WHERE id=?",
 		},
 	}
 }
@@ -26,7 +27,7 @@ func (s *Specialist) Create(db *mysql.DB, payload *app.SpecialistPayload) (int64
 	if err != nil {
 		return -1, err
 	}
-	res, err := exec(stmt, payload)
+	res, err := stmt.Exec(payload.Username, payload.Password, payload.Firstname, payload.Lastname, payload.Email, payload.Payrate)
 	if err != nil {
 		return -1, err
 	}
@@ -35,6 +36,15 @@ func (s *Specialist) Create(db *mysql.DB, payload *app.SpecialistPayload) (int64
 		return -1, err
 	}
 	return id, err
+}
+
+func (s *Specialist) Update(db *mysql.DB, payload *app.SpecialistPayload) error {
+	stmt, err := db.Prepare(s.Stmt["UPDATE"])
+	if err != nil {
+		return err
+	}
+	_, err = stmt.Exec(payload.Username, payload.Password, payload.Firstname, payload.Lastname, payload.Email, payload.Payrate, payload.ID)
+	return err
 }
 
 func (s *Specialist) Delete(db *mysql.DB, id int64) error {

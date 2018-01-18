@@ -33,7 +33,8 @@ func (c *ConsumerController) Delete(ctx *app.DeleteConsumerContext) error {
 	// Put your logic here
 
 	// ConsumerController_Delete: end_implement
-	return nil
+	res := &app.ConsumerMediaTiny{}
+	return ctx.OKTiny(res)
 }
 
 // List runs the list action.

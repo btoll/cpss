@@ -39,7 +39,8 @@ manyDecoder =
 encoder : Specialist -> Encode.Value
 encoder specialist =
     Encode.object
-        [ ( "username", Encode.string specialist.username )
+        [ ( "id", Encode.int specialist.id )
+        , ( "username", Encode.string specialist.username )
         , ( "password", Encode.string specialist.password )
         , ( "firstname", Encode.string specialist.firstname )
         , ( "lastname", Encode.string specialist.lastname )
