@@ -21,6 +21,7 @@ type alias Model =
     { tableState : Table.State
     , action : Action
     , editing : Maybe BillSheet
+    , disabled : Bool
     , billsheets : List BillSheet
     }
 
@@ -31,7 +32,7 @@ init : String -> Task Http.Error Model
 init url =
     Request.BillSheet.get url
         |> Http.toTask
-        |> Task.map ( Model ( Table.initialSort "ID" ) None Nothing )
+        |> Task.map ( Model ( Table.initialSort "ID" ) None Nothing True )
 
 
 
@@ -130,14 +131,20 @@ update url msg model =
             model ! []
 
         SetFormValue setFormValue s ->
-            { model | editing = Just ( setFormValue s ) } ! []
+            { model |
+                editing = Just ( setFormValue s )
+                , disabled = False
+            } ! []
 
         SetTableState newState ->
             { model | tableState = newState
             } ! []
 
         Submit ->
-            { model | action = None } ! []
+            { model |
+                action = None
+                , disabled = True
+            } ! []
 
         ToggleSelected id ->
             { model |
@@ -169,7 +176,7 @@ view model =
 
 
 drawView : Model -> List ( Html Msg )
-drawView { action, editing, tableState, billsheets } =
+drawView ( { action, editing, tableState, billsheets } as model ) =
     case action of
         None ->
             [ button [ onClick Add ] [ text "Add Bill Sheet" ]
@@ -178,15 +185,15 @@ drawView { action, editing, tableState, billsheets } =
 
         -- Adding | Editing
         _ ->
-            [ lazy viewForm editing
+            [ lazy viewForm model
             ]
 
 
-viewForm : Maybe BillSheet -> Html Msg
-viewForm billsheet =
+viewForm : Model -> Html Msg
+viewForm { editing, disabled }  =
     let
         editable : BillSheet
-        editable = case billsheet of
+        editable = case editing of
             Nothing ->
                 BillSheet "" "" "" 0.00 "" "" "" "" "" "" "" False
 
@@ -205,7 +212,7 @@ viewForm billsheet =
             , Form.textRow "County" editable.county ( SetFormValue (\v -> { editable | county = v }) )
             , Form.textRow "Specialist" editable.specialist ( SetFormValue (\v -> { editable | specialist = v }) )
             , Form.textRow "Record Number" editable.recordNumber ( SetFormValue (\v -> { editable | recordNumber = v }) )
-            , Form.submitRow False Cancel
+            , Form.submitRow disabled Cancel
         ]
 
 

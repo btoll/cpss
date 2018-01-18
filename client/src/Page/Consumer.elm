@@ -30,6 +30,7 @@ type alias Model =
     { tableState : Table.State
     , action : Action
     , editing : Maybe Consumer
+    , disabled : Bool
     , date : Dict String Date -- The key is actually a DemoPicker
     , datePickerState : Dict String DateTimePicker.State -- The key is actually a DemoPicker
     , consumers : List Consumer
@@ -45,7 +46,7 @@ type Action = None | Adding | Editing
 
 init : String -> ( Model, Cmd Msg )
 init url =
-    (Model ( Table.initialSort "ID" ) None Nothing Dict.empty Dict.empty [] ) !
+    ( Model ( Table.initialSort "ID" ) None Nothing True Dict.empty Dict.empty [] ) !
         [ Request.Consumer.get url |> Http.send Getted
         , DateTimePicker.initialCmd DatePickerChanged DateTimePicker.initialState
         ]
@@ -169,14 +170,20 @@ update url msg model =
             model ! []
 
         SetFormValue setFormValue s ->
-            { model | editing = Just ( setFormValue s ) } ! []
+            { model |
+                editing = Just ( setFormValue s )
+                , disabled = False
+            } ! []
 
         SetTableState newState ->
             { model | tableState = newState
             } ! []
 
         Submit ->
-            { model | action = None } ! []
+            { model |
+                action = None
+                , disabled = True
+            } ! []
 
         ToggleSelected id ->
             { model |
@@ -235,7 +242,7 @@ drawView ( { action, editing, tableState, consumers } as model ) =
 
 
 viewForm : Model -> Html Msg
-viewForm ( { editing, date, datePickerState } as model ) =
+viewForm ( { disabled, editing, date, datePickerState } as model ) =
     let
         editable : Consumer
         editable = case editing of
@@ -265,7 +272,7 @@ viewForm ( { editing, date, datePickerState } as model ) =
             , Form.floatRow "Copay" ( toString editable.copay ) ( SetFormValue (\v -> { editable | copay = ( Result.withDefault 0.00 ( String.toFloat v ) ) }) )
             , Form.dateTimePickerRow "Discharge Date" "AnalogDateTimePicker" model analogDateTimePickerConfig
             , Form.textRow "Other" editable.other ( SetFormValue (\v -> { editable | other = v }) )
-            , Form.submitRow False Cancel
+            , Form.submitRow disabled Cancel
         ]
 
 

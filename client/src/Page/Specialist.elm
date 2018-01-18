@@ -21,6 +21,7 @@ type alias Model =
     { tableState : Table.State
     , action : Action
     , editing : Maybe Specialist
+    , disabled : Bool
     , specialists : List Specialist
     }
 
@@ -31,7 +32,7 @@ init : String -> Task Http.Error Model
 init url =
     Request.Specialist.get url
         |> Http.toTask
-        |> Task.map ( Model ( Table.initialSort "ID" ) None Nothing )
+        |> Task.map ( Model ( Table.initialSort "ID" ) None Nothing True )
 
 
 
@@ -145,14 +146,20 @@ update url msg model =
             } ! []
 
         SetFormValue setFormValue s ->
-            { model | editing = Just ( setFormValue s ) } ! []
+            { model |
+                editing = Just ( setFormValue s )
+                , disabled = False
+            } ! []
 
         SetTableState newState ->
             { model | tableState = newState
             } ! []
 
         Submit ->
-            { model | action = None } ! []
+            { model |
+                action = None
+                , disabled = True
+            } ! []
 
         ToggleSelected id ->
             { model |
@@ -184,7 +191,7 @@ view model =
 
 
 drawView : Model -> List ( Html Msg )
-drawView { action, editing, tableState, specialists } =
+drawView ( { action, editing, tableState, specialists } as model ) =
     case action of
         None ->
             [ button [ onClick Add ] [ text "Add Specialist" ]
@@ -193,15 +200,15 @@ drawView { action, editing, tableState, specialists } =
 
         -- Adding | Editing
         _ ->
-            [ lazy viewForm editing
+            [ lazy viewForm model
             ]
 
 
-viewForm : Maybe Specialist -> Html Msg
-viewForm specialist =
+viewForm : Model -> Html Msg
+viewForm { disabled, editing } =
     let
         editable : Specialist
-        editable = case specialist of
+        editable = case editing of
             Nothing ->
                 Specialist -1 "" "" "" "" "" 0.00 False
 
@@ -216,7 +223,7 @@ viewForm specialist =
             , Form.textRow "Last Name" editable.lastname ( SetFormValue (\v -> { editable | lastname = v }) )
             , Form.textRow "Email" editable.email ( SetFormValue (\v -> { editable | email = v }) )
             , Form.floatRow "Pay Rate" ( toString editable.payrate ) ( SetFormValue (\v -> { editable | payrate = ( Result.withDefault 0.00 ( String.toFloat v ) ) }) )
-            , Form.submitRow False Cancel
+            , Form.submitRow disabled Cancel
         ]
 
 
