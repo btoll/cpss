@@ -23,11 +23,11 @@ func NewSpecialistController(service *goa.Service) *SpecialistController {
 func (c *SpecialistController) Create(ctx *app.CreateSpecialistContext) error {
 	// SpecialistController_Create: start_implement
 
-	id, err := sql.Create(ctx.Payload)
+	id, err := sql.Create(sql.NewSpecialist(ctx.Payload))
 	if err != nil {
-		panic(err)
+		return err
 	}
-	return ctx.OKTiny(&app.SpecialistMediaTiny{id})
+	return ctx.OKTiny(&app.SpecialistMediaTiny{int(id)})
 
 	// SpecialistController_Create: end_implement
 }
@@ -36,9 +36,9 @@ func (c *SpecialistController) Create(ctx *app.CreateSpecialistContext) error {
 func (c *SpecialistController) Delete(ctx *app.DeleteSpecialistContext) error {
 	// SpecialistController_Delete: start_implement
 
-	err := sql.Delete(ctx.ID)
+	err := sql.Delete(sql.NewSpecialist(ctx.ID))
 	if err != nil {
-		panic(err)
+		return err
 	}
 	return ctx.OKTiny(&app.SpecialistMediaTiny{ctx.ID})
 
@@ -49,11 +49,11 @@ func (c *SpecialistController) Delete(ctx *app.DeleteSpecialistContext) error {
 func (c *SpecialistController) List(ctx *app.ListSpecialistContext) error {
 	// SpecialistController_List: start_implement
 
-	collection, err := sql.List()
+	collection, err := sql.List(sql.NewSpecialist(nil))
 	if err != nil {
-		panic(err)
+		return err
 	}
-	return ctx.OK(*collection)
+	return ctx.OK(collection.(app.SpecialistMediaCollection))
 
 	// SpecialistController_List: end_implement
 }
@@ -62,13 +62,13 @@ func (c *SpecialistController) List(ctx *app.ListSpecialistContext) error {
 func (c *SpecialistController) Update(ctx *app.UpdateSpecialistContext) error {
 	// SpecialistController_Update: start_implement
 
-	err := sql.Update(ctx.Payload)
+	err := sql.Update(sql.NewSpecialist(ctx.Payload))
 	if err != nil {
-		panic(err)
+		return err
 	}
 	id, err := strconv.Atoi(ctx.ID)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	return ctx.OKTiny(&app.SpecialistMediaTiny{id})
 

@@ -49,7 +49,7 @@ type Msg
     | Post
     | Posted ( Result Http.Error Specialist )
     | Put
-    | Putted ( Result Http.Error Specialist )
+    | Putted ( Result Http.Error Int )
     | SetFormValue ( String -> Specialist ) String
     | SetTableState Table.State
     | Submit
@@ -125,8 +125,6 @@ update url msg model =
                 } ! [ subCmd ]
 
         Posted ( Ok specialist ) ->
-            -- Note that the POST request just returns the new row id, so all other fields
-            -- in the `specialist` model are only defaults! ( See Data.Specialist )
             let
                 specialists =
                     case model.editing of
@@ -154,7 +152,7 @@ update url msg model =
                         Cmd.none
 
                     Just specialist ->
-                        Request.Specialist.post url specialist
+                        Request.Specialist.put url specialist
                             |> Http.toTask
                             |> Task.attempt Putted
             in
@@ -162,9 +160,7 @@ update url msg model =
                     action = None
                 } ! [ subCmd ]
 
-        Putted ( Ok specialist ) ->
-            -- Note that the PUT request just returns the new row id, so all other fields
-            -- in the `specialist` model are only defaults! ( See Data.Specialist )
+        Putted ( Ok id ) ->
             let
                 specialists =
                     case model.editing of
@@ -173,7 +169,7 @@ update url msg model =
 
                         Just newSpecialist ->
                             model.specialists
-                                |> (::) { newSpecialist | id = specialist.id }
+                                |> (::) { newSpecialist | id = id }
                 newSpecialist =
                     case model.editing of
                         -- TODO

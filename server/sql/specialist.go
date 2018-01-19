@@ -2,27 +2,30 @@ package sql
 
 import (
 	mysql "database/sql"
+	"fmt"
 
 	"github.com/btoll/cpss/server/app"
 )
 
 type Specialist struct {
+	Data interface{}
 	Stmt map[string]string
 }
 
-func NewSpecialist() *Specialist {
+func NewSpecialist(payload interface{}) *Specialist {
 	return &Specialist{
+		Data: payload,
 		Stmt: map[string]string{
-			"COUNT":  "SELECT COUNT(*) FROM specialist",
 			"DELETE": "DELETE FROM specialist WHERE id=?",
 			"INSERT": "INSERT specialist SET username=?,password=?,firstname=?,lastname=?,email=?,payrate=?",
-			"SELECT": "SELECT * FROM specialist",
+			"SELECT": "SELECT %s FROM specialist",
 			"UPDATE": "UPDATE specialist SET username=?,password=?,firstname=?,lastname=?,email=?,payrate=? WHERE id=?",
 		},
 	}
 }
 
-func (s *Specialist) Create(db *mysql.DB, payload *app.SpecialistPayload) (int64, error) {
+func (s *Specialist) Create(db *mysql.DB) (int64, error) {
+	payload := s.Data.(*app.SpecialistPayload)
 	stmt, err := db.Prepare(s.Stmt["INSERT"])
 	if err != nil {
 		return -1, err
@@ -31,14 +34,11 @@ func (s *Specialist) Create(db *mysql.DB, payload *app.SpecialistPayload) (int64
 	if err != nil {
 		return -1, err
 	}
-	id, err := res.LastInsertId()
-	if err != nil {
-		return -1, err
-	}
-	return id, err
+	return res.LastInsertId()
 }
 
-func (s *Specialist) Update(db *mysql.DB, payload *app.SpecialistPayload) error {
+func (s *Specialist) Update(db *mysql.DB) error {
+	payload := s.Data.(*app.SpecialistPayload)
 	stmt, err := db.Prepare(s.Stmt["UPDATE"])
 	if err != nil {
 		return err
@@ -47,17 +47,18 @@ func (s *Specialist) Update(db *mysql.DB, payload *app.SpecialistPayload) error 
 	return err
 }
 
-func (s *Specialist) Delete(db *mysql.DB, id int64) error {
+func (s *Specialist) Delete(db *mysql.DB) error {
 	stmt, err := db.Prepare(s.Stmt["DELETE"])
 	if err != nil {
 		return err
 	}
+	id := s.Data.(int)
 	_, err = stmt.Exec(&id)
 	return err
 }
 
-func (s *Specialist) List(db *mysql.DB) (*app.SpecialistMediaCollection, error) {
-	rows, err := db.Query(s.Stmt["COUNT"])
+func (s *Specialist) List(db *mysql.DB) (interface{}, error) {
+	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)"))
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +69,7 @@ func (s *Specialist) List(db *mysql.DB) (*app.SpecialistMediaCollection, error) 
 			return nil, err
 		}
 	}
-	rows, err = db.Query(s.Stmt["SELECT"])
+	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*"))
 	if err != nil {
 		return nil, err
 	}
@@ -97,5 +98,5 @@ func (s *Specialist) List(db *mysql.DB) (*app.SpecialistMediaCollection, error) 
 		}
 		i++
 	}
-	return &collection, nil
+	return collection, nil
 }

@@ -1,4 +1,4 @@
-module Request.Specialist exposing (delete, get, post)
+module Request.Specialist exposing (delete, get, post, put)
 
 import Http
 import Data.Specialist exposing (Specialist, decoder, encoder, manyDecoder, succeed)
@@ -34,5 +34,24 @@ post url specialist =
     in
         decoder
             |> Http.post ( (++) url "/specialist/" ) body
+
+
+put : String -> Specialist -> Http.Request Int
+put url specialist =
+    let
+        body : Http.Body
+        body =
+            encoder specialist
+                |> Http.jsonBody
+    in
+        Http.request
+            { method = "PUT"
+            , headers = []
+            , url = ( (++) ( (++) url "/specialist/" ) ( toString specialist.id ) )
+            , body = body
+            , expect = Http.expectJson ( specialist.id |> succeed )
+            , timeout = Nothing
+            , withCredentials = False
+            }
 
 
