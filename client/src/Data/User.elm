@@ -1,6 +1,7 @@
 module Data.User exposing (User)
 
 
+
 type alias User =
 --    { username : Username
     { username : String

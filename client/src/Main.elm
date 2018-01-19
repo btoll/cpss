@@ -226,10 +226,10 @@ update msg model =
                     ( ( pageModel, cmd ), msgFromPage ) =
                         Login.update model.build.url subMsg subModel
 
-                    ( newModel, newCmd )  =
+                    ( newModel, newCmd ) =
                         case msgFromPage of
                             Login.NoOp ->
-                                ( { model | page = Login pageModel }, Cmd.none )
+                                ( { model | page = Login pageModel }, Cmd.map LoginMsg cmd )
 
                             Login.SetUser user ->
                                 let
@@ -240,7 +240,7 @@ update msg model =
                                         session = { user = Just user }
                                         , page = Blank
                                         , onLogin = Nothing
-                                    } |> setRoute model.onLogin -- Redirect after having had logged in.
+                                    } |> setRoute model.onLogin -- Redirect after logging in.
                 in
                     ( newModel, newCmd )
 
