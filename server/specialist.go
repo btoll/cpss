@@ -58,6 +58,21 @@ func (c *SpecialistController) List(ctx *app.ListSpecialistContext) error {
 	// SpecialistController_List: end_implement
 }
 
+// Show runs the show action.
+func (c *SpecialistController) Show(ctx *app.ShowSpecialistContext) error {
+	// SpecialistController_Show: start_implement
+
+	// Put your logic here
+	//	rec, err := sql.Read(sql.NewSpecialist(ctx.Payload))
+	//	if err != nil {
+	//		return err
+	//	}
+	//	return ctx.OK(collection.(app.SpecialistMediaCollection))
+	return nil
+
+	// SpecialistController_Show: end_implement
+}
+
 // Update runs the update action.
 func (c *SpecialistController) Update(ctx *app.UpdateSpecialistContext) error {
 	// SpecialistController_Update: start_implement

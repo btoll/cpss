@@ -18,6 +18,7 @@ nav div.container {
 }
 nav ul {
     list-style: none;
+    float: left;
     margin: 0;
     padding: 0;
 }
@@ -36,6 +37,15 @@ nav li a {
 #consumer nav li a[href$="consumer"],
 #specialist nav li a[href$="specialist"] {
     background: #265a88;
+}
+nav div.container div {
+    float: right;
+}
+nav div.container div p {
+    color: #fff;
+    font-weight: bold;
+    margin-right: 20px;
+    padding: 2px 10px;
 }
 
 section {

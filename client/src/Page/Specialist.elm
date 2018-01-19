@@ -181,7 +181,7 @@ update url msg model =
                     case model.editing of
                         -- TODO
                         Nothing ->
-                            Specialist -1 "" "" "" "" "" 0.00 False
+                            Specialist -1 "" "" "" "" "" 0.00 1 False
 
                         Just specialist ->
                             specialist
@@ -250,7 +250,7 @@ drawView { action, disabled, editing, tableState, specialists } =
         editable : Specialist
         editable = case editing of
             Nothing ->
-                Specialist -1 "" "" "" "" "" 0.00 False
+                Specialist -1 "" "" "" "" "" 0.00 1 False
 
             Just specialist ->
                 specialist
@@ -268,7 +268,8 @@ drawView { action, disabled, editing, tableState, specialists } =
                     , Form.textRow "First Name" editable.firstname ( SetFormValue (\v -> { editable | firstname = v }) )
                     , Form.textRow "Last Name" editable.lastname ( SetFormValue (\v -> { editable | lastname = v }) )
                     , Form.textRow "Email" editable.email ( SetFormValue (\v -> { editable | email = v }) )
-                    , Form.floatRow "Pay Rate" ( toString editable.payrate ) ( SetFormValue (\v -> { editable | payrate = ( Result.withDefault 0.00 ( String.toFloat v ) ) }) )
+                    , Form.floatRow "Pay Rate" ( toString editable.payrate ) ( SetFormValue (\v -> { editable | payrate = ( Result.withDefault 0.00 ( String.toFloat v ) ) } ) )
+                    , Form.textRow "Auth Level" ( toString editable.authLevel ) ( SetFormValue (\v -> { editable | authLevel = ( Result.withDefault -1 ( String.toInt v ) ) } ) )
                     , Form.submitRow disabled Cancel
                     ]
                 ]
@@ -276,7 +277,7 @@ drawView { action, disabled, editing, tableState, specialists } =
             ChangingPassword ->
                 [ form [ onSubmit Put ] [
                     Form.hiddenTextRow "Username" editable.username
-                    , Form.textRow "Password" editable.password ( SetFormValue (\v -> { editable | password = v }) )
+                    , Form.disabledTextRow "Password" editable.password ( SetFormValue (\v -> { editable | password = v }) )
                     , Form.hiddenTextRow "First Name" editable.firstname
                     , Form.hiddenTextRow "Last Name" editable.lastname
                     , Form.hiddenTextRow "Email" editable.email
@@ -294,6 +295,7 @@ drawView { action, disabled, editing, tableState, specialists } =
                     , Form.textRow "Last Name" editable.lastname ( SetFormValue (\v -> { editable | lastname = v }) )
                     , Form.textRow "Email" editable.email ( SetFormValue (\v -> { editable | email = v }) )
                     , Form.floatRow "Pay Rate" ( toString editable.payrate ) ( SetFormValue (\v -> { editable | payrate = ( Result.withDefault 0.00 ( String.toFloat v ) ) }) )
+                    , Form.textRow "Auth Level" ( toString editable.authLevel ) ( SetFormValue (\v -> { editable | authLevel = ( Result.withDefault -1 ( String.toInt v ) ) } ) )
                     , Form.submitRow disabled Cancel
                     ]
                 ]
@@ -318,6 +320,7 @@ config =
         , Table.stringColumn "Last Name" .lastname
         , Table.stringColumn "Email" .email
         , Table.floatColumn "Pay Rate" .payrate
+        , Table.intColumn "Auth Level" .authLevel
         , customColumn viewButton
         , customColumn viewButton2
         , customColumn viewButton3

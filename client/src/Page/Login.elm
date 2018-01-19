@@ -1,7 +1,5 @@
---module Page.Login exposing (ExternalMsg(..), Model, Msg, initialModel, update, view)
 module Page.Login exposing (ExternalMsg(..), Model, Msg, init, update, view)
 
-import Data.Login as Login exposing (Login)
 import Data.Session as Session exposing (Session)
 import Data.User as User exposing (User)
 import Html exposing (Html, form)
@@ -18,14 +16,16 @@ import Util.Form as Form
 
 
 type alias Model =
-    Login
+    User
 
 
-init : Login
+init : User
 init =
 --    { errors = []
     { username = ""
     , password = ""
+    , email = ""
+    , authLevel = -1
     }
 
 
@@ -35,7 +35,7 @@ init =
 
 type Msg
     = Authenticate
-    | Authenticated ( Result Http.Error Login )
+    | Authenticated ( Result Http.Error User )
     | Cancel
     | SetFormValue ( String -> Model ) String
 
@@ -55,17 +55,20 @@ update url msg model =
                     |> Task.attempt Authenticated
             ] , NoOp )
 
-        Authenticated ( Ok login ) ->
-            ( { model | username = "" , password = "" } ! [], SetUser ( User login.username "" 1 ) )
+        Authenticated ( Ok user ) ->
+            let
+                u = (Debug.log "user" user)
+            in
+            ( { model | username = "" , password = "" } ! [], SetUser user )
 
         Authenticated ( Err err ) ->
             let
                 e = (Debug.log "err" err)
             in
-            ( { model | username = "" , password = "" } ! [], NoOp )
+            ( { model | username = "", password = "" } ! [], NoOp )
 
         Cancel ->
-            ( { username = "", password = "" } ! [], NoOp )
+            ( { model | username = "", password = "" } ! [], NoOp )
 
         SetFormValue fn s ->
             ( ( s |> fn ) ! [], NoOp )

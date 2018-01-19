@@ -14,6 +14,7 @@ type alias Specialist =
     , lastname : String
     , email : String
     , payrate : Float
+    , authLevel : Int
     , selected : Bool
     }
 
@@ -28,6 +29,7 @@ decoder =
         |> optional "lastname" string ""
         |> optional "email" string ""
         |> optional "payrate" float 0.00
+        |> optional "authLevel" int 1
         |> optional "selected" bool False
 
 
@@ -46,6 +48,7 @@ encoder specialist =
         , ( "lastname", Encode.string specialist.lastname )
         , ( "email", Encode.string specialist.email )
         , ( "payrate", Encode.float specialist.payrate )
+        , ( "authLevel", Encode.int specialist.authLevel )
         ]
 
 succeed : a -> Decoder a

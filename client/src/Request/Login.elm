@@ -1,11 +1,11 @@
 module Request.Login exposing (post)
 
 import Http
-import Data.Login exposing (Login, decoder, encoder)
+import Data.User exposing (User, decoder, encoder)
 
 
 
-post : String -> Login -> Http.Request Login
+post : String -> User -> Http.Request User
 post url login =
     let
         body : Http.Body

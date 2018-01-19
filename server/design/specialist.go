@@ -18,6 +18,15 @@ var _ = Resource("Specialist", func() {
 		Response(OK, SpecialistMedia)
 	})
 
+	Action("show", func() {
+		Routing(GET("/:id"))
+		Params(func() {
+			Param("id", String, "Specialist ID")
+		})
+		Description("Get a specialist by id.")
+		Response(OK, SpecialistMedia)
+	})
+
 	Action("update", func() {
 		Routing(PUT("/:id"))
 		Payload(SpecialistPayload)
@@ -81,8 +90,12 @@ var SpecialistPayload = Type("SpecialistPayload", func() {
 		Metadata("struct:tag:datastore", "payrate,noindex")
 		Metadata("struct:tag:json", "payrate,omitempty")
 	})
+	Attribute("authLevel", Integer, "Specialist authorization level", func() {
+		Metadata("struct:tag:datastore", "authLevel,noindex")
+		Metadata("struct:tag:json", "authLevel,omitempty")
+	})
 
-	Required("username", "password", "firstname", "lastname", "email", "payrate")
+	Required("username", "password", "firstname", "lastname", "email", "payrate", "authLevel")
 })
 
 var SpecialistMedia = MediaType("application/specialistapi.specialistentity", func() {
@@ -99,8 +112,9 @@ var SpecialistMedia = MediaType("application/specialistapi.specialistentity", fu
 		Attribute("lastname")
 		Attribute("email")
 		Attribute("payrate")
+		Attribute("authLevel")
 
-		Required("id", "username", "password", "firstname", "lastname", "email", "payrate")
+		Required("id", "username", "password", "firstname", "lastname", "email", "payrate", "authLevel")
 	})
 
 	View("default", func() {
@@ -111,6 +125,7 @@ var SpecialistMedia = MediaType("application/specialistapi.specialistentity", fu
 		Attribute("lastname")
 		Attribute("email")
 		Attribute("payrate")
+		Attribute("authLevel")
 	})
 
 	View("tiny", func() {

@@ -11,9 +11,9 @@ var _ = Resource("Login", func() {
 	//	DefaultMedia(LoginMedia)
 	Description("Describes a login.")
 
-	Action("create", func() {
+	Action("verify", func() {
 		Routing(POST("/"))
-		Description("Create a new sport.")
+		Description("Verify the login.")
 		Payload(LoginPayload)
 		Response(OK, LoginMedia)
 	})
@@ -42,11 +42,17 @@ var LoginMedia = MediaType("application/loginapi.loginentity", func() {
 
 	Attributes(func() {
 		Attribute("username")
+		Attribute("password")
+		Attribute("email", String)
+		Attribute("authLevel", Integer)
 
-		Required("username")
+		Required("username", "password", "email", "authLevel")
 	})
 
 	View("default", func() {
 		Attribute("username")
+		Attribute("password")
+		Attribute("email")
+		Attribute("authLevel")
 	})
 })

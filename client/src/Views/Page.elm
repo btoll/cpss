@@ -1,7 +1,7 @@
 module Views.Page exposing (ActivePage(..), frame)
 
 import Data.User exposing (User)
-import Html exposing (Html, a, div, footer, li, main_, nav, text, ul)
+import Html exposing (Html, a, div, footer, li, main_, nav, p, text, ul)
 import Html.Attributes exposing (class, classList, id)
 import Route exposing (Route)
 
@@ -56,6 +56,18 @@ frame user page content =
         ]
 
 
+greeting : Maybe User -> Html msg
+greeting user =
+    case user of
+        Nothing ->
+            div [] []
+
+        Just user ->
+            div [] [
+                p [] [ text ( (++) ( (++) "Welcome " user.username ) "!" ) ]
+            ]
+
+
 --viewHeader : ActivePage -> Maybe User -> Bool -> Html msg
 --viewHeader page user isLoading =
 viewHeader : Maybe User -> ActivePage -> Html msg
@@ -66,6 +78,7 @@ viewHeader user page =
                 ( siteLinks user page
                     |> List.map ( navbarLink <| page )
                 )
+            , greeting <| user
             ]
 
         ]

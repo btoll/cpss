@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/btoll/cpss/server/app"
+	"github.com/btoll/cpss/server/sql"
 	"github.com/goadesign/goa"
 )
 
@@ -15,13 +16,15 @@ func NewLoginController(service *goa.Service) *LoginController {
 	return &LoginController{Controller: service.NewController("LoginController")}
 }
 
-// Create runs the create action.
-func (c *LoginController) Create(ctx *app.CreateLoginContext) error {
-	// LoginController_Create: start_implement
+// Verify runs the verify action.
+func (c *LoginController) Verify(ctx *app.VerifyLoginContext) error {
+	// LoginController_Verify: start_implement
 
-	// Put your logic here
+	rec, err := sql.VerifyPassword(ctx.Payload.Username, ctx.Payload.Password)
+	if err != nil {
+		return err
+	}
+	return ctx.OK(rec.(*app.LoginMedia))
 
-	// LoginController_Create: end_implement
-	res := &app.LoginMedia{}
-	return ctx.OK(res)
+	// LoginController_Verify: end_implement
 }

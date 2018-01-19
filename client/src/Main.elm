@@ -108,7 +108,7 @@ setRoute maybeRoute model =
 
                 Just user ->
                     case user.authLevel of
-                        0 ->
+                        1 ->
                             ( model, BillSheet.init model.build.url |> Task.attempt BillSheetLoaded )
 
                         _ ->
@@ -124,7 +124,7 @@ setRoute maybeRoute model =
 
                 Just user ->
                     case user.authLevel of
-                        0 ->
+                        1 ->
                             let
                                 ( subModel, subMsg ) =
                                     Consumer.init model.build.url
@@ -179,7 +179,7 @@ setRoute maybeRoute model =
 
                 Just user ->
                     case user.authLevel of
-                        0 ->
+                        1 ->
                             ( model, Specialist.init model.build.url |> Task.attempt SpecialistLoaded )
 
                         _ ->
@@ -240,7 +240,7 @@ update msg model =
                                         session = { user = Just user }
                                         , page = Blank
                                         , onLogin = Nothing
-                                    } |> setRoute model.onLogin -- Redirect after logging in.
+                                    } |> setRoute model.onLogin     -- Redirect after logging in.
                 in
                     ( newModel, newCmd )
 
