@@ -23,11 +23,11 @@ func NewSpecialistController(service *goa.Service) *SpecialistController {
 func (c *SpecialistController) Create(ctx *app.CreateSpecialistContext) error {
 	// SpecialistController_Create: start_implement
 
-	id, err := sql.Create(sql.NewSpecialist(ctx.Payload))
+	res, err := sql.Create(sql.NewSpecialist(ctx.Payload))
 	if err != nil {
 		return err
 	}
-	return ctx.OKTiny(&app.SpecialistMediaTiny{int(id)})
+	return ctx.OK(res.(*app.SpecialistMedia))
 
 	// SpecialistController_Create: end_implement
 }

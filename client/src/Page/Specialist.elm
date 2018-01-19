@@ -26,7 +26,7 @@ type alias Model =
     }
 
 
-type Action = None | Adding | Editing
+type Action = None | Adding | ChangingPassword | Editing
 
 init : String -> Task Http.Error Model
 init url =
@@ -42,6 +42,7 @@ init url =
 type Msg
     = Add
     | Cancel
+    | ChangePassword Specialist
     | Delete Specialist
     | Deleted ( Result Http.Error Specialist )
     | Edit Specialist
@@ -69,6 +70,12 @@ update url msg model =
             { model |
                 action = None
                 , editing = Nothing
+            } ! []
+
+        ChangePassword specialist ->
+            { model |
+                action = ChangingPassword
+                , editing = Just specialist
             } ! []
 
         Delete specialist ->
@@ -133,7 +140,7 @@ update url msg model =
 
                         Just newSpecialist ->
                             model.specialists
-                                |> (::) { newSpecialist | id = specialist.id }
+                                |> (::) { newSpecialist | id = specialist.id , password = specialist.password }
             in
                 { model |
                     specialists = specialists
@@ -266,6 +273,18 @@ drawView { action, disabled, editing, tableState, specialists } =
                     ]
                 ]
 
+            ChangingPassword ->
+                [ form [ onSubmit Put ] [
+                    Form.hiddenTextRow "Username" editable.username
+                    , Form.textRow "Password" editable.password ( SetFormValue (\v -> { editable | password = v }) )
+                    , Form.hiddenTextRow "First Name" editable.firstname
+                    , Form.hiddenTextRow "Last Name" editable.lastname
+                    , Form.hiddenTextRow "Email" editable.email
+                    , Form.hiddenTextRow "Pay Rate" ( toString editable.payrate )
+                    , Form.submitRow disabled Cancel
+                    ]
+                ]
+
             Editing ->
                 [ form [ onSubmit Put ] [
                     Form.disabledTextRow "ID" ( toString editable.id ) ( SetFormValue (\v -> { editable | id = ( Result.withDefault -1 ( String.toInt v ) ) }) )
@@ -294,13 +313,14 @@ config =
         [ customColumn viewCheckbox
         , Table.intColumn "ID" .id
         , Table.stringColumn "Username" .username
-        , Table.stringColumn "Password" .password
+        , Table.stringColumn "Password" ( .password >> String.slice 0 10 )       -- Just show a small portion of the hashed password.
         , Table.stringColumn "First Name" .firstname
         , Table.stringColumn "Last Name" .lastname
         , Table.stringColumn "Email" .email
         , Table.floatColumn "Pay Rate" .payrate
         , customColumn viewButton
         , customColumn viewButton2
+        , customColumn viewButton3
         ]
     , customizations =
         { defaultCustomizations | rowAttrs = toRowAttrs }
@@ -334,6 +354,12 @@ viewButton2 : Specialist -> Table.HtmlDetails Msg
 viewButton2 specialist =
     Table.HtmlDetails []
         [ button [ onClick ( Delete specialist ) ] [ text "Delete" ]
+        ]
+
+viewButton3 : Specialist -> Table.HtmlDetails Msg
+viewButton3 specialist =
+    Table.HtmlDetails []
+        [ button [ onClick ( ChangePassword specialist ) ] [ text "Change Password" ]
         ]
 
 viewCheckbox : Specialist -> Table.HtmlDetails Msg

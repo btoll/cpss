@@ -15,10 +15,7 @@ var _ = Resource("Specialist", func() {
 		Routing(POST("/"))
 		Description("Create a new sport.")
 		Payload(SpecialistPayload)
-		Response(OK, func() {
-			Status(200)
-			Media(SpecialistMedia, "tiny")
-		})
+		Response(OK, SpecialistMedia)
 	})
 
 	Action("update", func() {

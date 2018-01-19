@@ -1,11 +1,11 @@
-module Util.Form exposing (checkboxRow, dateTimePickerRow, disabledTextRow, passwordRow, selectRow, floatRow, submitRow, textRow)
+module Util.Form exposing (checkboxRow, dateTimePickerRow, disabledTextRow, hiddenTextRow, passwordRow, selectRow, floatRow, submitRow, textRow)
 
 import Date exposing (Date)
 import DateTimePicker
 import DateTimePicker.Config exposing (Config, DatePickerConfig, TimePickerConfig, defaultDateTimePickerConfig)
 import Dict exposing (Dict)
 import Html exposing (Html, div, input, label, option, select, text)
-import Html.Attributes exposing (checked, class, disabled, for, id, selected, step, type_, value)
+import Html.Attributes exposing (checked, class, disabled, for, hidden, id, selected, step, type_, value)
 import Html.Events exposing (onCheck, onClick, onInput)
 
 
@@ -85,6 +85,14 @@ floatRow name val fn =
     div [] [
         label [ prepareId name |> for ] [ text name ]
         , input [ prepareId name |> id, onInput fn, step "0.01", type_ "number", value val ] []
+    ]
+
+
+hiddenTextRow : String -> String -> Html msg
+hiddenTextRow name val =
+    div [ hidden True ] [
+        label [ prepareId name |> for ] [ text name ]
+        , input [ disabled False, prepareId name |> id, type_ "text", value val ] []
     ]
 
 
