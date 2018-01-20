@@ -7,7 +7,7 @@ PORT		= 1975
 TARGET  	= elm.js
 WEBSERVER	= elm reactor
 
-.PHONY: clean dev hooks prod production serve
+.PHONY: clean deploy dev hooks prod production serve
 
 define compile
 	$(CC) src/Main.elm --output=$(TARGET) \
@@ -24,6 +24,9 @@ $(TARGET):
 
 clean:
 	rm -f $(TARGET)
+
+deploy: production
+	rsync -avze ssh --progress --exclude-from='exclude-from.txt' . chomsky:/var/www/public/cpss
 
 dev: clean $(TARGET) $(NATIVE)
 	$(call concat, dev)

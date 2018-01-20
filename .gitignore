@@ -12,6 +12,7 @@ server/tool
 
 # For Makefile.
 server/.__gen__
+exclude-from.txt
 
 # The binary build artifact.
 server/cpss
