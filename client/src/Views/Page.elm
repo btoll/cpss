@@ -31,7 +31,7 @@ siteLinks user page =
 
         Just user ->
             case user.authLevel of
-                0 ->
+                1 ->
                     [ SiteLink Home Route.Home [ text "Home" ]
                     , SiteLink BillSheet Route.BillSheet [ text "Bill Sheet" ]
                     , SiteLink Consumer Route.Consumer [ text "Consumer" ]
