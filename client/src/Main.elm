@@ -3,7 +3,7 @@ module Main exposing (..)
 import Data.BillSheet exposing (BillSheet)
 import Data.Consumer exposing (Consumer)
 import Data.Session exposing (Session)
-import Data.Specialist exposing (Specialist)
+import Data.User exposing (User)
 import Html exposing (Html, text)
 import Http
 import Navigation
@@ -59,7 +59,7 @@ init flags location =
     let
         url =
             if ( Maybe.withDefault "dev" flags.env ) == "production"
-            then "https://www.benjamintoll.com/cpss"
+            then "http://96.31.87.245/cpss"
             else "http://localhost:8080/cpss"
     in
         setRoute ( Route.fromLocation location )

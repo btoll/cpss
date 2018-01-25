@@ -1,11 +1,11 @@
 module Request.Specialist exposing (delete, get, post, put)
 
 import Http
-import Data.Specialist exposing (Specialist, decoder, encoder, manyDecoder, succeed)
+import Data.User exposing (User, decoder, encoder, manyDecoder, succeed)
 
 
 
-delete : String -> Specialist -> Http.Request Specialist
+delete : String -> User -> Http.Request User
 delete url specialist =
     Http.request
         { method = "DELETE"
@@ -18,13 +18,13 @@ delete url specialist =
         }
 
 
-get : String -> Http.Request ( List Specialist )
+get : String -> Http.Request ( List User )
 get url =
     manyDecoder
         |> Http.get ( (++) url "/specialist/list" )
 
 
-post : String -> Specialist -> Http.Request Specialist
+post : String -> User -> Http.Request User
 post url specialist =
     let
         body : Http.Body
@@ -36,7 +36,7 @@ post url specialist =
             |> Http.post ( (++) url "/specialist/" ) body
 
 
-put : String -> Specialist -> Http.Request Int
+put : String -> User -> Http.Request User
 put url specialist =
     let
         body : Http.Body
@@ -49,7 +49,9 @@ put url specialist =
             , headers = []
             , url = ( (++) ( (++) url "/specialist/" ) ( toString specialist.id ) )
             , body = body
-            , expect = Http.expectJson ( specialist.id |> succeed )
+--            , expect = Http.expectJson ( specialist.id |> succeed )
+--            , expect = Http.expectJson ( specialist |> succeed )
+            , expect = Http.expectJson decoder
             , timeout = Nothing
             , withCredentials = False
             }

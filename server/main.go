@@ -25,8 +25,8 @@ func main() {
 	app.MountBillSheetController(service, d)
 	e := NewConsumerController(service)
 	app.MountConsumerController(service, e)
-	f := NewLoginController(service)
-	app.MountLoginController(service, f)
+	f := NewSessionController(service)
+	app.MountSessionController(service, f)
 
 	// Start service
 	if err := service.ListenAndServe(":8080"); err != nil {

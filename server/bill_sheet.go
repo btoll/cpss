@@ -33,7 +33,8 @@ func (c *BillSheetController) Delete(ctx *app.DeleteBillSheetContext) error {
 	// Put your logic here
 
 	// BillSheetController_Delete: end_implement
-	return nil
+	res := &app.BillSheetMediaTiny{}
+	return ctx.OKTiny(res)
 }
 
 // List runs the list action.

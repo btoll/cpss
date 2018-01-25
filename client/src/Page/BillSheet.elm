@@ -51,7 +51,6 @@ type Msg
     | SetFormValue ( String -> BillSheet ) String
     | SetTableState Table.State
     | Submit
-    | ToggleSelected String
 
 
 update : String -> Msg -> Model -> ( Model, Cmd Msg )
@@ -146,21 +145,6 @@ update url msg model =
                 , disabled = True
             } ! []
 
-        ToggleSelected id ->
-            { model |
-                billsheets =
-                    model.billsheets
-                        |> List.map ( toggle id )
-            } ! []
-
-
-toggle : String -> BillSheet -> BillSheet
-toggle id billsheet =
-    if billsheet.id == id then
-        { billsheet | selected = not billsheet.selected }
-    else
-        billsheet
-
 
 
 -- VIEW
@@ -225,8 +209,7 @@ config =
     { toId = .id
     , toMsg = SetTableState
     , columns =
-        [ customColumn viewCheckbox
-        , Table.stringColumn "ID" .id
+        [ Table.stringColumn "ID" .id
         , Table.stringColumn "Recipient ID" .recipientID
         , Table.stringColumn "Service Date" .serviceDate
         , Table.floatColumn "Billed Amount" .billedAmount
@@ -237,8 +220,8 @@ config =
         , Table.stringColumn "County" .county
         , Table.stringColumn "Specialist" .specialist
         , Table.stringColumn "Record Number" .recordNumber
-        , customColumn viewButton
-        , customColumn viewButton2
+        , customColumn ( viewButton Edit "Edit" )
+        , customColumn ( viewButton Delete "Delete" )
         ]
     , customizations =
         { defaultCustomizations | rowAttrs = toRowAttrs }
@@ -246,9 +229,8 @@ config =
 
 
 toRowAttrs : BillSheet -> List ( Attribute Msg )
-toRowAttrs { id, selected } =
-    [ onClick ( ToggleSelected id )
-    , style [ ( "background", if selected then "#CEFAF8" else "white" ) ]
+toRowAttrs { id } =
+    [ style [ ( "background", "white" ) ]
     ]
 
 
@@ -261,24 +243,10 @@ customColumn viewElement =
         }
 
 
--- TODO: Dry!
-viewButton : BillSheet -> Table.HtmlDetails Msg
-viewButton billsheet =
+viewButton : ( BillSheet -> msg ) -> String -> BillSheet -> Table.HtmlDetails msg
+viewButton msg name billsheet =
     Table.HtmlDetails []
-        [ button [ onClick ( Edit billsheet ) ] [ text "Edit" ]
+        [ button [ onClick <| msg <| billsheet ] [ text name ]
         ]
-
-viewButton2 : BillSheet -> Table.HtmlDetails Msg
-viewButton2 billsheet =
-    Table.HtmlDetails []
-        [ button [ onClick ( Delete billsheet ) ] [ text "Delete" ]
-        ]
-
-viewCheckbox : BillSheet -> Table.HtmlDetails Msg
-viewCheckbox { selected } =
-    Table.HtmlDetails []
-        [ input [ type_ "checkbox", checked selected ] []
-        ]
-------------
 
 

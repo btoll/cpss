@@ -68,7 +68,6 @@ type Msg
     | SetFormValue ( String -> Consumer ) String
     | SetTableState Table.State
     | Submit
-    | ToggleSelected String
 
 
 update : String -> Msg -> Model -> ( Model, Cmd Msg )
@@ -185,21 +184,6 @@ update url msg model =
                 , disabled = True
             } ! []
 
-        ToggleSelected id ->
-            { model |
-                consumers =
-                    model.consumers
-                        |> List.map ( toggle id )
-            } ! []
-
-
-toggle : String -> Consumer -> Consumer
-toggle id consumer =
-    if consumer.id == id then
-        { consumer | selected = not consumer.selected }
-    else
-        consumer
-
 
 
 -- VIEW
@@ -286,8 +270,7 @@ config =
     { toId = .id
     , toMsg = SetTableState
     , columns =
-        [ customColumn viewCheckbox
-        , Table.stringColumn "ID" .id
+        [ Table.stringColumn "ID" .id
         , Table.stringColumn "First Name" .firstname
         , Table.stringColumn "Last Name" .lastname
 --        , Table.stringColumn "Active" .active
@@ -302,8 +285,8 @@ config =
         , Table.floatColumn "Copay" .copay
         , Table.stringColumn "Discharge Date" .dischargeDate
         , Table.stringColumn "Other" .other
-        , customColumn viewButton
-        , customColumn viewButton2
+        , customColumn ( viewButton Edit "Edit" )
+        , customColumn ( viewButton Delete "Delete" )
         ]
     , customizations =
         { defaultCustomizations | rowAttrs = toRowAttrs }
@@ -311,9 +294,8 @@ config =
 
 
 toRowAttrs : Consumer -> List ( Attribute Msg )
-toRowAttrs { id, selected } =
-    [ onClick ( ToggleSelected id )
-    , style [ ( "background", if selected then "#CEFAF8" else "white" ) ]
+toRowAttrs { id } =
+    [ style [ ( "background", "white" ) ]
     ]
 
 
@@ -326,24 +308,10 @@ customColumn viewElement =
         }
 
 
--- TODO: Dry!
-viewButton : Consumer -> Table.HtmlDetails Msg
-viewButton consumer =
+viewButton : ( Consumer -> msg ) -> String -> Consumer -> Table.HtmlDetails msg
+viewButton msg name consumer =
     Table.HtmlDetails []
-        [ button [ onClick ( Edit consumer ) ] [ text "Edit" ]
+        [ button [ onClick <| msg <| consumer ] [ text name ]
         ]
-
-viewButton2 : Consumer -> Table.HtmlDetails Msg
-viewButton2 consumer =
-    Table.HtmlDetails []
-        [ button [ onClick ( Delete consumer ) ] [ text "Delete" ]
-        ]
-
-viewCheckbox : Consumer -> Table.HtmlDetails Msg
-viewCheckbox { selected } =
-    Table.HtmlDetails []
-        [ input [ type_ "checkbox", checked selected ] []
-        ]
-------------
 
 

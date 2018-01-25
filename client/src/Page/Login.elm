@@ -6,7 +6,7 @@ import Html exposing (Html, form)
 import Html.Attributes
 import Html.Events exposing (onSubmit)
 import Http
-import Request.Login
+import Request.Session
 import Task exposing (Task)
 import Util.Form as Form
 
@@ -22,9 +22,13 @@ type alias Model =
 init : User
 init =
 --    { errors = []
-    { username = ""
+    { id = -1
+    , username = ""
     , password = ""
+    , firstname = ""
+    , lastname = ""
     , email = ""
+    , payrate = 0.00
     , authLevel = -1
     }
 
@@ -50,15 +54,12 @@ update url msg model =
     case msg of
         Authenticate ->
             ( model ! [
-                Request.Login.post url model
+                Request.Session.auth url model
                     |> Http.toTask
                     |> Task.attempt Authenticated
             ] , NoOp )
 
         Authenticated ( Ok user ) ->
-            let
-                u = (Debug.log "user" user)
-            in
             ( { model | username = "" , password = "" } ! [], SetUser user )
 
         Authenticated ( Err err ) ->

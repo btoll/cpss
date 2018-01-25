@@ -34,10 +34,7 @@ var _ = Resource("Specialist", func() {
 			Param("id", String, "Specialist ID")
 		})
 		Description("Update a specialist by id.")
-		Response(OK, func() {
-			Status(200)
-			Media(SpecialistMedia, "tiny")
-		})
+		Response(OK, SpecialistMedia)
 	})
 
 	Action("delete", func() {

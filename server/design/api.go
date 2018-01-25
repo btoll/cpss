@@ -8,7 +8,7 @@ import (
 var _ = API("cpss", func() {
 	Title("Central Pennsylvania Support Services")
 	Description("api for mobile & web clients")
-	Host("localhost:8080") // millenniumgames-fa7da.appspot.com
+	Host("localhost:8080")
 	Scheme("http")
 	BasePath("/cpss")
 	TermsOfService("cpss tos")

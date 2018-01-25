@@ -14,10 +14,9 @@ type Hasher interface {
 }
 
 type SQL interface {
-	//	Verifier
 	Create(db *mysql.DB) (interface{}, error)
 	Read(db *mysql.DB) (interface{}, error)
-	Update(db *mysql.DB) error
+	Update(db *mysql.DB) (interface{}, error)
 	Delete(db *mysql.DB) error
 	List(db *mysql.DB) (interface{}, error)
 }
@@ -32,13 +31,6 @@ func cleanup(db *mysql.DB) error {
 
 func connect() (*mysql.DB, error) {
 	return mysql.Open("mysql", ":@/?charset=utf8")
-}
-
-func hash(clearText string) string {
-	h := sha256.New()
-	h.Write([]byte(clearText))
-	// %x -> base 16, with lower-case letters for a-f
-	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
 func Create(s SQL) (interface{}, error) {
@@ -67,17 +59,17 @@ func Read(s SQL) (interface{}, error) {
 	return coll, nil
 }
 
-func Update(s SQL) error {
+func Update(s SQL) (interface{}, error) {
 	db, err := connect()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	err = s.Update(db)
+	rec, err := s.Update(db)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	cleanup(db)
-	return nil
+	return rec, nil
 }
 
 func Delete(s SQL) error {
@@ -108,22 +100,39 @@ func VerifyPassword(username, password string) (interface{}, error) {
 	if err != nil {
 		return false, err
 	}
-	stmt, err := db.Prepare("SELECT email, authLevel FROM specialist WHERE username=? AND password=?")
+	stmt, err := db.Prepare("SELECT * FROM specialist WHERE username=? AND password=?")
 	if err != nil {
 		return false, err
 	}
-	hashed := hash(password)
+	hashed := Hash(password)
 	row := stmt.QueryRow(&username, &hashed)
+	var id int
+	//	var username string
+	//	var password string
+	var firstname string
+	var lastname string
 	var email string
+	var payrate float64
 	var authLevel int
-	err = row.Scan(&email, &authLevel)
+	err = row.Scan(&id, &username, &password, &firstname, &lastname, &email, &payrate, &authLevel)
 	if err != nil {
 		return nil, err
 	}
-	return &app.LoginMedia{
+	return &app.SessionMedia{
+		ID:        id,
 		Username:  username,
 		Password:  hashed,
+		Firstname: firstname,
+		Lastname:  lastname,
 		Email:     email,
+		Payrate:   payrate,
 		AuthLevel: authLevel,
 	}, nil
+}
+
+func Hash(clearText string) string {
+	h := sha256.New()
+	h.Write([]byte(clearText))
+	// %x -> base 16, with lower-case letters for a-f
+	return fmt.Sprintf("%x", h.Sum(nil))
 }

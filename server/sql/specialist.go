@@ -19,7 +19,7 @@ func NewSpecialist(payload interface{}) *Specialist {
 			"DELETE": "DELETE FROM specialist WHERE id=?",
 			"INSERT": "INSERT specialist SET username=?,password=?,firstname=?,lastname=?,email=?,payrate=?,authLevel=?",
 			"SELECT": "SELECT %s FROM specialist",
-			"UPDATE": "UPDATE specialist SET username=?,firstname=?,lastname=?,email=?,payrate=?,authLevel=? WHERE id=?",
+			"UPDATE": "UPDATE specialist SET username=?,password=?,firstname=?,lastname=?,email=?,payrate=?,authLevel=? WHERE id=?",
 		},
 	}
 }
@@ -30,7 +30,7 @@ func (s *Specialist) Create(db *mysql.DB) (interface{}, error) {
 	if err != nil {
 		return -1, err
 	}
-	hashed := hash(payload.Password)
+	hashed := Hash(payload.Password)
 	res, err := stmt.Exec(payload.Username, hashed, payload.Firstname, payload.Lastname, payload.Email, payload.Payrate, payload.AuthLevel)
 	if err != nil {
 		return -1, err
@@ -55,16 +55,31 @@ func (s *Specialist) Read(db *mysql.DB) (interface{}, error) {
 	return nil, nil
 }
 
-func (s *Specialist) Update(db *mysql.DB) error {
+func (s *Specialist) Update(db *mysql.DB) (interface{}, error) {
 	payload := s.Data.(*app.SpecialistPayload)
 	stmt, err := db.Prepare(s.Stmt["UPDATE"])
 	if err != nil {
-		return err
+		return nil, err
 	}
-	//	_, err = stmt.Exec(payload.Username, hashPassword(payload.Password), payload.Firstname, payload.Lastname, payload.Email, payload.Payrate, payload.ID)
-	// Note that we don't want to update the password here.  That will be done in its own view.
-	_, err = stmt.Exec(payload.Username, payload.Firstname, payload.Lastname, payload.Email, payload.Payrate, payload.AuthLevel, payload.ID)
-	return err
+
+	fmt.Println()
+	fmt.Println("payload.Password", payload.Password)
+	fmt.Println()
+
+	_, err = stmt.Exec(payload.Username, payload.Password, payload.Firstname, payload.Lastname, payload.Email, payload.Payrate, payload.AuthLevel, payload.ID)
+	if err != nil {
+		return nil, err
+	}
+	return &app.SpecialistMedia{
+		ID:        *payload.ID,
+		Username:  payload.Username,
+		Password:  payload.Password,
+		Firstname: payload.Firstname,
+		Lastname:  payload.Lastname,
+		Email:     payload.Email,
+		Payrate:   payload.Payrate,
+		AuthLevel: payload.AuthLevel,
+	}, nil
 }
 
 func (s *Specialist) Delete(db *mysql.DB) error {

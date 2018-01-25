@@ -1,11 +1,12 @@
 module Page.Specialist exposing (Model, Msg, init, update, view)
 
-import Data.Specialist exposing (Specialist)
+import Data.User as User exposing (User)
 import Html exposing (Html, Attribute, button, div, form, h1, input, label, section, text)
 import Html.Attributes exposing (action, checked, disabled, for, id, style, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Html.Lazy exposing (lazy)
 import Http
+import Request.Session
 import Request.Specialist
 import Table exposing (defaultCustomizations)
 import Task exposing (Task)
@@ -20,19 +21,25 @@ type alias Model =
     -- NOTE: Order matters here (see `init`)!
     { tableState : Table.State
     , action : Action
-    , editing : Maybe Specialist
+    , editing : Maybe User
     , disabled : Bool
-    , specialists : List Specialist
+    , changingPassword : String         -- Use for both storing current password and new password when changing password!
+    , specialists : List User
     }
 
 
-type Action = None | Adding | ChangingPassword | Editing
+type Action
+    = None
+    | Adding
+    | ChangingPassword User
+    | Editing
+    | SettingPassword User
 
 init : String -> Task Http.Error Model
 init url =
     Request.Specialist.get url
         |> Http.toTask
-        |> Task.map ( Model ( Table.initialSort "ID" ) None Nothing True )
+        |> Task.map ( Model ( Table.initialSort "ID" ) None Nothing True "" )
 
 
 
@@ -41,20 +48,22 @@ init url =
 
 type Msg
     = Add
+    | Authenticated User ( Result Http.Error User )
     | Cancel
-    | ChangePassword Specialist
-    | Delete Specialist
-    | Deleted ( Result Http.Error Specialist )
-    | Edit Specialist
-    | Getted ( Result Http.Error ( List Specialist ) )
+    | ChangePassword User
+    | Delete User
+    | Deleted ( Result Http.Error User )
+    | Edit User
+    | Getted ( Result Http.Error ( List User ) )
+    | Hashed ( Result Http.Error User )
     | Post
-    | Posted ( Result Http.Error Specialist )
-    | Put
-    | Putted ( Result Http.Error Int )
-    | SetFormValue ( String -> Specialist ) String
+    | Posted ( Result Http.Error User )
+    | Put Action
+    | Putted ( Result Http.Error User )
+    | SetPasswordValue String
+    | SetTextValue ( String -> User ) String
     | SetTableState Table.State
     | Submit
-    | ToggleSelected Int
 
 
 update : String -> Msg -> Model -> ( Model, Cmd Msg )
@@ -66,6 +75,19 @@ update url msg model =
                 , editing = Nothing
             } ! []
 
+        Authenticated specialist ( Ok user ) ->
+            { model |
+                action = SettingPassword specialist
+            } ! []
+
+        Authenticated specialist ( Err err ) ->
+            let
+                e = (Debug.log "err" err)
+            in
+            { model |
+                action = None
+            } ! []
+
         Cancel ->
             { model |
                 action = None
@@ -74,7 +96,7 @@ update url msg model =
 
         ChangePassword specialist ->
             { model |
-                action = ChangingPassword
+                action = ChangingPassword specialist
                 , editing = Just specialist
             } ! []
 
@@ -116,6 +138,25 @@ update url msg model =
                 , tableState = Table.initialSort "ID"
             } ! []
 
+        Hashed ( Ok specialist ) ->
+            let
+                subCmd =
+                    Request.Specialist.put url specialist
+                        |> Http.toTask
+                        |> Task.attempt Putted
+            in
+                { model |
+                    action = None
+                } ! [ subCmd ]
+
+        Hashed ( Err err ) ->
+            let
+                e = (Debug.log "err" err)
+            in
+            { model |
+                action = None
+            } ! []
+
         Post ->
             let
                 subCmd = case model.editing of
@@ -152,22 +193,53 @@ update url msg model =
                 editing = Nothing
             } ! []
 
-        Put ->
-            let
-                subCmd = case model.editing of
-                    Nothing ->
-                        Cmd.none
+        Put action ->
+            case action of
+                Editing ->
+                    let
+                        subCmd = case model.editing of
+                            Nothing ->
+                                Cmd.none
 
-                    Just specialist ->
-                        Request.Specialist.put url specialist
-                            |> Http.toTask
-                            |> Task.attempt Putted
-            in
-                { model |
-                    action = None
-                } ! [ subCmd ]
+                            Just specialist ->
+                                Request.Specialist.put url specialist
+                                    |> Http.toTask
+                                    |> Task.attempt Putted
+                    in
+                        { model |
+                            action = None
+                        } ! [ subCmd ]
 
-        Putted ( Ok id ) ->
+                ChangingPassword specialist ->
+                    let
+                        subCmd =
+                            { specialist | password = model.changingPassword }
+                                |> Request.Session.auth url
+                                    |> Http.toTask
+                                    |> Task.attempt ( Authenticated specialist )
+                    in
+                        { model |
+                            action = SettingPassword specialist
+                            , changingPassword = ""
+                        } ! [ subCmd ]
+
+                SettingPassword specialist ->
+                    let
+                        subCmd =
+                            { specialist | password = model.changingPassword }
+                                |>Request.Session.hash url
+                                    |> Http.toTask
+                                    |> Task.attempt Hashed
+                    in
+                        { model |
+                            action = None
+                            , changingPassword = ""
+                        } ! [ subCmd ]
+
+                _ ->
+                    model ! []
+
+        Putted ( Ok specialist ) ->
             let
                 specialists =
                     case model.editing of
@@ -176,21 +248,15 @@ update url msg model =
 
                         Just newSpecialist ->
                             model.specialists
-                                |> (::) { newSpecialist | id = id }
-                newSpecialist =
-                    case model.editing of
-                        -- TODO
-                        Nothing ->
-                            Specialist -1 "" "" "" "" "" 0.00 1 False
-
-                        Just specialist ->
-                            specialist
+                                |> List.filter ( \m -> specialist.id /= m.id )
+                                |> (::)
+                                    { newSpecialist |
+                                        id = specialist.id
+                                        , password = specialist.password
+                                    }
             in
                 { model |
-                    specialists =
-                        model.specialists
-                            |> List.filter ( \m -> newSpecialist.id /= m.id )
-                            |> (::) newSpecialist
+                    specialists = specialists
                     , editing = Nothing
                 } ! []
 
@@ -199,9 +265,9 @@ update url msg model =
                 editing = Nothing
             } ! []
 
-        SetFormValue setFormValue s ->
+        SetPasswordValue s ->
             { model |
-                editing = Just ( setFormValue s )
+                changingPassword = s
                 , disabled = False
             } ! []
 
@@ -209,26 +275,17 @@ update url msg model =
             { model | tableState = newState
             } ! []
 
+        SetTextValue setTextValue s ->
+            { model |
+                editing = Just ( setTextValue s )
+                , disabled = False
+            } ! []
+
         Submit ->
             { model |
                 action = None
                 , disabled = True
             } ! []
-
-        ToggleSelected id ->
-            { model |
-                specialists =
-                    model.specialists
-                        |> List.map ( toggle ( toString id ) )
-            } ! []
-
-
-toggle : String -> Specialist -> Specialist
-toggle id specialist =
-    if ( (==) ( toString specialist.id ) id ) then
-        { specialist | selected = not specialist.selected }
-    else
-        specialist
 
 
 
@@ -245,12 +302,18 @@ view model =
 
 
 drawView : Model -> List ( Html Msg )
-drawView { action, disabled, editing, tableState, specialists } =
+drawView (
+    { action
+    , disabled
+    , editing
+    , tableState
+    , specialists
+    } as model ) =
     let
-        editable : Specialist
+        editable : User
         editable = case editing of
             Nothing ->
-                Specialist -1 "" "" "" "" "" 0.00 1 False
+                User -1 "" "" "" "" "" 0.00 1
 
             Just specialist ->
                 specialist
@@ -263,39 +326,41 @@ drawView { action, disabled, editing, tableState, specialists } =
 
             Adding ->
                 [ form [ onSubmit Post ] [
-                    Form.textRow "Username" editable.username ( SetFormValue (\v -> { editable | username = v }) )
-                    , Form.textRow "Password" editable.password ( SetFormValue (\v -> { editable | password = v }) )
-                    , Form.textRow "First Name" editable.firstname ( SetFormValue (\v -> { editable | firstname = v }) )
-                    , Form.textRow "Last Name" editable.lastname ( SetFormValue (\v -> { editable | lastname = v }) )
-                    , Form.textRow "Email" editable.email ( SetFormValue (\v -> { editable | email = v }) )
-                    , Form.floatRow "Pay Rate" ( toString editable.payrate ) ( SetFormValue (\v -> { editable | payrate = ( Result.withDefault 0.00 ( String.toFloat v ) ) } ) )
-                    , Form.textRow "Auth Level" ( toString editable.authLevel ) ( SetFormValue (\v -> { editable | authLevel = ( Result.withDefault -1 ( String.toInt v ) ) } ) )
+                    Form.textRow "Username" editable.username ( SetTextValue (\v -> { editable | username = v }) )
+                    , Form.textRow "Password" editable.password ( SetTextValue (\v -> { editable | password = v }) )
+                    , Form.textRow "First Name" editable.firstname ( SetTextValue (\v -> { editable | firstname = v }) )
+                    , Form.textRow "Last Name" editable.lastname ( SetTextValue (\v -> { editable | lastname = v }) )
+                    , Form.textRow "Email" editable.email ( SetTextValue (\v -> { editable | email = v }) )
+                    , Form.floatRow "Pay Rate" ( toString editable.payrate ) ( SetTextValue (\v -> { editable | payrate = ( Result.withDefault 0.00 ( String.toFloat v ) ) } ) )
+                    , Form.textRow "Auth Level" ( toString editable.authLevel ) ( SetTextValue (\v -> { editable | authLevel = ( Result.withDefault -1 ( String.toInt v ) ) } ) )
                     , Form.submitRow disabled Cancel
                     ]
                 ]
 
-            ChangingPassword ->
-                [ form [ onSubmit Put ] [
-                    Form.hiddenTextRow "Username" editable.username
-                    , Form.disabledTextRow "Password" editable.password ( SetFormValue (\v -> { editable | password = v }) )
-                    , Form.hiddenTextRow "First Name" editable.firstname
-                    , Form.hiddenTextRow "Last Name" editable.lastname
-                    , Form.hiddenTextRow "Email" editable.email
-                    , Form.hiddenTextRow "Pay Rate" ( toString editable.payrate )
+            ChangingPassword editable ->
+                [ form [ onSubmit ( Put ( ChangingPassword editable ) ) ] [
+                    Form.textRow "Current Password" model.changingPassword SetPasswordValue
                     , Form.submitRow disabled Cancel
                     ]
                 ]
 
             Editing ->
-                [ form [ onSubmit Put ] [
-                    Form.disabledTextRow "ID" ( toString editable.id ) ( SetFormValue (\v -> { editable | id = ( Result.withDefault -1 ( String.toInt v ) ) }) )
-                    , Form.textRow "Username" editable.username ( SetFormValue (\v -> { editable | username = v }) )
-                    , Form.disabledTextRow "Password" editable.password ( SetFormValue (\v -> { editable | password = v }) )
-                    , Form.textRow "First Name" editable.firstname ( SetFormValue (\v -> { editable | firstname = v }) )
-                    , Form.textRow "Last Name" editable.lastname ( SetFormValue (\v -> { editable | lastname = v }) )
-                    , Form.textRow "Email" editable.email ( SetFormValue (\v -> { editable | email = v }) )
-                    , Form.floatRow "Pay Rate" ( toString editable.payrate ) ( SetFormValue (\v -> { editable | payrate = ( Result.withDefault 0.00 ( String.toFloat v ) ) }) )
-                    , Form.textRow "Auth Level" ( toString editable.authLevel ) ( SetFormValue (\v -> { editable | authLevel = ( Result.withDefault -1 ( String.toInt v ) ) } ) )
+                [ form [ onSubmit ( Put Editing ) ] [
+                    Form.disabledTextRow "ID" ( toString editable.id ) ( SetTextValue (\v -> { editable | id = ( Result.withDefault -1 ( String.toInt v ) ) }) )
+                    , Form.textRow "Username" editable.username ( SetTextValue (\v -> { editable | username = v }) )
+                    , Form.disabledTextRow "Password" editable.password ( SetTextValue (\v -> { editable | password = v }) )
+                    , Form.textRow "First Name" editable.firstname ( SetTextValue (\v -> { editable | firstname = v }) )
+                    , Form.textRow "Last Name" editable.lastname ( SetTextValue (\v -> { editable | lastname = v }) )
+                    , Form.textRow "Email" editable.email ( SetTextValue (\v -> { editable | email = v }) )
+                    , Form.floatRow "Pay Rate" ( toString editable.payrate ) ( SetTextValue (\v -> { editable | payrate = ( Result.withDefault 0.00 ( String.toFloat v ) ) }) )
+                    , Form.textRow "Auth Level" ( toString editable.authLevel ) ( SetTextValue (\v -> { editable | authLevel = ( Result.withDefault -1 ( String.toInt v ) ) } ) )
+                    , Form.submitRow disabled Cancel
+                    ]
+                ]
+
+            SettingPassword specialist ->
+                [ form [ onSubmit ( Put ( SettingPassword specialist ) ) ] [
+                    Form.textRow "New Password" model.changingPassword  SetPasswordValue
                     , Form.submitRow disabled Cancel
                     ]
                 ]
@@ -304,7 +369,7 @@ drawView { action, disabled, editing, tableState, specialists } =
 -- TABLE CONFIGURATION
 
 
-config : Table.Config Specialist Msg
+config : Table.Config User Msg
 config =
     Table.customConfig
     -- TODO: Figure out why .id is giving me trouble!
@@ -312,8 +377,7 @@ config =
     { toId = .username
     , toMsg = SetTableState
     , columns =
-        [ customColumn viewCheckbox
-        , Table.intColumn "ID" .id
+        [ Table.intColumn "ID" .id
         , Table.stringColumn "Username" .username
         , Table.stringColumn "Password" ( .password >> String.slice 0 10 )       -- Just show a small portion of the hashed password.
         , Table.stringColumn "First Name" .firstname
@@ -321,23 +385,22 @@ config =
         , Table.stringColumn "Email" .email
         , Table.floatColumn "Pay Rate" .payrate
         , Table.intColumn "Auth Level" .authLevel
-        , customColumn viewButton
-        , customColumn viewButton2
-        , customColumn viewButton3
+        , customColumn ( viewButton Edit "Edit" )
+        , customColumn ( viewButton Delete "Delete" )
+        , customColumn ( viewButton ChangePassword "Change Password" )
         ]
     , customizations =
         { defaultCustomizations | rowAttrs = toRowAttrs }
     }
 
 
-toRowAttrs : Specialist -> List ( Attribute Msg )
-toRowAttrs { id, selected } =
-    [ onClick ( ToggleSelected id )
-    , style [ ( "background", if selected then "#CEFAF8" else "white" ) ]
+toRowAttrs : User -> List ( Attribute Msg )
+toRowAttrs { id } =
+    [ style [ ( "background", "white" ) ]
     ]
 
 
-customColumn : ( Specialist -> Table.HtmlDetails Msg ) -> Table.Column Specialist Msg
+customColumn : ( User -> Table.HtmlDetails Msg ) -> Table.Column User Msg
 customColumn viewElement =
     Table.veryCustomColumn
         { name = ""
@@ -346,30 +409,10 @@ customColumn viewElement =
         }
 
 
--- TODO: Dry!
-viewButton : Specialist -> Table.HtmlDetails Msg
-viewButton specialist =
+viewButton : ( User -> msg ) -> String -> User -> Table.HtmlDetails msg
+viewButton msg name specialist =
     Table.HtmlDetails []
-        [ button [ onClick ( Edit specialist ) ] [ text "Edit" ]
+        [ button [ onClick <| msg <| specialist ] [ text name ]
         ]
-
-viewButton2 : Specialist -> Table.HtmlDetails Msg
-viewButton2 specialist =
-    Table.HtmlDetails []
-        [ button [ onClick ( Delete specialist ) ] [ text "Delete" ]
-        ]
-
-viewButton3 : Specialist -> Table.HtmlDetails Msg
-viewButton3 specialist =
-    Table.HtmlDetails []
-        [ button [ onClick ( ChangePassword specialist ) ] [ text "Change Password" ]
-        ]
-
-viewCheckbox : Specialist -> Table.HtmlDetails Msg
-viewCheckbox { selected } =
-    Table.HtmlDetails []
-        [ input [ type_ "checkbox", checked selected ] []
-        ]
-------------
 
 

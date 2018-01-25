@@ -1,8 +1,6 @@
 package main
 
 import (
-	"strconv"
-
 	"github.com/btoll/cpss/server/app"
 	"github.com/btoll/cpss/server/sql"
 	_ "github.com/go-sql-driver/mysql"
@@ -77,15 +75,11 @@ func (c *SpecialistController) Show(ctx *app.ShowSpecialistContext) error {
 func (c *SpecialistController) Update(ctx *app.UpdateSpecialistContext) error {
 	// SpecialistController_Update: start_implement
 
-	err := sql.Update(sql.NewSpecialist(ctx.Payload))
+	rec, err := sql.Update(sql.NewSpecialist(ctx.Payload))
 	if err != nil {
 		return err
 	}
-	id, err := strconv.Atoi(ctx.ID)
-	if err != nil {
-		return err
-	}
-	return ctx.OKTiny(&app.SpecialistMediaTiny{id})
+	return ctx.OK(rec.(*app.SpecialistMedia))
 
 	// SpecialistController_Update: end_implement
 }
