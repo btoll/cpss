@@ -18,6 +18,16 @@ var _ = Resource("Status", func() {
 		Response(OK, StatusMedia)
 	})
 
+	Action("update", func() {
+		Routing(PUT("/:id"))
+		Payload(StatusPayload)
+		Params(func() {
+			Param("id", String, "Status ID")
+		})
+		Description("Update a status by id.")
+		Response(OK, StatusMedia)
+	})
+
 	Action("delete", func() {
 		Routing(DELETE("/:id"))
 		Params(func() {

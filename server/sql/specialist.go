@@ -62,10 +62,6 @@ func (s *Specialist) Update(db *mysql.DB) (interface{}, error) {
 		return nil, err
 	}
 
-	fmt.Println()
-	fmt.Println("payload.Password", payload.Password)
-	fmt.Println()
-
 	_, err = stmt.Exec(payload.Username, payload.Password, payload.Firstname, payload.Lastname, payload.Email, payload.Payrate, payload.AuthLevel, payload.ID)
 	if err != nil {
 		return nil, err

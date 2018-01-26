@@ -60,7 +60,6 @@ func (c *SpecialistController) List(ctx *app.ListSpecialistContext) error {
 func (c *SpecialistController) Show(ctx *app.ShowSpecialistContext) error {
 	// SpecialistController_Show: start_implement
 
-	// Put your logic here
 	//	rec, err := sql.Read(sql.NewSpecialist(ctx.Payload))
 	//	if err != nil {
 	//		return err

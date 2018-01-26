@@ -10,6 +10,7 @@ import Request.Status
 import Table exposing (defaultCustomizations)
 import Task exposing (Task)
 import Util.Form as Form
+import Views.Errors as Errors
 
 
 
@@ -18,7 +19,8 @@ import Util.Form as Form
 
 type alias Model =
     -- NOTE: Order matters here (see `init`)!
-    { tableState : Table.State
+    { errors : List String
+    , tableState : Table.State
     , action : Action
     , editing : Maybe Status
     , disabled : Bool
@@ -29,13 +31,14 @@ type alias Model =
 type Action
     = None
     | Adding
+    | Editing
 
 
 init : String -> Task Http.Error Model
 init url =
     Request.Status.get url
         |> Http.toTask
-        |> Task.map ( Model ( Table.initialSort "ID" ) None Nothing True )
+        |> Task.map ( Model [] ( Table.initialSort "ID" ) None Nothing True )
 
 
 
@@ -47,9 +50,12 @@ type Msg
     | Cancel
     | Delete Status
     | Deleted ( Result Http.Error Status )
+    | Edit Status
     | Getted ( Result Http.Error ( List Status ) )
     | Post
     | Posted ( Result Http.Error Status )
+    | Put
+    | Putted ( Result Http.Error Status )
     | SetTextValue ( String -> Status ) String
     | SetTableState Table.State
     | Submit
@@ -80,15 +86,24 @@ update url msg model =
                 { model |
                     action = None
                     , editing = Nothing
+                    , errors = []
                 } ! [ subCmd ]
 
-        Deleted ( Ok deletedstatus ) ->
+        Deleted ( Ok status ) ->
             { model |
-                status = model.status |> List.filter ( \m -> deletedstatus.id /= m.id )
+                status = model.status |> List.filter ( \m -> status.id /= m.id )
             } ! []
 
         Deleted ( Err err ) ->
-            model ! []
+            { model |
+                errors = [ "There was a problem when attempting to delete the status!" ]
+            } ! []
+
+        Edit status ->
+            { model |
+                action = Editing
+                , editing = Just status
+            } ! []
 
         Getted ( Ok status ) ->
             { model |
@@ -138,6 +153,43 @@ update url msg model =
                 editing = Nothing
             } ! []
 
+        Put ->
+            let
+                subCmd = case model.editing of
+                    Nothing ->
+                        Cmd.none
+
+                    Just status ->
+                        Request.Status.put url status
+                            |> Http.toTask
+                            |> Task.attempt Putted
+            in
+                { model |
+                    action = None
+                } ! [ subCmd ]
+
+        Putted ( Ok st ) ->
+            let
+                status =
+                    case model.editing of
+                        Nothing ->
+                            model.status
+
+                        Just newStatus ->
+                            model.status
+                                |> List.filter ( \m -> st.id /= m.id )
+                                |> (::) { newStatus | id = st.id }
+            in
+                { model |
+                    status = status
+                    , editing = Nothing
+                } ! []
+
+        Putted ( Err err ) ->
+            { model |
+                editing = Nothing
+--                , errors = (::) "There was a problem, the record could not be updated!" model.errors
+            } ! []
 
         SetTableState newState ->
             { model | tableState = newState
@@ -163,8 +215,10 @@ update url msg model =
 view : Model -> Html Msg
 view model =
     section []
-        ( (::)
-            ( h1 [] [ text "Status" ] )
+        ( (++)
+            [ h1 [] [ text "Status" ]
+            , Errors.view model.errors
+            ]
             ( drawView model )
         )
 
@@ -199,6 +253,12 @@ drawView (
                     ]
                 ]
 
+            Editing ->
+                [ form [ onSubmit Put ] [
+                    Form.textRow "Status" editable.status ( SetTextValue (\v -> { editable | status = v }) )
+                    , Form.submitRow disabled Cancel
+                    ]
+                ]
 
 
 -- TABLE CONFIGURATION
@@ -214,6 +274,7 @@ config =
     , columns =
         [ Table.intColumn "ID" .id
         , Table.stringColumn "Status" .status
+        , customColumn ( viewButton Edit "Edit" )
         , customColumn ( viewButton Delete "Delete" )
         ]
     , customizations =
