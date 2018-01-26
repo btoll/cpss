@@ -11,6 +11,7 @@ import Request.Specialist
 import Table exposing (defaultCustomizations)
 import Task exposing (Task)
 import Util.Form as Form
+import Views.Errors as Errors
 
 
 
@@ -19,7 +20,8 @@ import Util.Form as Form
 
 type alias Model =
     -- NOTE: Order matters here (see `init`)!
-    { tableState : Table.State
+    { errors : List String
+    , tableState : Table.State
     , action : Action
     , editing : Maybe User
     , disabled : Bool
@@ -39,7 +41,7 @@ init : String -> Task Http.Error Model
 init url =
     Request.Specialist.get url
         |> Http.toTask
-        |> Task.map ( Model ( Table.initialSort "ID" ) None Nothing True "" )
+        |> Task.map ( Model [] ( Table.initialSort "ID" ) None Nothing True "" )
 
 
 
@@ -81,17 +83,16 @@ update url msg model =
             } ! []
 
         Authenticated specialist ( Err err ) ->
-            let
-                e = (Debug.log "err" err)
-            in
             { model |
-                action = None
+                action = ChangingPassword specialist
+                , errors = [ "Passwords do not match!" ]
             } ! []
 
         Cancel ->
             { model |
                 action = None
                 , editing = Nothing
+                , errors = []
             } ! []
 
         ChangePassword specialist ->
@@ -118,7 +119,10 @@ update url msg model =
             } ! []
 
         Deleted ( Err err ) ->
-            model ! []
+            { model |
+                action = None
+--                , errors = (::) "There was a problem, the record could not be deleted!" model.errors
+            } ! []
 
         Edit specialist ->
             { model |
@@ -135,6 +139,7 @@ update url msg model =
         Getted ( Err err ) ->
             { model |
                 specialists = []
+--                , errors = (::) "There was a problem, the record(s) could not be retrieved!" model.errors
                 , tableState = Table.initialSort "ID"
             } ! []
 
@@ -155,6 +160,7 @@ update url msg model =
             in
             { model |
                 action = None
+--                , errors = (::) "There was a problem, the password could not be hashed!" model.errors
             } ! []
 
         Post ->
@@ -181,7 +187,11 @@ update url msg model =
 
                         Just newSpecialist ->
                             model.specialists
-                                |> (::) { newSpecialist | id = specialist.id , password = specialist.password }
+                                |> (::)
+                                    { newSpecialist |
+                                        id = specialist.id
+                                        , password = specialist.password
+                                    }
             in
                 { model |
                     specialists = specialists
@@ -191,6 +201,7 @@ update url msg model =
         Posted ( Err err ) ->
             { model |
                 editing = Nothing
+--                , errors = (::) "There was a problem, the record could not be saved!" model.errors
             } ! []
 
         Put action ->
@@ -263,6 +274,7 @@ update url msg model =
         Putted ( Err err ) ->
             { model |
                 editing = Nothing
+--                , errors = (::) "There was a problem, the record could not be updated!" model.errors
             } ! []
 
         SetPasswordValue s ->
@@ -295,8 +307,10 @@ update url msg model =
 view : Model -> Html Msg
 view model =
     section []
-        ( (::)
-            ( h1 [] [ text "Specialists" ] )
+        ( (++)
+            [ h1 [] [ text "Specialists" ]
+            , Errors.view model.errors
+            ]
             ( drawView model )
         )
 

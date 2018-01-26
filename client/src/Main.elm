@@ -96,9 +96,6 @@ type Msg
 
 setRoute : Maybe Route -> Model -> ( Model, Cmd Msg )
 setRoute maybeRoute model =
-    let
-        m = (Debug.log "maybeRoute" maybeRoute)
-    in
     case maybeRoute of
         Just Route.BillSheet ->
             case model.session.user of
