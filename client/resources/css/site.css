@@ -35,7 +35,8 @@ nav li a {
 #home nav li a[href$="/"],
 #billsheet nav li a[href$="billsheet"],
 #consumer nav li a[href$="consumer"],
-#specialist nav li a[href$="specialist"] {
+#specialist nav li a[href$="specialist"],
+#status nav li a[href$="status"] {
     background: #265a88;
 }
 nav div.container div {

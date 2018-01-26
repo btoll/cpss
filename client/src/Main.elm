@@ -3,6 +3,7 @@ module Main exposing (..)
 import Data.BillSheet exposing (BillSheet)
 import Data.Consumer exposing (Consumer)
 import Data.Session exposing (Session)
+import Data.Status exposing (Status)
 import Data.User exposing (User)
 import Html exposing (Html, text)
 import Http
@@ -12,6 +13,7 @@ import Page.Consumer as Consumer
 import Page.Login as Login
 import Page.NotFound as NotFound
 import Page.Specialist as Specialist
+import Page.Status as Status
 import Ports exposing (fileContentRead, fileSelected)
 import Route exposing (Route)
 import Task
@@ -40,6 +42,7 @@ type Page
     | Consumer Consumer.Model
     | Login Login.Model
     | Specialist Specialist.Model
+    | Status Status.Model
 
 
 
@@ -87,6 +90,8 @@ type Msg
     | LoginMsg Login.Msg
     | SpecialistLoaded ( Result Http.Error Specialist.Model )
     | SpecialistMsg Specialist.Msg
+    | StatusLoaded ( Result Http.Error Status.Model )
+    | StatusMsg Status.Msg
 
 
 setRoute : Maybe Route -> Model -> ( Model, Cmd Msg )
@@ -185,6 +190,22 @@ setRoute maybeRoute model =
                         _ ->
                             { model | page = Errored "You are not authorized to view this page" } ! []
 
+        Just Route.Status ->
+            case model.session.user of
+                Nothing ->
+                    { model |
+                        page = Login Login.init
+                        , onLogin = maybeRoute
+                    } ! []
+
+                Just user ->
+                    case user.authLevel of
+                        1 ->
+                            ( model, Status.init model.build.url |> Task.attempt StatusLoaded )
+
+                        _ ->
+                            { model | page = Errored "You are not authorized to view this page" } ! []
+
         Nothing ->
             case model.session.user of
                 Nothing ->
@@ -253,6 +274,15 @@ update msg model =
             ( SpecialistMsg subMsg, Specialist subModel ) ->
                 toPage Specialist SpecialistMsg Specialist.update subMsg subModel
 
+            ( StatusLoaded ( Ok subModel ), _ ) ->
+                { model | page = Status subModel } ! []
+
+            ( StatusLoaded ( Err err ), _ ) ->
+                model ! []
+
+            ( StatusMsg subMsg, Status subModel ) ->
+                toPage Status StatusMsg Status.update subMsg subModel
+
             _ ->
                 model ! []
 
@@ -300,6 +330,11 @@ view model =
             Specialist.view subModel
                 |> frame model.session.user Page.Specialist
                 |> Html.map SpecialistMsg
+
+        Status subModel ->
+            Status.view subModel
+                |> frame model.session.user Page.Status
+                |> Html.map StatusMsg
 
 --        Home subModel ->
 --            Home.view session subModel

@@ -14,6 +14,7 @@ type ActivePage
     | Login
     | Logout
     | Specialist
+    | Status
 
 
 type alias SiteLink msg =
@@ -36,6 +37,7 @@ siteLinks user page =
                     , SiteLink BillSheet Route.BillSheet [ text "Bill Sheet" ]
                     , SiteLink Consumer Route.Consumer [ text "Consumer" ]
                     , SiteLink Specialist Route.Specialist [ text "Specialist" ]
+                    , SiteLink Status Route.Status [ text "Status" ]
                     , SiteLink Logout Route.Logout [ text "Logout" ]
                     ]
                 _ ->

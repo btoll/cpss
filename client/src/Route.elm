@@ -18,6 +18,7 @@ type Route
     | Login
     | Logout
     | Specialist
+    | Status
 
 
 route : Parser (Route -> a) a
@@ -29,6 +30,7 @@ route =
         , Url.map Login (s "login")
         , Url.map Logout (s "logout")
         , Url.map Specialist (s "specialist")
+        , Url.map Status (s "status")
         ]
 
 
@@ -58,8 +60,11 @@ routeToString page =
 
                 Specialist ->
                     [ "specialist" ]
+
+                Status ->
+                    [ "status" ]
     in
-    "#/" ++ String.join "/" pieces
+        "#/" ++ String.join "/" pieces
 
 
 
