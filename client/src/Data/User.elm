@@ -1,4 +1,4 @@
-module Data.User exposing (User, decoder, encoder, manyDecoder, succeed)
+module Data.User exposing (User, decoder, authEncoder, encoder, hashEncoder, manyDecoder, succeed)
 
 import Json.Decode as Decode exposing (Decoder, bool, float, int, list, string)
 import Json.Decode.Pipeline exposing (decode, optional, required)
@@ -36,6 +36,14 @@ manyDecoder =
     list decoder
 
 
+authEncoder : { r | username : String, password : String } -> Encode.Value
+authEncoder user =
+    Encode.object
+        [ ( "username", Encode.string user.username )
+        , ( "password", Encode.string user.password )
+        ]
+
+
 encoder : User -> Encode.Value
 encoder user =
     Encode.object
@@ -48,6 +56,15 @@ encoder user =
         , ( "payrate", Encode.float user.payrate )
         , ( "authLevel", Encode.int user.authLevel )
         ]
+
+
+hashEncoder : { r | id : Int, password : String } -> Encode.Value
+hashEncoder user =
+    Encode.object
+        [ ( "id", Encode.int user.id )
+        , ( "password", Encode.string user.password )
+        ]
+
 
 succeed : a -> Decoder a
 succeed =

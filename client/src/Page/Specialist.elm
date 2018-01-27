@@ -80,6 +80,7 @@ update url msg model =
         Authenticated specialist ( Ok user ) ->
             { model |
                 action = SettingPassword specialist
+                , errors = []
             } ! []
 
         Authenticated specialist ( Err err ) ->
@@ -145,8 +146,16 @@ update url msg model =
 
         Hashed ( Ok specialist ) ->
             let
+                newSpecialist =
+                    case model.editing of
+                        Nothing ->
+                            specialist
+
+                        Just current ->
+                            { current | password = specialist.password }
+
                 subCmd =
-                    Request.Specialist.put url specialist
+                    Request.Specialist.put url newSpecialist
                         |> Http.toTask
                         |> Task.attempt Putted
             in
@@ -238,7 +247,7 @@ update url msg model =
                     let
                         subCmd =
                             { specialist | password = model.changingPassword }
-                                |>Request.Session.hash url
+                                |> Request.Session.hash url
                                     |> Http.toTask
                                     |> Task.attempt Hashed
                     in

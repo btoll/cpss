@@ -16,20 +16,17 @@ import Util.Form as Form
 
 
 type alias Model =
-    User
+    { errors : List String
+    , username : String
+    , password : String
+    }
 
 
-init : User
+init : Model
 init =
---    { errors = []
-    { id = -1
+    { errors = []
     , username = ""
     , password = ""
-    , firstname = ""
-    , lastname = ""
-    , email = ""
-    , payrate = 0.00
-    , authLevel = -1
     }
 
 

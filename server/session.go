@@ -19,7 +19,7 @@ func NewSessionController(service *goa.Service) *SessionController {
 func (c *SessionController) Auth(ctx *app.AuthSessionContext) error {
 	// SessionController_Auth: start_implement
 
-	rec, err := sql.VerifyPassword(ctx.Payload.Username, ctx.Payload.Password)
+	rec, err := sql.VerifyPassword(*ctx.Payload.Username, ctx.Payload.Password)
 	if err != nil {
 		return err
 	}
@@ -31,15 +31,9 @@ func (c *SessionController) Auth(ctx *app.AuthSessionContext) error {
 func (c *SessionController) Hash(ctx *app.HashSessionContext) error {
 	// SessionController_Hash: start_implement
 
-	return ctx.OK(&app.SessionMedia{
-		ID:        *ctx.Payload.ID,
-		Username:  ctx.Payload.Username,
-		Password:  sql.Hash(ctx.Payload.Password),
-		Firstname: *ctx.Payload.Firstname,
-		Lastname:  *ctx.Payload.Lastname,
-		Email:     *ctx.Payload.Email,
-		Payrate:   *ctx.Payload.Payrate,
-		AuthLevel: *ctx.Payload.AuthLevel,
+	return ctx.OKTiny(&app.SessionMediaTiny{
+		ID:       *ctx.Payload.ID,
+		Password: sql.Hash(ctx.Payload.Password),
 	})
 
 	// SessionController_Verify: end_implement

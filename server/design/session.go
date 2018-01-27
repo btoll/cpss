@@ -22,7 +22,10 @@ var _ = Resource("Session", func() {
 		Routing(POST("/hash"))
 		Description("Hash the new password.")
 		Payload(SessionPayload)
-		Response(OK, SessionMedia)
+		Response(OK, func() {
+			Status(200)
+			Media(SessionMedia, "tiny")
+		})
 	})
 })
 
@@ -62,7 +65,7 @@ var SessionPayload = Type("SessionPayload", func() {
 		Metadata("struct:tag:json", "authLevel,omitempty")
 	})
 
-	Required("username", "password")
+	Required("password")
 })
 
 var SessionMedia = MediaType("application/sessionapi.sessionentity", func() {
@@ -93,5 +96,10 @@ var SessionMedia = MediaType("application/sessionapi.sessionentity", func() {
 		Attribute("email")
 		Attribute("payrate")
 		Attribute("authLevel")
+	})
+
+	View("tiny", func() {
+		Attribute("id")
+		Attribute("password")
 	})
 })
