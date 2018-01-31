@@ -1,4 +1,4 @@
-module Data.User exposing (User, decoder, authEncoder, encoder, hashEncoder, manyDecoder, succeed)
+module Data.User exposing (User, authEncoder, decoder, encoder, hashEncoder, manyDecoder, new, succeed)
 
 import Json.Decode as Decode exposing (Decoder, bool, float, int, list, string)
 import Json.Decode.Pipeline exposing (decode, optional, required)
@@ -15,6 +15,19 @@ type alias User =
     , email : String
     , payrate : Float
     , authLevel : Int
+    }
+
+
+new : User
+new =
+    { id = -1
+    , username = ""
+    , password = ""
+    , firstname = ""
+    , lastname = ""
+    , email = ""
+    , payrate = 0.00
+    , authLevel = -1
     }
 
 

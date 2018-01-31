@@ -1,4 +1,4 @@
-module Data.BillSheet exposing (BillSheet, decoder, encoder, manyDecoder, succeed)
+module Data.BillSheet exposing (BillSheet, decoder, encoder, manyDecoder, new, succeed)
 
 import Json.Decode as Decode exposing (Decoder, bool, float, list, string)
 import Json.Decode.Pipeline exposing (decode, optional, required)
@@ -19,6 +19,23 @@ type alias BillSheet =
     , specialist : String
     , recordNumber : String
     , selected : Bool
+    }
+
+
+new : BillSheet
+new =
+    { id = ""
+    , recipientID = ""
+    , serviceDate = ""
+    , billedAmount = 0.00
+    , consumer = ""
+    , status = ""
+    , confirmation = ""
+    , service = ""
+    , county = ""
+    , specialist = ""
+    , recordNumber = ""
+    , selected = False
     }
 
 

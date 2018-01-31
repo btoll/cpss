@@ -1,6 +1,6 @@
 module Page.Status exposing (Model, Msg, init, update, view)
 
-import Data.Status as Status exposing (Status)
+import Data.Status as Status exposing (Status, new)
 import Html exposing (Html, Attribute, button, div, form, h1, input, label, section, text)
 import Html.Attributes exposing (action, checked, disabled, for, id, style, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
@@ -235,7 +235,7 @@ drawView (
         editable : Status
         editable = case editing of
             Nothing ->
-                Status -1 ""
+                new
 
             Just status ->
                 status

@@ -10,6 +10,8 @@ module Util.Form exposing (
     , submitRow
 --    , tableButton
     , textRow
+    , toFloat
+    , toInt
 --    , toRowAttrs
     )
 
@@ -61,6 +63,42 @@ disabledTextRow name val fn =
     ]
 
 
+toFloat : String -> Float
+toFloat v =
+    String.toFloat v
+        |> Result.withDefault 0.00
+
+
+floatRow : String -> Float -> ( String -> msg ) -> Html msg
+floatRow name val fn =
+    div [] [
+        label [ prepareId name |> for ] [ text name ]
+        , input [ prepareId name |> id, onInput fn, step "0.01", type_ "number", value ( toString val ) ] []
+    ]
+
+
+hiddenTextRow : String -> String -> Html msg
+hiddenTextRow name val =
+    div [ hidden True ] [
+        label [ prepareId name |> for ] [ text name ]
+        , input [ disabled False, prepareId name |> id, type_ "text", value val ] []
+    ]
+
+
+toInt : String -> Int
+toInt v =
+    String.toInt v
+        |> Result.withDefault 0
+
+
+intRow : String -> Int -> ( String -> msg ) -> Html msg
+intRow name val fn =
+    div [] [
+        label [ prepareId name |> for ] [ text name ]
+        , input [ disabled False, prepareId name |> id, onInput fn, type_ "text", value ( toString val ) ] []
+    ]
+
+
 passwordRow : String -> String -> ( String -> msg ) -> Html msg
 passwordRow name val fn =
     div [] [
@@ -79,35 +117,19 @@ prepareId name =
 
 -- TODO: Break the `select` creation into its own function for use across pages
 -- that don't need it to be wrapped in a `div`.
-selectRow : String -> String -> List String -> ( String -> msg ) -> Html msg
+selectRow : String -> String -> List ( String, String ) -> ( String -> msg ) -> Html msg
 selectRow name selectedOption list fn =
     let
-        opt s =
-            option [ selected ( (==) s selectedOption ), value s ] [ text s ]
+        opt ( v, t ) =
+            option [ selected ( (==) v selectedOption ), value v ] [ text t ]
     in
         div [] [
             label [] [ text name ]
             , list
-                |> (::) "-- Select an option --"
+                |> (::) ( "-1", "-- Select an option --" )
                 |> List.map opt
                 |> select [ onInput fn ]
         ]
-
-
-floatRow : String -> String -> ( String -> msg ) -> Html msg
-floatRow name val fn =
-    div [] [
-        label [ prepareId name |> for ] [ text name ]
-        , input [ prepareId name |> id, onInput fn, step "0.01", type_ "number", value val ] []
-    ]
-
-
-hiddenTextRow : String -> String -> Html msg
-hiddenTextRow name val =
-    div [ hidden True ] [
-        label [ prepareId name |> for ] [ text name ]
-        , input [ disabled False, prepareId name |> id, type_ "text", value val ] []
-    ]
 
 
 submitRow : Bool -> msg -> Html msg

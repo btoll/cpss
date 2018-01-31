@@ -26,7 +26,7 @@ clean:
 	rm -f $(TARGET)
 
 deploy: production
-	rsync -avze ssh --progress --exclude-from='exclude-from.txt' . chomsky:/var/www/public/cpss
+	rsync -avze ssh --progress --exclude-from='exclude-from.txt' . onf:/var/www/www.benjamintoll.com/cpss
 
 dev: clean $(TARGET) $(NATIVE)
 	$(call concat, dev)

@@ -1,7 +1,7 @@
 module Page.Consumer exposing (Model, Msg, init, update, view)
 
 import Css
-import Data.Consumer exposing (Consumer)
+import Data.Consumer exposing (Consumer, new)
 import Date exposing (Date)
 import Date.Extra.Config.Config_en_us exposing (config)
 import Date.Extra.Format
@@ -90,7 +90,7 @@ update url msg model =
                 editable : Consumer
                 editable = case model.editing of
                     Nothing ->
-                        Consumer "" "" "" True "" "" "" "" "" "" "" "" 0.00 "" "" False
+                        new
 
                     Just consumer ->
                         consumer
@@ -231,7 +231,7 @@ viewForm ( { disabled, editing, date, datePickerState } as model ) =
         editable : Consumer
         editable = case editing of
             Nothing ->
-                Consumer "" "" "" True "" "" "" "" "" "" "" "" 0.00 "" "" False
+                new
 
             Just consumer ->
                 consumer
@@ -253,7 +253,7 @@ viewForm ( { disabled, editing, date, datePickerState } as model ) =
             , Form.textRow "Recipient ID" editable.recipientID ( SetFormValue (\v -> { editable | recipientID = v }) )
             , Form.textRow "DIA Code" editable.diaCode ( SetFormValue (\v -> { editable | diaCode = v }) )
             , Form.textRow "Consumer ID" editable.consumerID ( SetFormValue (\v -> { editable | consumerID = v }) )
-            , Form.floatRow "Copay" ( toString editable.copay ) ( SetFormValue (\v -> { editable | copay = ( Result.withDefault 0.00 ( String.toFloat v ) ) }) )
+            , Form.floatRow "Copay" editable.copay ( SetFormValue (\v -> { editable | copay = Form.toFloat v } ) )
             , Form.dateTimePickerRow "Discharge Date" "AnalogDateTimePicker" model analogDateTimePickerConfig
             , Form.textRow "Other" editable.other ( SetFormValue (\v -> { editable | other = v }) )
             , Form.submitRow disabled Cancel

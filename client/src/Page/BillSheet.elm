@@ -1,6 +1,6 @@
 module Page.BillSheet exposing (Model, Msg, init, update, view)
 
-import Data.BillSheet exposing (BillSheet)
+import Data.BillSheet exposing (BillSheet, new)
 import Html exposing (Html, Attribute, button, div, form, h1, input, label, section, text)
 import Html.Attributes exposing (action, checked, disabled, for, id, style, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
@@ -179,7 +179,7 @@ viewForm { editing, disabled }  =
         editable : BillSheet
         editable = case editing of
             Nothing ->
-                BillSheet "" "" "" 0.00 "" "" "" "" "" "" "" False
+                new
 
             Just billsheet ->
                 billsheet
@@ -188,7 +188,7 @@ viewForm { editing, disabled }  =
             Form.disabledTextRow "ID" editable.id ( SetFormValue (\v -> { editable | id = v }) )
             , Form.textRow "Recipient ID" editable.recipientID ( SetFormValue (\v -> { editable | recipientID = v }) )
             , Form.textRow "Service Date" editable.serviceDate ( SetFormValue (\v -> { editable | serviceDate = v }) )
-            , Form.floatRow "Billed Amount" ( toString editable.billedAmount ) ( SetFormValue (\v -> { editable | billedAmount = ( Result.withDefault 0.00 ( String.toFloat v ) ) }) )
+            , Form.floatRow "Billed Amount" editable.billedAmount ( SetFormValue (\v -> { editable | billedAmount = Form.toFloat v } ) )
             , Form.textRow "Consumer" editable.consumer ( SetFormValue (\v -> { editable | consumer = v }) )
             , Form.textRow "Status" editable.status ( SetFormValue (\v -> { editable | status = v }) )
             , Form.textRow "Confirmation" editable.confirmation ( SetFormValue (\v -> { editable | confirmation = v }) )

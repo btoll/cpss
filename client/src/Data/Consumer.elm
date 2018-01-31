@@ -1,4 +1,4 @@
-module Data.Consumer exposing (Consumer, decoder, encoder, manyDecoder, succeed)
+module Data.Consumer exposing (Consumer, decoder, encoder, manyDecoder, new, succeed)
 
 import Json.Decode as Decode exposing (Decoder, bool, float, list, string)
 import Json.Decode.Pipeline exposing (decode, optional, required)
@@ -23,6 +23,27 @@ type alias Consumer =
     , dischargeDate : String
     , other : String
     , selected : Bool
+    }
+
+
+new : Consumer
+new =
+    { id = ""
+    , firstname = ""
+    , lastname = ""
+    , active = True
+    , countyName = ""
+    , countyCode = ""
+    , fundingSource = ""
+    , zip = ""
+    , bsu = ""
+    , recipientID = ""
+    , diaCode = ""
+    , consumerID = ""
+    , copay = 0.00
+    , dischargeDate = ""
+    , other = ""
+    , selected = False
     }
 
 

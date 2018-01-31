@@ -1,8 +1,8 @@
 module Page.Specialist exposing (Model, Msg, init, update, view)
 
-import Data.User as User exposing (User)
+import Data.User as User exposing (User, new)
 import Html exposing (Html, Attribute, button, div, form, h1, input, label, section, text)
-import Html.Attributes exposing (action, checked, disabled, for, id, style, type_, value)
+import Html.Attributes exposing (action, checked, for, id, step, style, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Html.Lazy exposing (lazy)
 import Http
@@ -12,6 +12,7 @@ import Table exposing (defaultCustomizations)
 import Task exposing (Task)
 import Util.Form as Form
 import Views.Errors as Errors
+import Views.Form
 
 
 
@@ -36,6 +37,7 @@ type Action
     | ChangingPassword User
     | Editing
     | SettingPassword User
+
 
 init : String -> Task Http.Error Model
 init url =
@@ -92,6 +94,8 @@ update url msg model =
         Cancel ->
             { model |
                 action = None
+                , changingPassword = ""
+                , disabled = True
                 , editing = Nothing
                 , errors = []
             } ! []
@@ -336,7 +340,7 @@ drawView (
         editable : User
         editable = case editing of
             Nothing ->
-                User -1 "" "" "" "" "" 0.00 1
+                new
 
             Just specialist ->
                 specialist
@@ -349,13 +353,38 @@ drawView (
 
             Adding ->
                 [ form [ onSubmit Post ] [
-                    Form.textRow "Username" editable.username ( SetTextValue (\v -> { editable | username = v }) )
-                    , Form.textRow "Password" editable.password ( SetTextValue (\v -> { editable | password = v }) )
-                    , Form.textRow "First Name" editable.firstname ( SetTextValue (\v -> { editable | firstname = v }) )
-                    , Form.textRow "Last Name" editable.lastname ( SetTextValue (\v -> { editable | lastname = v }) )
-                    , Form.textRow "Email" editable.email ( SetTextValue (\v -> { editable | email = v }) )
-                    , Form.floatRow "Pay Rate" ( toString editable.payrate ) ( SetTextValue (\v -> { editable | payrate = ( Result.withDefault 0.00 ( String.toFloat v ) ) } ) )
-                    , Form.textRow "Auth Level" ( toString editable.authLevel ) ( SetTextValue (\v -> { editable | authLevel = ( Result.withDefault -1 ( String.toInt v ) ) } ) )
+                    Views.Form.text "Username"
+                        [ value editable.username
+                        , onInput ( SetTextValue (\v -> { editable | username = v } ) )
+                        ]
+                        []
+                    , Views.Form.text "Password"
+                        [ value editable.password
+                        , onInput ( SetTextValue (\v -> { editable | password = v } ) )
+                        ]
+                        []
+                    , Views.Form.text "First Name"
+                        [ value editable.firstname
+                        , onInput ( SetTextValue (\v -> { editable | firstname = v } ) )
+                        ]
+                        []
+                    , Views.Form.text "Last Name"
+                        [ value editable.lastname
+                        , onInput ( SetTextValue (\v -> { editable | lastname = v } ) )
+                        ]
+                        []
+                    , Views.Form.text "Email"
+                        [ value editable.email
+                        , onInput ( SetTextValue (\v -> { editable | email = v } ) )
+                        ]
+                        []
+                    , Views.Form.float "Pay Rate"
+                        [ value ( toString editable.payrate )
+                        , onInput ( SetTextValue (\v -> { editable | payrate = Views.Form.toFloat v } ) )
+                        , step "0.01"
+                        ]
+                        []
+                    , Form.selectRow "Auth Level" ( toString editable.authLevel ) [ ( "1", "Admin" ), ( "2", "User" ) ] ( SetTextValue (\v -> { editable | authLevel = Form.toInt v } ) )
                     , Form.submitRow disabled Cancel
                     ]
                 ]
@@ -369,14 +398,39 @@ drawView (
 
             Editing ->
                 [ form [ onSubmit ( Put Editing ) ] [
-                    Form.disabledTextRow "ID" ( toString editable.id ) ( SetTextValue (\v -> { editable | id = ( Result.withDefault -1 ( String.toInt v ) ) }) )
-                    , Form.textRow "Username" editable.username ( SetTextValue (\v -> { editable | username = v }) )
-                    , Form.disabledTextRow "Password" editable.password ( SetTextValue (\v -> { editable | password = v }) )
-                    , Form.textRow "First Name" editable.firstname ( SetTextValue (\v -> { editable | firstname = v }) )
-                    , Form.textRow "Last Name" editable.lastname ( SetTextValue (\v -> { editable | lastname = v }) )
-                    , Form.textRow "Email" editable.email ( SetTextValue (\v -> { editable | email = v }) )
-                    , Form.floatRow "Pay Rate" ( toString editable.payrate ) ( SetTextValue (\v -> { editable | payrate = ( Result.withDefault 0.00 ( String.toFloat v ) ) }) )
-                    , Form.textRow "Auth Level" ( toString editable.authLevel ) ( SetTextValue (\v -> { editable | authLevel = ( Result.withDefault -1 ( String.toInt v ) ) } ) )
+                    Form.disabledTextRow "ID" ( toString editable.id ) ( SetTextValue (\v -> { editable | id = Form.toInt v } ) )
+                    , Views.Form.text "Username"
+                        [ value editable.username
+                        , onInput ( SetTextValue (\v -> { editable | username = v } ) )
+                        ]
+                        []
+                    , Views.Form.text "Password"
+                        [ value editable.password
+                        , Html.Attributes.disabled True
+                        ]
+                        []
+                    , Views.Form.text "First Name"
+                        [ value editable.firstname
+                        , onInput ( SetTextValue (\v -> { editable | firstname = v } ) )
+                        ]
+                        []
+                    , Views.Form.text "Last Name"
+                        [ value editable.lastname
+                        , onInput ( SetTextValue (\v -> { editable | lastname = v } ) )
+                        ]
+                        []
+                    , Views.Form.text "Email"
+                        [ value editable.email
+                        , onInput ( SetTextValue (\v -> { editable | email = v } ) )
+                        ]
+                        []
+                    , Views.Form.float "Pay Rate"
+                        [ value ( toString editable.payrate )
+                        , onInput ( SetTextValue (\v -> { editable | payrate = Views.Form.toFloat v } ) )
+                        , step "0.01"
+                        ]
+                        []
+                    , Form.selectRow "Auth Level" ( toString editable.authLevel ) [ ( "1", "Admin" ), ( "2", "User" ) ] ( SetTextValue (\v -> { editable | authLevel = Form.toInt v } ) )
                     , Form.submitRow disabled Cancel
                     ]
                 ]

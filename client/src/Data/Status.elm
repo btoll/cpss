@@ -1,4 +1,4 @@
-module Data.Status exposing (Status, decoder, encoder, manyDecoder, succeed)
+module Data.Status exposing (Status, decoder, encoder, manyDecoder, new, succeed)
 
 import Json.Decode as Decode exposing (Decoder, int, list, string)
 import Json.Decode.Pipeline exposing (decode, optional, required)
@@ -9,6 +9,13 @@ import Json.Encode as Encode
 type alias Status =
     { id : Int
     , status : String
+    }
+
+
+new : Status
+new =
+    { id = -1
+    , status = ""
     }
 
 
