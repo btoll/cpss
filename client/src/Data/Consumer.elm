@@ -22,7 +22,6 @@ type alias Consumer =
     , copay : Float
     , dischargeDate : String
     , other : String
-    , selected : Bool
     }
 
 
@@ -43,7 +42,6 @@ new =
     , copay = 0.00
     , dischargeDate = ""
     , other = ""
-    , selected = False
     }
 
 
@@ -65,7 +63,6 @@ decoder =
         |> required "copay" float
         |> required "dischargeDate" string
         |> required "other" string
-        |> optional "selected" bool False
 
 
 manyDecoder : Decoder ( List Consumer )

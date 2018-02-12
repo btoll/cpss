@@ -2,17 +2,17 @@ module Page.Specialist exposing (Model, Msg, init, update, view)
 
 import Data.User as User exposing (User, new)
 import Html exposing (Html, Attribute, button, div, form, h1, input, label, section, text)
-import Html.Attributes exposing (action, checked, for, id, step, style, type_, value)
+import Html.Attributes exposing (action, autofocus, checked, for, id, step, style, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
-import Html.Lazy exposing (lazy)
 import Http
 import Request.Session
 import Request.Specialist
 import Table exposing (defaultCustomizations)
 import Task exposing (Task)
-import Util.Form as Form
+import Validate.Specialist
 import Views.Errors as Errors
-import Views.Form
+import Views.Form as Form
+import Views.Modal as Modal
 
 
 
@@ -20,13 +20,13 @@ import Views.Form
 
 
 type alias Model =
-    -- NOTE: Order matters here (see `init`)!
-    { errors : List String
+    { errors : List ( Validate.Specialist.Field, String )
     , tableState : Table.State
     , action : Action
     , editing : Maybe User
     , disabled : Bool
     , changingPassword : String         -- Use for both storing current password and new password when changing password!
+    , showModal : ( Bool, Maybe Modal.Modal )
     , specialists : List User
     }
 
@@ -39,11 +39,17 @@ type Action
     | SettingPassword User
 
 
-init : String -> Task Http.Error Model
+init : String -> ( Model, Cmd Msg )
 init url =
-    Request.Specialist.get url
-        |> Http.toTask
-        |> Task.map ( Model [] ( Table.initialSort "ID" ) None Nothing True "" )
+    { errors = []
+    , tableState = Table.initialSort "ID"
+    , action = None
+    , editing = Nothing
+    , disabled = True
+    , changingPassword = ""         -- Use for both storing current password and new password when changing password!
+    , showModal = ( False, Nothing )
+    , specialists = []
+    } ! [ Request.Specialist.get url |> Http.send FetchedSpecialists ]
 
 
 
@@ -58,14 +64,15 @@ type Msg
     | Delete User
     | Deleted ( Result Http.Error User )
     | Edit User
-    | Getted ( Result Http.Error ( List User ) )
+    | FetchedSpecialists ( Result Http.Error ( List User ) )
     | Hashed ( Result Http.Error User )
+    | ModalMsg Modal.Msg
     | Post
     | Posted ( Result Http.Error User )
     | Put Action
     | Putted ( Result Http.Error User )
+    | SetFormValue ( String -> User ) String
     | SetPasswordValue String
-    | SetTextValue ( String -> User ) String
     | SetTableState Table.State
     | Submit
 
@@ -88,7 +95,8 @@ update url msg model =
         Authenticated specialist ( Err err ) ->
             { model |
                 action = ChangingPassword specialist
-                , errors = [ "Passwords do not match!" ]
+                -- TODO!
+--                , errors = [ None, "Passwords do not match!" ]
             } ! []
 
         Cancel ->
@@ -107,16 +115,10 @@ update url msg model =
             } ! []
 
         Delete specialist ->
-            let
-                subCmd =
-                    Request.Specialist.delete url specialist
-                        |> Http.toTask
-                        |> Task.attempt Deleted
-            in
-                { model |
-                    action = None
-                    , editing = Nothing
-                } ! [ subCmd ]
+            { model |
+                editing = Just specialist
+                , showModal = ( True , Modal.Delete |> Just )
+            } ! []
 
         Deleted ( Ok deletedSpecialist ) ->
             { model |
@@ -135,13 +137,13 @@ update url msg model =
                 , editing = Just specialist
             } ! []
 
-        Getted ( Ok specialists ) ->
+        FetchedSpecialists ( Ok specialists ) ->
             { model |
                 specialists = specialists
                 , tableState = Table.initialSort "ID"
             } ! []
 
-        Getted ( Err err ) ->
+        FetchedSpecialists ( Err err ) ->
             { model |
                 specialists = []
 --                , errors = (::) "There was a problem, the record(s) could not be retrieved!" model.errors
@@ -176,19 +178,51 @@ update url msg model =
 --                , errors = (::) "There was a problem, the password could not be hashed!" model.errors
             } ! []
 
+        ModalMsg subMsg ->
+            let
+                cmd =
+                    case ( subMsg |> Modal.update ) of
+                        False ->
+                            Cmd.none
+
+                        True ->
+                            Maybe.withDefault new model.editing
+                                |> Request.Specialist.delete url
+                                |> Http.toTask
+                                |> Task.attempt Deleted
+            in
+            { model |
+                showModal = ( False, Nothing )
+            } ! [ cmd ]
+
         Post ->
             let
-                subCmd = case model.editing of
-                    Nothing ->
-                        Cmd.none
+                errors =
+                    case model.editing of
+                        Nothing ->
+                            []
 
-                    Just specialist ->
-                        Request.Specialist.post url specialist
-                            |> Http.toTask
-                            |> Task.attempt Posted
+                        Just specialist ->
+                            Validate.Specialist.errors specialist
+
+                ( action, subCmd ) = if errors |> List.isEmpty then
+                    case model.editing of
+                        Nothing ->
+                            ( None, Cmd.none )
+
+                        Just specialist ->
+                            ( None
+                            , Request.Specialist.post url specialist
+                                |> Http.toTask
+                                |> Task.attempt Posted
+                            )
+                    else
+                        ( Adding, Cmd.none )
             in
                 { model |
-                    action = None
+                    action = action
+                    , editing = Nothing
+                    , errors = errors
                 } ! [ subCmd ]
 
         Posted ( Ok specialist ) ->
@@ -221,17 +255,31 @@ update url msg model =
             case action of
                 Editing ->
                     let
-                        subCmd = case model.editing of
-                            Nothing ->
-                                Cmd.none
+                        errors =
+                            case model.editing of
+                                Nothing ->
+                                    []
 
-                            Just specialist ->
-                                Request.Specialist.put url specialist
-                                    |> Http.toTask
-                                    |> Task.attempt Putted
+                                Just specialist ->
+                                    Validate.Specialist.errors specialist
+
+                        ( action, subCmd ) = if errors |> List.isEmpty then
+                            case model.editing of
+                                Nothing ->
+                                    ( None, Cmd.none )
+
+                                Just specialist ->
+                                    ( None
+                                    , Request.Specialist.put url specialist
+                                        |> Http.toTask
+                                        |> Task.attempt Putted
+                                    )
+                            else
+                                ( Adding, Cmd.none )
                     in
                         { model |
-                            action = None
+                            action = action
+                            , errors = errors
                         } ! [ subCmd ]
 
                 ChangingPassword specialist ->
@@ -290,6 +338,12 @@ update url msg model =
 --                , errors = (::) "There was a problem, the record could not be updated!" model.errors
             } ! []
 
+        SetFormValue setFormValue s ->
+            { model |
+                editing = Just ( setFormValue s )
+                , disabled = False
+            } ! []
+
         SetPasswordValue s ->
             { model |
                 changingPassword = s
@@ -298,12 +352,6 @@ update url msg model =
 
         SetTableState newState ->
             { model | tableState = newState
-            } ! []
-
-        SetTextValue setTextValue s ->
-            { model |
-                editing = Just ( setTextValue s )
-                , disabled = False
             } ! []
 
         Submit ->
@@ -345,102 +393,98 @@ drawView (
             Just specialist ->
                 specialist
     in
-        case action of
-            None ->
-                [ button [ onClick Add ] [ text "Add Specialist" ]
-                , Table.view config tableState specialists
-                ]
+    case action of
+        None ->
+            [ button [ onClick Add ] [ text "Add Specialist" ]
+            , Table.view config tableState specialists
+            , model.showModal
+                |> Modal.view
+                |> Html.map ModalMsg
+            ]
 
-            Adding ->
-                [ form [ onSubmit Post ] [
-                    Views.Form.text "Username"
-                        [ value editable.username
-                        , onInput ( SetTextValue (\v -> { editable | username = v } ) )
-                        ]
-                        []
-                    , Views.Form.text "Password"
-                        [ value editable.password
-                        , onInput ( SetTextValue (\v -> { editable | password = v } ) )
-                        ]
-                        []
-                    , Views.Form.text "First Name"
-                        [ value editable.firstname
-                        , onInput ( SetTextValue (\v -> { editable | firstname = v } ) )
-                        ]
-                        []
-                    , Views.Form.text "Last Name"
-                        [ value editable.lastname
-                        , onInput ( SetTextValue (\v -> { editable | lastname = v } ) )
-                        ]
-                        []
-                    , Views.Form.text "Email"
-                        [ value editable.email
-                        , onInput ( SetTextValue (\v -> { editable | email = v } ) )
-                        ]
-                        []
-                    , Views.Form.float "Pay Rate"
-                        [ value ( toString editable.payrate )
-                        , onInput ( SetTextValue (\v -> { editable | payrate = Views.Form.toFloat v } ) )
-                        , step "0.01"
-                        ]
-                        []
-                    , Form.selectRow "Auth Level" ( toString editable.authLevel ) [ ( "1", "Admin" ), ( "2", "User" ) ] ( SetTextValue (\v -> { editable | authLevel = Form.toInt v } ) )
-                    , Form.submitRow disabled Cancel
-                    ]
-                ]
+        Adding ->
+            [ form [ onSubmit Post ]
+                ( (++)
+                    ( editable |> formRows )
+                    [ Form.submit disabled Cancel ]
+                )
+            ]
 
-            ChangingPassword editable ->
-                [ form [ onSubmit ( Put ( ChangingPassword editable ) ) ] [
-                    Form.textRow "Current Password" model.changingPassword SetPasswordValue
-                    , Form.submitRow disabled Cancel
+        ChangingPassword editable ->
+            [ form [ onSubmit ( Put ( ChangingPassword editable ) ) ]
+                [ Form.text "Current Password"
+                    [ value model.changingPassword
+                    , onInput SetPasswordValue
                     ]
+                    []
+                , Form.submit disabled Cancel
                 ]
+            ]
 
-            Editing ->
-                [ form [ onSubmit ( Put Editing ) ] [
-                    Form.disabledTextRow "ID" ( toString editable.id ) ( SetTextValue (\v -> { editable | id = Form.toInt v } ) )
-                    , Views.Form.text "Username"
-                        [ value editable.username
-                        , onInput ( SetTextValue (\v -> { editable | username = v } ) )
-                        ]
-                        []
-                    , Views.Form.text "Password"
-                        [ value editable.password
-                        , Html.Attributes.disabled True
-                        ]
-                        []
-                    , Views.Form.text "First Name"
-                        [ value editable.firstname
-                        , onInput ( SetTextValue (\v -> { editable | firstname = v } ) )
-                        ]
-                        []
-                    , Views.Form.text "Last Name"
-                        [ value editable.lastname
-                        , onInput ( SetTextValue (\v -> { editable | lastname = v } ) )
-                        ]
-                        []
-                    , Views.Form.text "Email"
-                        [ value editable.email
-                        , onInput ( SetTextValue (\v -> { editable | email = v } ) )
-                        ]
-                        []
-                    , Views.Form.float "Pay Rate"
-                        [ value ( toString editable.payrate )
-                        , onInput ( SetTextValue (\v -> { editable | payrate = Views.Form.toFloat v } ) )
-                        , step "0.01"
-                        ]
-                        []
-                    , Form.selectRow "Auth Level" ( toString editable.authLevel ) [ ( "1", "Admin" ), ( "2", "User" ) ] ( SetTextValue (\v -> { editable | authLevel = Form.toInt v } ) )
-                    , Form.submitRow disabled Cancel
-                    ]
-                ]
+        Editing ->
+            [ form [ onSubmit ( Put Editing ) ]
+                ( (++)
+                    ( editable |> formRows )
+                    [ Form.submit disabled Cancel ]
+                )
+            ]
 
-            SettingPassword specialist ->
-                [ form [ onSubmit ( Put ( SettingPassword specialist ) ) ] [
-                    Form.textRow "New Password" model.changingPassword  SetPasswordValue
-                    , Form.submitRow disabled Cancel
+        SettingPassword specialist ->
+            [ form [ onSubmit ( Put ( SettingPassword specialist ) ) ]
+                [ Form.text "New Password"
+                    [ value model.changingPassword
+                    , onInput SetPasswordValue
                     ]
+                    []
+                , Form.submit disabled Cancel
                 ]
+            ]
+
+
+formRows : User -> List ( Html Msg )
+formRows editable =
+    [ Form.text "Username"
+        [ value editable.username
+        , onInput ( SetFormValue ( \v -> { editable | username = v } ) )
+        , autofocus True
+        ]
+        []
+    , Form.password "Password"
+        [ value editable.password
+        , onInput ( SetFormValue ( \v -> { editable | password = v } ) )
+        ]
+        []
+    , Form.text "First Name"
+        [ value editable.firstname
+        , onInput ( SetFormValue (\v -> { editable | firstname = v } ) )
+        ]
+        []
+    , Form.text "Last Name"
+        [ value editable.lastname
+        , onInput ( SetFormValue (\v -> { editable | lastname = v } ) )
+        ]
+        []
+    , Form.text "Email"
+        [ value editable.email
+        , onInput ( SetFormValue (\v -> { editable | email = v } ) )
+        ]
+        []
+    , Form.float "Pay Rate"
+        [ value ( toString editable.payrate )
+        , onInput ( SetFormValue (\v -> { editable | payrate = Form.toFloat v } ) )
+        , step "0.01"
+        ]
+        []
+    , Form.select "Auth Level"
+        [ id "authLevelSelection"
+        , onInput ( SetFormValue (\v -> { editable | authLevel = Form.toInt v } ) )
+        ]
+        (
+            [ ( "-1", "-- Select an invoice --" ), ( "1", "Admin" ), ( "2", "User" ) ]
+                |> List.map ( editable.authLevel |> toString |> Form.option )
+        )
+    ]
+
 
 
 -- TABLE CONFIGURATION

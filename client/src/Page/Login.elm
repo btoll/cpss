@@ -3,12 +3,12 @@ module Page.Login exposing (ExternalMsg(..), Model, Msg, init, update, view)
 import Data.Session as Session exposing (Session)
 import Data.User as User exposing (User)
 import Html exposing (Html, form)
-import Html.Attributes
-import Html.Events exposing (onSubmit)
+import Html.Attributes exposing (autofocus, value)
+import Html.Events exposing (onInput, onSubmit)
 import Http
 import Request.Session
 import Task exposing (Task)
-import Util.Form as Form
+import Views.Form as Form
 
 
 
@@ -16,16 +16,14 @@ import Util.Form as Form
 
 
 type alias Model =
-    { errors : List String
-    , username : String
+    { username : String
     , password : String
     }
 
 
 init : Model
 init =
-    { errors = []
-    , username = ""
+    { username = ""
     , password = ""
     }
 
@@ -79,9 +77,24 @@ update url msg model =
 view : Model -> Html Msg
 view model =
     form [ onSubmit Authenticate ] [
-        Form.textRow "Username" model.username ( SetFormValue (\v -> { model | username = v }) )
-        , Form.passwordRow "Password" model.password ( SetFormValue (\v -> { model | password = v }) )
-        , Form.submitRow ( (||) ( model.username |> String.isEmpty ) ( model.password |> String.isEmpty ) ) Cancel
+        Form.text "Username"
+            [ value model.username
+            , onInput ( SetFormValue ( \v -> { model | username = v } ) )
+            , autofocus True
+            ]
+            []
+        , Form.password "Password"
+            [ value model.password
+            , onInput ( SetFormValue ( \v -> { model | password = v } ) )
+            ]
+            []
+       , Form.submit
+           ( (||)
+               ( model.username |> String.isEmpty )
+               ( model.password |> String.isEmpty )
+           )
+           Cancel
+
     ]
 
 

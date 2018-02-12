@@ -18,7 +18,6 @@ type alias BillSheet =
     , county : String
     , specialist : String
     , recordNumber : String
-    , selected : Bool
     }
 
 
@@ -35,7 +34,6 @@ new =
     , county = ""
     , specialist = ""
     , recordNumber = ""
-    , selected = False
     }
 
 
@@ -53,7 +51,6 @@ decoder =
         |> required "county" string
         |> required "specialist" string
         |> required "recordNumber" string
-        |> optional "selected" bool False
 
 
 manyDecoder : Decoder ( List BillSheet )

@@ -2,11 +2,9 @@ body {
     margin: 0;
     padding: 0;
 }
-
 main {
     margin-top: 80px
 }
-
 nav {
     background: #337ab7;
     position: fixed;
@@ -48,11 +46,9 @@ nav div.container div p {
     margin-right: 20px;
     padding: 2px 10px;
 }
-
 section {
     margin-left: 2%;
 }
-
 div p.error {
     background-color: #ff9;
     border: 1px solid #000;
@@ -60,7 +56,6 @@ div p.error {
     padding: 10px;
     width: 50%;
 }
-
 table {
     border-collapse: collapse;
     margin: 20px 10px 10px;
@@ -79,7 +74,6 @@ tr {
 td {
     padding: 10px;
 }
-
 form {
 }
 form > div {
@@ -92,7 +86,7 @@ form > div label {
     text-align: right;
     width: 130px;
 }
-form div.elm-input-datepickerDatePicker.elm-input-datepickerTimePicker {
+form div.elm-datepicker--container {
     display: inline-block;
 }
 /* The last child contains the form buttons. */

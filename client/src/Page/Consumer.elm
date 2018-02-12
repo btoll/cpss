@@ -1,55 +1,86 @@
 module Page.Consumer exposing (Model, Msg, init, update, view)
 
-import Css
 import Data.Consumer exposing (Consumer, new)
-import Date exposing (Date)
-import Date.Extra.Config.Config_en_us exposing (config)
-import Date.Extra.Format
-import DateParser
-import DateTimePicker
-import DateTimePicker.Config exposing (Config, DatePickerConfig, TimePickerConfig, defaultDateTimePickerConfig)
-import DateTimePicker.Css
-import Dict exposing (Dict)
+import Date exposing (Date, Day(..), day, dayOfWeek, month, year)
+import DatePicker exposing (defaultSettings, DateEvent(..))
 import Html exposing (Html, Attribute, button, div, form, h1, input, label, node, section, text)
 import Html.Attributes exposing (action, checked, disabled, for, id, style, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
-import Html.Lazy exposing (lazy)
 import Http
 import Request.Consumer
 import Table exposing (defaultCustomizations)
 import Task exposing (Task)
-import Util.Form as Form
+import Util.Date
+import Validate.Consumer
+import Views.Errors as Errors
+import Views.Form as Form
+import Views.Modal as Modal
 
 
 
 -- MODEL
 
 
--- NOTE: Order matters here, the `consumers` field must be last b/c of partial application (see `init`)!
 type alias Model =
-    { tableState : Table.State
+    { errors : List ( Validate.Consumer.Field, String )
+    , tableState : Table.State
     , action : Action
     , editing : Maybe Consumer
     , disabled : Bool
-    , date : Dict String Date -- The key is actually a DemoPicker
-    , datePickerState : Dict String DateTimePicker.State -- The key is actually a DemoPicker
+    , showModal : ( Bool, Maybe Modal.Modal )
+    , date : Maybe Date
+    , datePicker : DatePicker.DatePicker
     , consumers : List Consumer
     }
-
-
-type DemoPicker
-    = AnalogDateTimePicker
 
 
 type Action = None | Adding | Editing
 
 
+commonSettings : DatePicker.Settings
+commonSettings =
+    defaultSettings
+
+
+settings : Maybe Date -> DatePicker.Settings
+settings date =
+    let
+        isDisabled =
+            case date of
+                Nothing ->
+                    commonSettings.isDisabled
+
+                Just date ->
+                    \d ->
+                        Date.toTime d
+                            > Date.toTime date
+                            || (commonSettings.isDisabled d)
+    in
+        { commonSettings
+            | placeholder = ""
+            , isDisabled = isDisabled
+        }
+
+
+
 init : String -> ( Model, Cmd Msg )
 init url =
-    ( Model ( Table.initialSort "ID" ) None Nothing True Dict.empty Dict.empty [] ) !
-        [ Request.Consumer.get url |> Http.send Getted
-        , DateTimePicker.initialCmd DatePickerChanged DateTimePicker.initialState
-        ]
+    let
+        ( datePicker, datePickerFx ) =
+            DatePicker.init
+    in
+    { errors = []
+    , tableState = Table.initialSort "ID"
+    , action = None
+    , editing = Nothing
+    , disabled = True
+    , showModal = ( False, Nothing )
+    , date = Nothing
+    , datePicker = datePicker
+    , consumers = []
+    } ! [ Cmd.map DatePicker datePickerFx
+    , Request.Consumer.get url |> Http.send FetchedConsumers
+    ]
 
 
 -- UPDATE
@@ -58,13 +89,16 @@ init url =
 type Msg
     = Add
     | Cancel
-    | DatePickerChanged DateTimePicker.State ( Maybe Date )
+    | DatePicker DatePicker.Msg
     | Delete Consumer
     | Deleted ( Result Http.Error () )
     | Edit Consumer
-    | Getted ( Result Http.Error ( List Consumer ) )
+    | FetchedConsumers ( Result Http.Error ( List Consumer ) )
+    | ModalMsg Modal.Msg
     | Post
     | Posted ( Result Http.Error Consumer )
+    | Put
+    | Putted ( Result Http.Error Consumer )
     | SetFormValue ( String -> Consumer ) String
     | SetTableState Table.State
     | Submit
@@ -83,41 +117,63 @@ update url msg model =
             { model |
                 action = None
                 , editing = Nothing
+                , errors = []
             } ! []
 
-        DatePickerChanged state value ->
+        DatePicker subMsg ->
             let
-                editable : Consumer
-                editable = case model.editing of
-                    Nothing ->
-                        new
+                ( newDatePicker, datePickerFx, dateEvent ) =
+                    DatePicker.update ( settings model.date ) subMsg model.datePicker
 
-                    Just consumer ->
-                        consumer
+                ( newDate, newConsumer ) =
+                    let
+                        consumer = Maybe.withDefault new model.editing
+                    in
+                    case dateEvent of
+                        Changed newDate ->
+                            let
+                                dateString =
+                                    case dateEvent of
+                                        Changed date ->
+                                            case date of
+                                                Nothing ->
+                                                    ""
+
+                                                Just d ->
+                                                    d |> Util.Date.simple
+
+                                        _ ->
+                                            consumer.dischargeDate
+                            in
+                            ( newDate , { consumer | dischargeDate = dateString } )
+
+                        _ ->
+                            ( model.date, { consumer | dischargeDate = consumer.dischargeDate } )
             in
-                { model
-                    | date =
-                        case value of
-                            Nothing ->
-                                Dict.remove ( toString AnalogDateTimePicker ) model.date
-
-                            Just date ->
-                                Dict.insert ( toString AnalogDateTimePicker ) date model.date
-                    , datePickerState = Dict.insert ( toString AnalogDateTimePicker ) state model.datePickerState
-                    , editing = Just ( { editable | dischargeDate = value |> toString } )
-                } ! []
+            { model
+                | date = newDate
+                , datePicker = newDatePicker
+                , editing = Just newConsumer
+            } ! [ Cmd.map DatePicker datePickerFx ]
 
         Delete consumer ->
-            let
-                subCmd =
-                    Request.Consumer.delete url consumer
-                        |> Http.toTask
-                        |> Task.attempt Deleted
-            in
-                { model |
-                    action = None
-                    , editing = Nothing
-                } ! [ subCmd ]
+            model ! []
+--            { model |
+--                showModal =
+--                    ( True
+--                    , specialist |> Modal.Delete |> Just
+--                    )
+--            } ! []
+--            let
+--                subCmd =
+--                    Request.Consumer.delete url consumer
+--                        |> Http.toTask
+--                        |> Task.attempt Deleted
+--            in
+--                { model |
+--                    action = None
+--                    , editing = Nothing
+--                } ! [ subCmd ]
 
         Deleted ( Ok consumer ) ->
             model ! []
@@ -134,38 +190,102 @@ update url msg model =
                 , editing = Just consumer
             } ! []
 
-        Getted ( Ok consumers ) ->
+        FetchedConsumers ( Ok consumers ) ->
             { model |
                 consumers = consumers
                 , tableState = Table.initialSort "ID"
             } ! []
 
-        Getted ( Err err ) ->
+        FetchedConsumers ( Err err ) ->
             { model |
                 consumers = []
                 , tableState = Table.initialSort "ID"
             } ! []
 
+        ModalMsg subMsg ->
+            model ! []
+--            let
+--                ( bool, cmd ) =
+--                    ( \invoice ->
+--                        Request.Specialist.delete url invoice
+--                            |> Http.toTask
+--                            |> Task.attempt Deleted
+--                    ) |> Modal.update subMsg
+--            in
+--            { model |
+--                showModal = ( bool, Nothing )
+--            } ! [ cmd ]
+
         Post ->
             let
-                subCmd = case model.editing of
-                    Nothing ->
-                        Cmd.none
+                errors =
+                    case model.editing of
+                        Nothing ->
+                            []
 
-                    Just consumer ->
-                        Request.Consumer.post url consumer
-                            |> Http.toTask
-                            |> Task.attempt Posted
+                        Just consumer ->
+                            Validate.Consumer.errors consumer
+
+                ( action, subCmd ) = if errors |> List.isEmpty then
+                    case model.editing of
+                        Nothing ->
+                            ( None, Cmd.none )
+
+                        Just consumer ->
+                            ( None
+                            , Request.Consumer.post url consumer
+                                |> Http.toTask
+                                |> Task.attempt Posted
+                            )
+                    else
+                        ( Adding, Cmd.none )
             in
                 { model |
-                    action = None
+                    action = action
                     , editing = Nothing
+                    , errors = errors
                 } ! [ subCmd ]
 
         Posted ( Ok consumer ) ->
             model ! []
 
         Posted ( Err err ) ->
+            model ! []
+
+        Put ->
+--            let
+--                errors =
+--                    case model.editing of
+--                        Nothing ->
+--                            []
+--
+--                        Just consumer ->
+--                            Validate.Consumer.errors consumer
+--
+--                ( action, subCmd ) = if errors |> List.isEmpty then
+--                    case model.editing of
+--                        Nothing ->
+--                            ( None, Cmd.none )
+--
+--                        Just consumer ->
+--                            ( None
+--                            , Request.Consumer.put url consumer
+--                                |> Http.toTask
+--                                |> Task.attempt Putted
+--                            )
+--                    else
+--                        ( Editing, Cmd.none )
+--            in
+--                { model |
+--                    action = action
+--                    , errors = errors
+--                } ! [ subCmd ]
+            model ! []
+
+        Putted ( Ok consumer ) ->
+            model ! []
+
+        Putted ( Err err ) ->
             model ! []
 
         SetFormValue setFormValue s ->
@@ -189,44 +309,27 @@ update url msg model =
 -- VIEW
 
 
-analogDateTimePickerConfig : Config ( DatePickerConfig TimePickerConfig ) Msg
-analogDateTimePickerConfig =
-    let
-        defaultDateTimeConfig =
-            defaultDateTimePickerConfig DatePickerChanged
-    in
-        { defaultDateTimeConfig
-            | timePickerType = DateTimePicker.Config.Analog
-            , allowYearNavigation = False
-        }
-
-
 view : Model -> Html Msg
 view model =
     section []
-        ( (::)
-            ( h1 [] [ text "Consumer" ] )
+        ( (++)
+            [ h1 [] [ text "Consumer" ]
+            , Errors.view model.errors
+            ]
             ( drawView model )
         )
 
 
 drawView : Model -> List ( Html Msg )
-drawView ( { action, editing, tableState, consumers } as model ) =
-    case action of
-        None ->
-            [ button [ onClick Add ] [ text "Add Consumer" ]
-            , Table.view config tableState consumers
-            ]
-
-        -- Adding | Editing
-        _ ->
---            [ lazy viewForm editing model
-            [ viewForm model
-            ]
-
-
-viewForm : Model -> Html Msg
-viewForm ( { disabled, editing, date, datePickerState } as model ) =
+drawView (
+    { action
+    , date
+    , datePicker
+    , disabled
+    , editing
+    , tableState
+    , consumers
+    } as model ) =
     let
         editable : Consumer
         editable = case editing of
@@ -235,31 +338,108 @@ viewForm ( { disabled, editing, date, datePickerState } as model ) =
 
             Just consumer ->
                 consumer
-
-        { css } =
-            Css.compile [ DateTimePicker.Css.css ]
     in
-        form [ onSubmit Post ] [
-            node "style" [] [ text css ]
-            , Form.disabledTextRow "ID" editable.id ( SetFormValue (\v -> { editable | id = v }) )
-            , Form.textRow "First Name" editable.firstname ( SetFormValue (\v -> { editable | firstname = v }) )
-            , Form.textRow "Last Name" editable.lastname ( SetFormValue (\v -> { editable | lastname = v }) )
---            , Form.textRow "Active" editable.active ( SetFormValue (\v -> { editable | active = v }) )
-            , Form.textRow "County Name" editable.countyName ( SetFormValue (\v -> { editable | countyName = v }) )
-            , Form.textRow "County Code" editable.countyCode ( SetFormValue (\v -> { editable | countyCode = v }) )
-            , Form.textRow "Funding Source" editable.fundingSource ( SetFormValue (\v -> { editable | fundingSource = v }) )
-            , Form.textRow "Zip Code" editable.zip ( SetFormValue (\v -> { editable | zip = v }) )
-            , Form.textRow "BSU" editable.bsu ( SetFormValue (\v -> { editable | bsu = v }) )
-            , Form.textRow "Recipient ID" editable.recipientID ( SetFormValue (\v -> { editable | recipientID = v }) )
-            , Form.textRow "DIA Code" editable.diaCode ( SetFormValue (\v -> { editable | diaCode = v }) )
-            , Form.textRow "Consumer ID" editable.consumerID ( SetFormValue (\v -> { editable | consumerID = v }) )
-            , Form.floatRow "Copay" editable.copay ( SetFormValue (\v -> { editable | copay = Form.toFloat v } ) )
-            , Form.dateTimePickerRow "Discharge Date" "AnalogDateTimePicker" model analogDateTimePickerConfig
-            , Form.textRow "Other" editable.other ( SetFormValue (\v -> { editable | other = v }) )
-            , Form.submitRow disabled Cancel
+    case action of
+        None ->
+            [ button [ onClick Add ] [ text "Add Consumer" ]
+            , Table.view config tableState consumers
+            , model.showModal
+                |> Modal.view
+                |> Html.map ModalMsg
+            ]
+
+        Adding ->
+            [ form [ onSubmit Post ]
+                ( (++)
+                    ( ( editable, date, datePicker ) |> formRows )
+                    [ Form.submit disabled Cancel ]
+                )
+            ]
+
+        Editing ->
+            [ form [ onSubmit Put ]
+                ( (++)
+                    ( ( editable, date, datePicker ) |> formRows )
+                    [ Form.submit disabled Cancel ]
+                )
+            ]
+
+
+formRows : ( Consumer, Maybe Date, DatePicker.DatePicker ) -> List ( Html Msg )
+formRows ( editable, date, datePicker ) =
+-- , Form.textRow "Active" editable.active ( SetFormValue (\v -> { editable | active = v }) )
+    [ Form.text "ID"
+        [ value editable.id
+        , onInput ( SetFormValue ( \v -> { editable | id = v } ) )
+        , disabled True
         ]
-
-
+        []
+    , Form.text "First Name"
+        [ value editable.firstname
+        , onInput ( SetFormValue (\v -> { editable | firstname = v } ) )
+        ]
+        []
+    , Form.text "Last Name"
+        [ value editable.lastname
+        , onInput ( SetFormValue (\v -> { editable | lastname = v } ) )
+        ]
+        []
+    , Form.text "County Name"
+        [ value editable.countyName
+        , onInput ( SetFormValue (\v -> { editable | countyName = v } ) )
+        ]
+        []
+    , Form.text "County Code"
+        [ value editable.countyCode
+        , onInput ( SetFormValue (\v -> { editable | countyCode = v } ) )
+        ]
+        []
+    , Form.text "Funding Source"
+        [ value editable.fundingSource
+        , onInput ( SetFormValue (\v -> { editable | fundingSource = v } ) )
+        ]
+        []
+    , Form.text "Zip Code"
+        [ value editable.zip
+        , onInput ( SetFormValue (\v -> { editable | zip = v } ) )
+        ]
+        []
+    , Form.text "BSU"
+        [ value editable.bsu
+        , onInput ( SetFormValue (\v -> { editable | bsu = v } ) )
+        ]
+        []
+    , Form.text "Recipient ID"
+        [ value editable.recipientID
+        , onInput ( SetFormValue (\v -> { editable | recipientID = v } ) )
+        ]
+        []
+    , Form.text "DIA Code"
+        [ value editable.diaCode
+        , onInput ( SetFormValue (\v -> { editable | diaCode = v } ) )
+        ]
+        []
+    , Form.text "Consumer ID"
+        [ value editable.consumerID
+        , onInput ( SetFormValue (\v -> { editable | consumerID = v } ) )
+        ]
+        []
+    , Form.float "Copay"
+        [ value ( toString editable.copay )
+        , onInput ( SetFormValue (\v -> { editable | copay = Form.toFloat v } ) )
+        ]
+        []
+    , div []
+        [ label [] [ text "Discharge Date" ]
+        , DatePicker.view date ( settings date ) datePicker
+            |> Html.map DatePicker
+        ]
+    , Form.text "Other"
+        [ value editable.other
+        , onInput ( SetFormValue (\v -> { editable | other = v } ) )
+        ]
+        []
+    ]
 
 -- TABLE CONFIGURATION
 

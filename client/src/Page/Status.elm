@@ -2,15 +2,17 @@ module Page.Status exposing (Model, Msg, init, update, view)
 
 import Data.Status as Status exposing (Status, new)
 import Html exposing (Html, Attribute, button, div, form, h1, input, label, section, text)
-import Html.Attributes exposing (action, checked, disabled, for, id, style, type_, value)
+import Html.Attributes exposing (action, autofocus, checked, disabled, for, id, style, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Html.Lazy exposing (lazy)
 import Http
 import Request.Status
 import Table exposing (defaultCustomizations)
 import Task exposing (Task)
-import Util.Form as Form
+import Validate.Status
 import Views.Errors as Errors
+import Views.Form as Form
+import Views.Modal as Modal
 
 
 
@@ -18,12 +20,12 @@ import Views.Errors as Errors
 
 
 type alias Model =
-    -- NOTE: Order matters here (see `init`)!
-    { errors : List String
+    { errors : List ( Validate.Status.Field, String )
     , tableState : Table.State
     , action : Action
     , editing : Maybe Status
     , disabled : Bool
+    , showModal : ( Bool, Maybe Modal.Modal )
     , status : List Status
     }
 
@@ -34,11 +36,16 @@ type Action
     | Editing
 
 
-init : String -> Task Http.Error Model
+init : String -> ( Model, Cmd Msg )
 init url =
-    Request.Status.get url
-        |> Http.toTask
-        |> Task.map ( Model [] ( Table.initialSort "ID" ) None Nothing True )
+    { errors = []
+    , tableState = Table.initialSort "ID"
+    , action = None
+    , editing = Nothing
+    , disabled = True
+    , showModal = ( False, Nothing )
+    , status = []
+    } ! [ Request.Status.get url |> Http.send FetchedStatus ]
 
 
 
@@ -51,12 +58,13 @@ type Msg
     | Delete Status
     | Deleted ( Result Http.Error Status )
     | Edit Status
-    | Getted ( Result Http.Error ( List Status ) )
+    | FetchedStatus ( Result Http.Error ( List Status ) )
+    | ModalMsg Modal.Msg
     | Post
     | Posted ( Result Http.Error Status )
     | Put
     | Putted ( Result Http.Error Status )
-    | SetTextValue ( String -> Status ) String
+    | SetFormValue ( String -> Status ) String
     | SetTableState Table.State
     | Submit
 
@@ -74,20 +82,14 @@ update url msg model =
             { model |
                 action = None
                 , editing = Nothing
+                , errors = []
             } ! []
 
         Delete status ->
-            let
-                subCmd =
-                    Request.Status.delete url status
-                        |> Http.toTask
-                        |> Task.attempt Deleted
-            in
-                { model |
-                    action = None
-                    , editing = Nothing
-                    , errors = []
-                } ! [ subCmd ]
+            { model |
+                editing = Just status
+                , showModal = ( True , Modal.Delete |> Just )
+            } ! []
 
         Deleted ( Ok status ) ->
             { model |
@@ -95,9 +97,11 @@ update url msg model =
             } ! []
 
         Deleted ( Err err ) ->
-            { model |
-                errors = [ "There was a problem when attempting to delete the status!" ]
-            } ! []
+            model ! []
+            -- TODO!
+--            { model |
+--                errors = [ "There was a problem when attempting to delete the status!" ]
+--            } ! []
 
         Edit status ->
             { model |
@@ -105,31 +109,63 @@ update url msg model =
                 , editing = Just status
             } ! []
 
-        Getted ( Ok status ) ->
+        FetchedStatus ( Ok status ) ->
             { model |
                 status = status
                 , tableState = Table.initialSort "ID"
             } ! []
 
-        Getted ( Err err ) ->
+        FetchedStatus ( Err err ) ->
             { model |
                 status = []
                 , tableState = Table.initialSort "ID"
             } ! []
 
+        ModalMsg subMsg ->
+            let
+                cmd =
+                    case ( subMsg |> Modal.update ) of
+                        False ->
+                            Cmd.none
+
+                        True ->
+                            Maybe.withDefault new model.editing
+                                |> Request.Status.delete url
+                                |> Http.toTask
+                                |> Task.attempt Deleted
+            in
+            { model |
+                showModal = ( False, Nothing )
+            } ! [ cmd ]
+
         Post ->
             let
-                subCmd = case model.editing of
-                    Nothing ->
-                        Cmd.none
+                errors =
+                    case model.editing of
+                        Nothing ->
+                            []
 
-                    Just status ->
-                        Request.Status.post url status
-                            |> Http.toTask
-                            |> Task.attempt Posted
+                        Just status ->
+                            Validate.Status.errors status
+
+                ( action, subCmd ) = if errors |> List.isEmpty then
+                    case model.editing of
+                        Nothing ->
+                            ( None, Cmd.none )
+
+                        Just status ->
+                            ( None
+                            , Request.Status.post url status
+                                |> Http.toTask
+                                |> Task.attempt Posted
+                            )
+                    else
+                        ( Adding, Cmd.none )
             in
                 { model |
-                    action = None
+                    action = action
+                    , editing = Nothing
+                    , errors = errors
                 } ! [ subCmd ]
 
         Posted ( Ok status ) ->
@@ -155,17 +191,31 @@ update url msg model =
 
         Put ->
             let
-                subCmd = case model.editing of
-                    Nothing ->
-                        Cmd.none
+                errors =
+                    case model.editing of
+                        Nothing ->
+                            []
 
-                    Just status ->
-                        Request.Status.put url status
-                            |> Http.toTask
-                            |> Task.attempt Putted
+                        Just status ->
+                            Validate.Status.errors status
+
+                ( action, subCmd ) = if errors |> List.isEmpty then
+                    case model.editing of
+                        Nothing ->
+                            ( None, Cmd.none )
+
+                        Just status ->
+                            ( None
+                            , Request.Status.put url status
+                                |> Http.toTask
+                                |> Task.attempt Putted
+                            )
+                    else
+                        ( Editing, Cmd.none )
             in
                 { model |
-                    action = None
+                    action = action
+                    , errors = errors
                 } ! [ subCmd ]
 
         Putted ( Ok st ) ->
@@ -195,9 +245,9 @@ update url msg model =
             { model | tableState = newState
             } ! []
 
-        SetTextValue setTextValue s ->
+        SetFormValue setFormValue s ->
             { model |
-                editing = Just ( setTextValue s )
+                editing = Just ( setFormValue s )
                 , disabled = False
             } ! []
 
@@ -240,27 +290,41 @@ drawView (
             Just status ->
                 status
     in
-        case action of
-            None ->
-                [ button [ onClick Add ] [ text "Add status" ]
-                , Table.view config tableState status
-                ]
+    case action of
+        None ->
+            [ button [ onClick Add ] [ text "Add status" ]
+            , Table.view config tableState status
+            , model.showModal
+                |> Modal.view
+                |> Html.map ModalMsg
+            ]
 
-            Adding ->
-                [ form [ onSubmit Post ] [
-                    Form.textRow "Status" editable.status ( SetTextValue (\v -> { editable | status = v }) )
-                    , Form.submitRow disabled Cancel
-                    ]
-                ]
+        Adding ->
+            [ form [ onSubmit Post ]
+                ( (++)
+                    ( editable |> formRows )
+                    [ Form.submit disabled Cancel ]
+                )
+            ]
 
-            Editing ->
-                [ form [ onSubmit Put ] [
-                    Form.textRow "Status" editable.status ( SetTextValue (\v -> { editable | status = v }) )
-                    , Form.submitRow disabled Cancel
-                    ]
-                ]
+        Editing ->
+            [ form [ onSubmit Put ]
+                ( (++)
+                    ( editable |> formRows )
+                    [ Form.submit disabled Cancel ]
+                )
+            ]
 
 
+formRows : Status -> List ( Html Msg )
+formRows editable =
+    [ Form.text "Status"
+        [ value editable.status
+        , onInput ( SetFormValue ( \v -> { editable | status = v } ) )
+        , autofocus True
+        ]
+        []
+    ]
 -- TABLE CONFIGURATION
 
 

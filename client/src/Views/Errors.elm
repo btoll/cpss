@@ -5,10 +5,17 @@ import Html.Attributes exposing (class)
 
 
 
-view : List String -> Html msg
+view : List ( a, String ) -> Html msg
 view errors =
     errors
-        |> List.map ( \s -> p [ class "error" ] [ text s ] )
+        |> List.map
+            ( \t ->
+                let
+                    tipe = t |> Tuple.first |> toString
+                    description = t |> Tuple.second
+                in
+                p [ class "error" ] [ (++) tipe description |> text ]
+            )
         |> div []
 
 

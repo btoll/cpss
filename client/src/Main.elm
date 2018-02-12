@@ -84,11 +84,9 @@ initialPage =
 
 type Msg
     = SetRoute ( Maybe Route )
-    | BillSheetLoaded ( Result Http.Error BillSheet.Model )
     | BillSheetMsg BillSheet.Msg
     | ConsumerMsg Consumer.Msg
     | LoginMsg Login.Msg
-    | SpecialistLoaded ( Result Http.Error Specialist.Model )
     | SpecialistMsg Specialist.Msg
     | StatusLoaded ( Result Http.Error Status.Model )
     | StatusMsg Status.Msg
@@ -100,18 +98,21 @@ setRoute maybeRoute model =
         Just Route.BillSheet ->
             case model.session.user of
                 Nothing ->
-                    let
-                        loginModel = Login.init
-                    in
-                        { model |
-                            page = Login loginModel
-                            , onLogin = maybeRoute
-                        } ! []
+                    { model |
+                        page = Login Login.init
+                        , onLogin = maybeRoute
+                    } ! []
 
                 Just user ->
                     case user.authLevel of
                         1 ->
-                            ( model, BillSheet.init model.build.url |> Task.attempt BillSheetLoaded )
+                            let
+                                ( subModel, subMsg ) =
+                                    BillSheet.init model.build.url
+                            in
+                                { model |
+                                    page = BillSheet subModel
+                                } ! [ Cmd.map BillSheetMsg subMsg ]
 
                         _ ->
                             { model | page = Errored "You are not authorized to view this page" } ! []
@@ -179,10 +180,16 @@ setRoute maybeRoute model =
                         , onLogin = maybeRoute
                     } ! []
 
-                Just user ->
-                    case user.authLevel of
+                Just specialist ->
+                    case specialist.authLevel of
                         1 ->
-                            ( model, Specialist.init model.build.url |> Task.attempt SpecialistLoaded )
+                            let
+                                ( subModel, subMsg ) =
+                                    Specialist.init model.build.url
+                            in
+                                { model |
+                                    page = Specialist subModel
+                                } ! [ Cmd.map SpecialistMsg subMsg ]
 
                         _ ->
                             { model | page = Errored "You are not authorized to view this page" } ! []
@@ -195,10 +202,16 @@ setRoute maybeRoute model =
                         , onLogin = maybeRoute
                     } ! []
 
-                Just user ->
-                    case user.authLevel of
+                Just status ->
+                    case status.authLevel of
                         1 ->
-                            ( model, Status.init model.build.url |> Task.attempt StatusLoaded )
+                            let
+                                ( subModel, subMsg ) =
+                                    Status.init model.build.url
+                            in
+                                { model |
+                                    page = Status subModel
+                                } ! [ Cmd.map StatusMsg subMsg ]
 
                         _ ->
                             { model | page = Errored "You are not authorized to view this page" } ! []
@@ -226,12 +239,6 @@ update msg model =
         case ( msg, model.page ) of
             ( SetRoute route, _ ) ->
                 setRoute route model
-
-            ( BillSheetLoaded ( Ok subModel ), _ ) ->
-                { model | page = BillSheet subModel } ! []
-
-            ( BillSheetLoaded ( Err err ), _ ) ->
-                model ! []
 
             ( BillSheetMsg subMsg, BillSheet subModel ) ->
                 toPage BillSheet BillSheetMsg BillSheet.update subMsg subModel
@@ -262,20 +269,8 @@ update msg model =
                 in
                     ( newModel, newCmd )
 
-            ( SpecialistLoaded ( Ok subModel ), _ ) ->
-                { model | page = Specialist subModel } ! []
-
-            ( SpecialistLoaded ( Err err ), _ ) ->
-                model ! []
-
             ( SpecialistMsg subMsg, Specialist subModel ) ->
                 toPage Specialist SpecialistMsg Specialist.update subMsg subModel
-
-            ( StatusLoaded ( Ok subModel ), _ ) ->
-                { model | page = Status subModel } ! []
-
-            ( StatusLoaded ( Err err ), _ ) ->
-                model ! []
 
             ( StatusMsg subMsg, Status subModel ) ->
                 toPage Status StatusMsg Status.update subMsg subModel
