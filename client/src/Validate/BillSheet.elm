@@ -7,6 +7,7 @@ import Validate exposing (Validator, ifBlank, validate)
 
 type Field
     = RecipientID
+    | ServiceDate
 
 
 
@@ -37,6 +38,7 @@ modelValidator : Validator ( Field, String ) BillSheet
 modelValidator =
     Validate.all
         [ ifBlank .recipientID ( RecipientID, message )
+        , ifBlank .serviceDate ( ServiceDate, message )
         ]
 
 

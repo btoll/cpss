@@ -34,35 +34,35 @@ var SessionPayload = Type("SessionPayload", func() {
 
 	Attribute("id", Integer, "Session id", func() {
 		Metadata("struct:tag:datastore", "id,noindex")
-		Metadata("struct:tag:json", "id,omitempty")
+		Metadata("struct:tag:json", "id")
 	})
 	Attribute("username", String, "Session username", func() {
 		Metadata("struct:tag:datastore", "username,noindex")
-		Metadata("struct:tag:json", "username,omitempty")
+		Metadata("struct:tag:json", "username")
 	})
 	Attribute("password", String, "Session password", func() {
 		Metadata("struct:tag:datastore", "password,noindex")
-		Metadata("struct:tag:json", "password,omitempty")
+		Metadata("struct:tag:json", "password")
 	})
 	Attribute("firstname", String, "Session firstname", func() {
 		Metadata("struct:tag:datastore", "firstname,noindex")
-		Metadata("struct:tag:json", "firstname,omitempty")
+		Metadata("struct:tag:json", "firstname")
 	})
 	Attribute("lastname", String, "Session lastname", func() {
 		Metadata("struct:tag:datastore", "lastname,noindex")
-		Metadata("struct:tag:json", "lastname,omitempty")
+		Metadata("struct:tag:json", "lastname")
 	})
 	Attribute("email", String, "Session email", func() {
 		Metadata("struct:tag:datastore", "email,noindex")
-		Metadata("struct:tag:json", "email,omitempty")
+		Metadata("struct:tag:json", "email")
 	})
 	Attribute("payrate", Number, "Session payrate", func() {
 		Metadata("struct:tag:datastore", "payrate,noindex")
-		Metadata("struct:tag:json", "payrate,omitempty")
+		Metadata("struct:tag:json", "payrate")
 	})
 	Attribute("authLevel", Integer, "Session authLevel", func() {
 		Metadata("struct:tag:datastore", "authLevel,noindex")
-		Metadata("struct:tag:json", "authLevel,omitempty")
+		Metadata("struct:tag:json", "authLevel")
 	})
 
 	Required("password")

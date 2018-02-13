@@ -45,7 +45,7 @@ init url =
     , disabled = True
     , showModal = ( False, Nothing )
     , status = []
-    } ! [ Request.Status.get url |> Http.send FetchedStatus ]
+    } ! [ Request.Status.list url |> Http.send FetchedStatus ]
 
 
 
@@ -289,11 +289,18 @@ drawView (
 
             Just status ->
                 status
+
+        showList =
+            case status |> List.length of
+                0 ->
+                    div [] []
+                _ ->
+                    Table.view config tableState status
     in
     case action of
         None ->
             [ button [ onClick Add ] [ text "Add status" ]
-            , Table.view config tableState status
+            , showList
             , model.showModal
                 |> Modal.view
                 |> Html.map ModalMsg
@@ -341,15 +348,8 @@ config =
         , customColumn ( viewButton Edit "Edit" )
         , customColumn ( viewButton Delete "Delete" )
         ]
-    , customizations =
-        { defaultCustomizations | rowAttrs = toRowAttrs }
+    , customizations = defaultCustomizations
     }
-
-
-toRowAttrs : Status -> List ( Attribute Msg )
-toRowAttrs { id } =
-    [ style [ ( "background", "white" ) ]
-    ]
 
 
 customColumn : ( Status -> Table.HtmlDetails Msg ) -> Table.Column Status Msg

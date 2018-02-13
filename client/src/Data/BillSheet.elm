@@ -1,38 +1,39 @@
 module Data.BillSheet exposing (BillSheet, decoder, encoder, manyDecoder, new, succeed)
 
-import Json.Decode as Decode exposing (Decoder, bool, float, list, string)
+import Json.Decode as Decode exposing (Decoder, bool, float, int, list, string)
 import Json.Decode.Pipeline exposing (decode, optional, required)
 import Json.Encode as Encode
 
 
 
 type alias BillSheet =
-    { id : String
+    { id : Int
     , recipientID : String
     , serviceDate : String
     , billedAmount : Float
-    , consumer : String
-    , status : String
+    , consumer : Int
+    , status : Int
     , confirmation : String
-    , service : String
-    , county : String
-    , specialist : String
+    , service : Int
+    , county : Int
+    , specialist : Int
     , recordNumber : String
     }
 
 
+
 new : BillSheet
 new =
-    { id = ""
+    { id = -1
     , recipientID = ""
     , serviceDate = ""
-    , billedAmount = 0.00
-    , consumer = ""
-    , status = ""
+    , billedAmount = 0.0
+    , consumer = -1
+    , status = -1
     , confirmation = ""
-    , service = ""
-    , county = ""
-    , specialist = ""
+    , service = -1
+    , county = -1
+    , specialist = -1
     , recordNumber = ""
     }
 
@@ -40,17 +41,17 @@ new =
 decoder : Decoder BillSheet
 decoder =
     decode BillSheet
-        |> required "id" string
-        |> required "recipientID" string
-        |> required "serviceDate" string
-        |> required "billedAmount" float
-        |> required "consumer" string
-        |> required "status" string
-        |> required "confirmation" string
-        |> required "service" string
-        |> required "county" string
-        |> required "specialist" string
-        |> required "recordNumber" string
+        |> required "id" int
+        |> optional "recipientID" string ""
+        |> optional "serviceDate" string ""
+        |> optional "billedAmount" float 0.0
+        |> optional "consumer" int -1
+        |> optional "status" int -1
+        |> optional "confirmation" string ""
+        |> optional "service" int -1
+        |> optional "county" int -1
+        |> optional "specialist" int -1
+        |> optional "recordNumber" string ""
 
 
 manyDecoder : Decoder ( List BillSheet )
@@ -61,17 +62,19 @@ manyDecoder =
 encoder : BillSheet -> Encode.Value
 encoder billsheet =
     Encode.object
-        [ ( "recipientID", Encode.string billsheet.recipientID )
+        [ ( "id", Encode.int billsheet.id )
+        , ( "recipientID", Encode.string billsheet.recipientID )
         , ( "serviceDate", Encode.string billsheet.serviceDate )
         , ( "billedAmount", Encode.float billsheet.billedAmount )
-        , ( "consumer", Encode.string billsheet.consumer )
-        , ( "status", Encode.string billsheet.status )
+        , ( "consumer", Encode.int billsheet.consumer )
+        , ( "status", Encode.int billsheet.status )
         , ( "confirmation", Encode.string billsheet.confirmation )
-        , ( "service", Encode.string billsheet.service )
-        , ( "county", Encode.string billsheet.county )
-        , ( "specialist", Encode.string billsheet.specialist )
+        , ( "service", Encode.int billsheet.service )
+        , ( "county", Encode.int billsheet.county )
+        , ( "specialist", Encode.int billsheet.specialist )
         , ( "recordNumber", Encode.string billsheet.recordNumber )
         ]
+
 
 succeed : a -> Decoder a
 succeed =

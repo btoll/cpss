@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/btoll/cpss/server/app"
+	"github.com/btoll/cpss/server/sql"
 	"github.com/goadesign/goa"
 )
 
@@ -19,31 +20,50 @@ func NewConsumerController(service *goa.Service) *ConsumerController {
 func (c *ConsumerController) Create(ctx *app.CreateConsumerContext) error {
 	// ConsumerController_Create: start_implement
 
-	// Put your logic here
+	id, err := sql.Create(sql.NewConsumer(ctx.Payload))
+	if err != nil {
+		return err
+	}
+	return ctx.OKTiny(&app.ConsumerMediaTiny{id.(int)})
 
 	// ConsumerController_Create: end_implement
-	res := &app.ConsumerMediaTiny{}
-	return ctx.OKTiny(res)
 }
 
 // Delete runs the delete action.
 func (c *ConsumerController) Delete(ctx *app.DeleteConsumerContext) error {
 	// ConsumerController_Delete: start_implement
 
-	// Put your logic here
+	err := sql.Delete(sql.NewConsumer(ctx.ID))
+	if err != nil {
+		return err
+	}
+	return ctx.OKTiny(&app.ConsumerMediaTiny{ctx.ID})
 
 	// ConsumerController_Delete: end_implement
-	res := &app.ConsumerMediaTiny{}
-	return ctx.OKTiny(res)
 }
 
 // List runs the list action.
 func (c *ConsumerController) List(ctx *app.ListConsumerContext) error {
 	// ConsumerController_List: start_implement
 
-	// Put your logic here
+	collection, err := sql.List(sql.NewConsumer(nil))
+	if err != nil {
+		return err
+	}
+	return ctx.OK(collection.(app.ConsumerMediaCollection))
 
 	// ConsumerController_List: end_implement
-	res := app.ConsumerMediaCollection{}
-	return ctx.OK(res)
+}
+
+// Update runs the update action.
+func (c *ConsumerController) Update(ctx *app.UpdateConsumerContext) error {
+	// ConsumerController_Update: start_implement
+
+	rec, err := sql.Update(sql.NewConsumer(ctx.Payload))
+	if err != nil {
+		return err
+	}
+	return ctx.OK(rec.(*app.ConsumerMedia))
+
+	// ConsumerController_Update: end_implement
 }

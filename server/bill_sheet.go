@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/btoll/cpss/server/app"
+	"github.com/btoll/cpss/server/sql"
 	"github.com/goadesign/goa"
 )
 
@@ -19,31 +20,50 @@ func NewBillSheetController(service *goa.Service) *BillSheetController {
 func (c *BillSheetController) Create(ctx *app.CreateBillSheetContext) error {
 	// BillSheetController_Create: start_implement
 
-	// Put your logic here
+	id, err := sql.Create(sql.NewBillSheet(ctx.Payload))
+	if err != nil {
+		return err
+	}
+	return ctx.OKTiny(&app.BillSheetMediaTiny{id.(int)})
 
 	// BillSheetController_Create: end_implement
-	res := &app.BillSheetMediaTiny{}
-	return ctx.OKTiny(res)
 }
 
 // Delete runs the delete action.
 func (c *BillSheetController) Delete(ctx *app.DeleteBillSheetContext) error {
 	// BillSheetController_Delete: start_implement
 
-	// Put your logic here
+	err := sql.Delete(sql.NewBillSheet(ctx.ID))
+	if err != nil {
+		return err
+	}
+	return ctx.OKTiny(&app.BillSheetMediaTiny{ctx.ID})
 
 	// BillSheetController_Delete: end_implement
-	res := &app.BillSheetMediaTiny{}
-	return ctx.OKTiny(res)
 }
 
 // List runs the list action.
 func (c *BillSheetController) List(ctx *app.ListBillSheetContext) error {
 	// BillSheetController_List: start_implement
 
-	// Put your logic here
+	collection, err := sql.List(sql.NewBillSheet(nil))
+	if err != nil {
+		return err
+	}
+	return ctx.OK(collection.(app.BillSheetMediaCollection))
 
 	// BillSheetController_List: end_implement
-	res := app.BillSheetMediaCollection{}
-	return ctx.OK(res)
+}
+
+// Update runs the update action.
+func (c *BillSheetController) Update(ctx *app.UpdateBillSheetContext) error {
+	// BillSheetController_Update: start_implement
+
+	rec, err := sql.Update(sql.NewBillSheet(ctx.Payload))
+	if err != nil {
+		return err
+	}
+	return ctx.OK(rec.(*app.BillSheetMedia))
+
+	// BillSheetController_Update: end_implement
 }

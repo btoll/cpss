@@ -21,10 +21,20 @@ var _ = Resource("Consumer", func() {
 		})
 	})
 
+	Action("update", func() {
+		Routing(PUT("/:id"))
+		Payload(ConsumerPayload)
+		Params(func() {
+			Param("id", Integer, "Consumer ID")
+		})
+		Description("Update a consumer by id.")
+		Response(OK, ConsumerMedia)
+	})
+
 	Action("delete", func() {
 		Routing(DELETE("/:id"))
 		Params(func() {
-			Param("id", String, "Consumer ID")
+			Param("id", Integer, "Consumer ID")
 		})
 		Description("Delete a consumer by id.")
 		Response(OK, func() {
@@ -43,68 +53,64 @@ var _ = Resource("Consumer", func() {
 var ConsumerPayload = Type("ConsumerPayload", func() {
 	Description("Consumer Description.")
 
-	Attribute("id", String, "ID", func() {
+	Attribute("id", Integer, "ID", func() {
 		Metadata("struct:tag:datastore", "id,noindex")
-		Metadata("struct:tag:json", "id,omitempty")
+		Metadata("struct:tag:json", "id")
 	})
 	Attribute("firstname", String, "Consumer firstname", func() {
 		Metadata("struct:tag:datastore", "firstname,noindex")
-		Metadata("struct:tag:json", "firstname,omitempty")
+		Metadata("struct:tag:json", "firstname")
 	})
 	Attribute("lastname", String, "Consumer lastname", func() {
 		Metadata("struct:tag:datastore", "lastname,noindex")
-		Metadata("struct:tag:json", "lastname,omitempty")
+		Metadata("struct:tag:json", "lastname")
 	})
 	Attribute("active", Boolean, "Consumer active", func() {
 		Metadata("struct:tag:datastore", "active,noindex")
-		Metadata("struct:tag:json", "active,omitempty")
+		Metadata("struct:tag:json", "active")
 	})
-	Attribute("countyName", String, "Consumer countyName", func() {
-		Metadata("struct:tag:datastore", "countyName,noindex")
-		Metadata("struct:tag:json", "countyName,omitempty")
+	Attribute("county", Integer, "Consumer county", func() {
+		Metadata("struct:tag:datastore", "county,noindex")
+		Metadata("struct:tag:json", "county")
 	})
 	Attribute("countyCode", String, "Consumer countyCode", func() {
 		Metadata("struct:tag:datastore", "countyCode,noindex")
-		Metadata("struct:tag:json", "countyCode,omitempty")
+		Metadata("struct:tag:json", "countyCode")
 	})
 	Attribute("fundingSource", String, "Consumer fundingSource", func() {
 		Metadata("struct:tag:datastore", "fundingSource,noindex")
-		Metadata("struct:tag:json", "fundingSource,omitempty")
+		Metadata("struct:tag:json", "fundingSource")
 	})
 	Attribute("zip", String, "Consumer zip", func() {
 		Metadata("struct:tag:datastore", "zip,noindex")
-		Metadata("struct:tag:json", "zip,omitempty")
+		Metadata("struct:tag:json", "zip")
 	})
 	Attribute("bsu", String, "Consumer bsu", func() {
 		Metadata("struct:tag:datastore", "bsu,noindex")
-		Metadata("struct:tag:json", "bsu,omitempty")
+		Metadata("struct:tag:json", "bsu")
 	})
 	Attribute("recipientID", String, "Consumer recipientID", func() {
 		Metadata("struct:tag:datastore", "recipientID,noindex")
-		Metadata("struct:tag:json", "recipientID,omitempty")
+		Metadata("struct:tag:json", "recipientID")
 	})
 	Attribute("diaCode", String, "Consumer diaCode", func() {
 		Metadata("struct:tag:datastore", "diaCode,noindex")
-		Metadata("struct:tag:json", "diaCode,omitempty")
-	})
-	Attribute("consumerID", String, "Consumer consumerID", func() {
-		Metadata("struct:tag:datastore", "consumerID,noindex")
-		Metadata("struct:tag:json", "consumerID,omitempty")
+		Metadata("struct:tag:json", "diaCode")
 	})
 	Attribute("copay", Number, "Consumer copay", func() {
 		Metadata("struct:tag:datastore", "copay,noindex")
-		Metadata("struct:tag:json", "copay,omitempty")
+		Metadata("struct:tag:json", "copay")
 	})
 	Attribute("dischargeDate", String, "Consumer dischargeDate", func() {
 		Metadata("struct:tag:datastore", "dischargeDate,noindex")
-		Metadata("struct:tag:json", "dischargeDate,omitempty")
+		Metadata("struct:tag:json", "dischargeDate")
 	})
 	Attribute("other", String, "Consumer other", func() {
 		Metadata("struct:tag:datastore", "other,noindex")
-		Metadata("struct:tag:json", "other,omitempty")
+		Metadata("struct:tag:json", "other")
 	})
 
-	Required("firstname", "lastname", "active", "countyName", "countyCode", "fundingSource", "zip", "bsu", "recipientID", "diaCode", "consumerID", "copay", "dischargeDate", "other")
+	Required("firstname", "lastname", "active", "county", "countyCode", "fundingSource", "zip", "bsu", "recipientID", "diaCode", "copay", "dischargeDate", "other")
 })
 
 var ConsumerMedia = MediaType("application/consumerapi.consumerentity", func() {
@@ -118,19 +124,18 @@ var ConsumerMedia = MediaType("application/consumerapi.consumerentity", func() {
 		Attribute("firstname")
 		Attribute("lastname")
 		Attribute("active")
-		Attribute("countyName")
+		Attribute("county")
 		Attribute("countyCode")
 		Attribute("fundingSource")
 		Attribute("zip")
 		Attribute("bsu")
 		Attribute("recipientID")
 		Attribute("diaCode")
-		Attribute("consumerID")
 		Attribute("copay")
 		Attribute("dischargeDate")
 		Attribute("other")
 
-		Required("id", "firstname", "lastname", "active", "countyName", "countyCode", "fundingSource", "zip", "bsu", "recipientID", "diaCode", "consumerID", "copay", "dischargeDate", "other")
+		Required("id", "firstname", "lastname", "active", "county", "countyCode", "fundingSource", "zip", "bsu", "recipientID", "diaCode", "copay", "dischargeDate", "other")
 	})
 
 	View("default", func() {
@@ -138,14 +143,13 @@ var ConsumerMedia = MediaType("application/consumerapi.consumerentity", func() {
 		Attribute("firstname")
 		Attribute("lastname")
 		Attribute("active")
-		Attribute("countyName")
+		Attribute("county")
 		Attribute("countyCode")
 		Attribute("fundingSource")
 		Attribute("zip")
 		Attribute("bsu")
 		Attribute("recipientID")
 		Attribute("diaCode")
-		Attribute("consumerID")
 		Attribute("copay")
 		Attribute("dischargeDate")
 		Attribute("other")

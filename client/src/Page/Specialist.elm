@@ -49,7 +49,7 @@ init url =
     , changingPassword = ""         -- Use for both storing current password and new password when changing password!
     , showModal = ( False, Nothing )
     , specialists = []
-    } ! [ Request.Specialist.get url |> Http.send FetchedSpecialists ]
+    } ! [ Request.Specialist.list url |> Http.send FetchedSpecialists ]
 
 
 
@@ -120,9 +120,9 @@ update url msg model =
                 , showModal = ( True , Modal.Delete |> Just )
             } ! []
 
-        Deleted ( Ok deletedSpecialist ) ->
+        Deleted ( Ok specialist ) ->
             { model |
-                specialists = model.specialists |> List.filter ( \m -> deletedSpecialist.id /= m.id )
+                specialists = model.specialists |> List.filter ( \m -> specialist.id /= m.id )
             } ! []
 
         Deleted ( Err err ) ->
@@ -240,10 +240,10 @@ update url msg model =
                                         , password = specialist.password
                                     }
             in
-                { model |
-                    specialists = specialists
-                    , editing = Nothing
-                } ! []
+            { model |
+                specialists = specialists
+                , editing = Nothing
+            } ! []
 
         Posted ( Err err ) ->
             { model |
@@ -392,11 +392,18 @@ drawView (
 
             Just specialist ->
                 specialist
+
+        showList =
+            case specialists |> List.length of
+                0 ->
+                    div [] []
+                _ ->
+                    Table.view config tableState specialists
     in
     case action of
         None ->
             [ button [ onClick Add ] [ text "Add Specialist" ]
-            , Table.view config tableState specialists
+            , showList
             , model.showModal
                 |> Modal.view
                 |> Html.map ModalMsg
@@ -478,9 +485,8 @@ formRows editable =
     , Form.select "Auth Level"
         [ id "authLevelSelection"
         , onInput ( SetFormValue (\v -> { editable | authLevel = Form.toInt v } ) )
-        ]
-        (
-            [ ( "-1", "-- Select an invoice --" ), ( "1", "Admin" ), ( "2", "User" ) ]
+        ] (
+            [ ( "-1", "-- Select an auth level --" ), ( "1", "Admin" ), ( "2", "User" ) ]
                 |> List.map ( editable.authLevel |> toString |> Form.option )
         )
     ]
@@ -493,13 +499,10 @@ formRows editable =
 config : Table.Config User Msg
 config =
     Table.customConfig
-    -- TODO: Figure out why .id is giving me trouble!
---    { toId = .id
-    { toId = .username
+    { toId = .id >> toString
     , toMsg = SetTableState
     , columns =
-        [ Table.intColumn "ID" .id
-        , Table.stringColumn "Username" .username
+        [ Table.stringColumn "Username" .username
         , Table.stringColumn "Password" ( .password >> String.slice 0 10 )       -- Just show a small portion of the hashed password.
         , Table.stringColumn "First Name" .firstname
         , Table.stringColumn "Last Name" .lastname
@@ -510,15 +513,8 @@ config =
         , customColumn ( viewButton Delete "Delete" )
         , customColumn ( viewButton ChangePassword "Change Password" )
         ]
-    , customizations =
-        { defaultCustomizations | rowAttrs = toRowAttrs }
+    , customizations = defaultCustomizations
     }
-
-
-toRowAttrs : User -> List ( Attribute Msg )
-toRowAttrs { id } =
-    [ style [ ( "background", "white" ) ]
-    ]
 
 
 customColumn : ( User -> Table.HtmlDetails Msg ) -> Table.Column User Msg

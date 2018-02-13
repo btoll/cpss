@@ -8,6 +8,7 @@ import Validate exposing (Validator, ifBlank, validate)
 type Field
     = FirstName
     | LastName
+    | DischargeDate
 
 
 
@@ -26,6 +27,7 @@ modelValidator =
     Validate.all
         [ ifBlank .firstname ( FirstName, message )
         , ifBlank .lastname ( LastName, message )
+        , ifBlank .dischargeDate ( DischargeDate, message )
         ]
 
 

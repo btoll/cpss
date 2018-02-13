@@ -9,8 +9,8 @@ CREATE TABLE IF NOT EXISTS `specialist` (
   `firstname` varchar(100) DEFAULT NULL,
   `lastname` varchar(100) DEFAULT NULL,
   `email` varchar(100) DEFAULT NULL,
-  `payrate` double DEFAULT '0',
-  `authLevel` int DEFAULT '1',
+  `payrate` double DEFAULT 0,
+  `authLevel` int DEFAULT 1,
   PRIMARY KEY (`id`),
   KEY `ID` (`id`)
 ) ;

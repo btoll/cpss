@@ -21,10 +21,20 @@ var _ = Resource("BillSheet", func() {
 		})
 	})
 
+	Action("update", func() {
+		Routing(PUT("/:id"))
+		Payload(BillSheetPayload)
+		Params(func() {
+			Param("id", Integer, "BillSheet ID")
+		})
+		Description("Update a billsheet by id.")
+		Response(OK, BillSheetMedia)
+	})
+
 	Action("delete", func() {
 		Routing(DELETE("/:id"))
 		Params(func() {
-			Param("id", String, "BillSheet ID")
+			Param("id", Integer, "BillSheet ID")
 		})
 		Description("Delete a billsheet by id.")
 		Response(OK, func() {
@@ -43,49 +53,49 @@ var _ = Resource("BillSheet", func() {
 var BillSheetPayload = Type("BillSheetPayload", func() {
 	Description("BillSheet Description.")
 
-	Attribute("id", String, "ID", func() {
+	Attribute("id", Integer, "ID", func() {
 		Metadata("struct:tag:datastore", "id,noindex")
-		Metadata("struct:tag:json", "id,omitempty")
+		Metadata("struct:tag:json", "id")
 	})
 	Attribute("recipientID", String, "recipientID", func() {
 		Metadata("struct:tag:datastore", "recipientID,noindex")
-		Metadata("struct:tag:json", "recipientID,omitempty")
+		Metadata("struct:tag:json", "recipientID")
 	})
 	Attribute("serviceDate", String, "BillSheet serviceDate", func() {
 		Metadata("struct:tag:datastore", "serviceDate,noindex")
-		Metadata("struct:tag:json", "serviceDate,omitempty")
+		Metadata("struct:tag:json", "serviceDate")
 	})
 	Attribute("billedAmount", Number, "BillSheet billedAmount", func() {
 		Metadata("struct:tag:datastore", "billedAmount,noindex")
-		Metadata("struct:tag:json", "billedAmount,omitempty")
+		Metadata("struct:tag:json", "billedAmount")
 	})
-	Attribute("consumer", String, "BillSheet consumer", func() {
+	Attribute("consumer", Integer, "BillSheet consumer", func() {
 		Metadata("struct:tag:datastore", "consumer,noindex")
-		Metadata("struct:tag:json", "consumer,omitempty")
+		Metadata("struct:tag:json", "consumer")
 	})
-	Attribute("status", String, "BillSheet status", func() {
+	Attribute("status", Integer, "BillSheet status", func() {
 		Metadata("struct:tag:datastore", "status,noindex")
-		Metadata("struct:tag:json", "status,omitempty")
+		Metadata("struct:tag:json", "status")
 	})
 	Attribute("confirmation", String, "BillSheet confirmation", func() {
 		Metadata("struct:tag:datastore", "confirmation,noindex")
-		Metadata("struct:tag:json", "confirmation,omitempty")
+		Metadata("struct:tag:json", "confirmation")
 	})
-	Attribute("service", String, "BillSheet service", func() {
+	Attribute("service", Integer, "BillSheet service", func() {
 		Metadata("struct:tag:datastore", "service,noindex")
-		Metadata("struct:tag:json", "service,omitempty")
+		Metadata("struct:tag:json", "service")
 	})
-	Attribute("county", String, "BillSheet county", func() {
+	Attribute("county", Integer, "BillSheet county", func() {
 		Metadata("struct:tag:datastore", "county,noindex")
-		Metadata("struct:tag:json", "county,omitempty")
+		Metadata("struct:tag:json", "county")
 	})
-	Attribute("specialist", String, "BillSheet specialist", func() {
+	Attribute("specialist", Integer, "BillSheet specialist", func() {
 		Metadata("struct:tag:datastore", "specialist,noindex")
-		Metadata("struct:tag:json", "specialist,omitempty")
+		Metadata("struct:tag:json", "specialist")
 	})
 	Attribute("recordNumber", String, "BillSheet recordNumber", func() {
 		Metadata("struct:tag:datastore", "recordNumber,noindex")
-		Metadata("struct:tag:json", "recordNumber,omitempty")
+		Metadata("struct:tag:json", "recordNumber")
 	})
 
 	Required("recipientID", "serviceDate", "billedAmount", "consumer", "status", "confirmation", "service", "county", "specialist", "recordNumber")
@@ -110,7 +120,7 @@ var BillSheetMedia = MediaType("application/billsheetapi.billsheetentity", func(
 		Attribute("specialist")
 		Attribute("recordNumber")
 
-		Required("recipientID", "serviceDate", "billedAmount", "consumer", "status", "confirmation", "service", "county", "specialist", "recordNumber")
+		Required("id", "recipientID", "serviceDate", "billedAmount", "consumer", "status", "confirmation", "service", "county", "specialist", "recordNumber")
 	})
 
 	View("default", func() {

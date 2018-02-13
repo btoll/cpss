@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS `status` (
 
 LOCK TABLES `status` WRITE;
 /*!40000 ALTER TABLE `status` DISABLE KEYS */;
-INSERT INTO `status` VALUES
+INSERT `status` VALUES
 	(NULL,'Billed'),
 	(NULL,'Paid'),
 	(NULL,'Authorization Issues'),

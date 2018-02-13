@@ -1,4 +1,4 @@
-module Request.Status exposing (delete, get, post, put)
+module Request.Status exposing (delete, list, post, put)
 
 import Http
 import Data.Status exposing (Status, decoder, encoder, manyDecoder, succeed)
@@ -18,8 +18,8 @@ delete url status =
         }
 
 
-get : String -> Http.Request ( List Status )
-get url =
+list : String -> Http.Request ( List Status )
+list url =
     manyDecoder
         |> Http.get ( (++) url "/status/list" )
 

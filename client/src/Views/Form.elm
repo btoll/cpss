@@ -43,7 +43,7 @@ checkbox name attrs =
 
 float : String -> List ( Attribute msg ) -> List ( Html msg ) -> Html msg
 float name attrs =
-    inputControl "number" name ( attrs |> (::) ( step "0.25" ) )
+    inputControl "number" name ( attrs |> (::) ( step "0.01" ) )
 
 
 -- TODO: The compiler doesn't like this annotation!

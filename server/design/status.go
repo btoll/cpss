@@ -22,7 +22,7 @@ var _ = Resource("Status", func() {
 		Routing(PUT("/:id"))
 		Payload(StatusPayload)
 		Params(func() {
-			Param("id", String, "Status ID")
+			Param("id", Integer, "Status ID")
 		})
 		Description("Update a status by id.")
 		Response(OK, StatusMedia)
@@ -52,11 +52,11 @@ var StatusPayload = Type("StatusPayload", func() {
 
 	Attribute("id", Integer, "ID", func() {
 		Metadata("struct:tag:datastore", "id,noindex")
-		Metadata("struct:tag:json", "id,omitempty")
+		Metadata("struct:tag:json", "id")
 	})
 	Attribute("status", String, "Status status", func() {
 		Metadata("struct:tag:datastore", "status,noindex")
-		Metadata("struct:tag:json", "status,omitempty")
+		Metadata("struct:tag:json", "status")
 	})
 
 	Required("status")

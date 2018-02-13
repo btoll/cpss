@@ -16,6 +16,7 @@ func NewSessionController(service *goa.Service) *SessionController {
 	return &SessionController{Controller: service.NewController("SessionController")}
 }
 
+// Auth runs the auth action.
 func (c *SessionController) Auth(ctx *app.AuthSessionContext) error {
 	// SessionController_Auth: start_implement
 
@@ -28,13 +29,13 @@ func (c *SessionController) Auth(ctx *app.AuthSessionContext) error {
 	// SessionController_Auth: end_implement
 }
 
+// Hash runs the hash action.
 func (c *SessionController) Hash(ctx *app.HashSessionContext) error {
 	// SessionController_Hash: start_implement
 
-	return ctx.OKTiny(&app.SessionMediaTiny{
-		ID:       *ctx.Payload.ID,
-		Password: sql.Hash(ctx.Payload.Password),
-	})
+	// Put your logic here
 
-	// SessionController_Verify: end_implement
+	// SessionController_Hash: end_implement
+	res := &app.SessionMediaTiny{}
+	return ctx.OKTiny(res)
 }

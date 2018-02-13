@@ -3,7 +3,7 @@
 SHELL 			= /bin/sh
 CC      		= go
 GENERATED		= .__gen__
-GOA_DESIGN		= design/api.go design/bill_sheet.go design/consumer.go design/session.go design/status.go design/specialist.go
+GOA_DESIGN		= design/api.go design/bill_sheet.go design/consumer.go design/county.go design/session.go design/status.go design/specialist.go
 TARGET			= cpss
 WATCHER			= entr
 

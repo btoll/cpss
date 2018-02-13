@@ -1,4 +1,4 @@
-module Request.Specialist exposing (delete, get, post, put)
+module Request.Specialist exposing (delete, list, post, put)
 
 import Http
 import Data.User exposing (User, decoder, encoder, manyDecoder, succeed)
@@ -18,8 +18,8 @@ delete url specialist =
         }
 
 
-get : String -> Http.Request ( List User )
-get url =
+list : String -> Http.Request ( List User )
+list url =
     manyDecoder
         |> Http.get ( (++) url "/specialist/list" )
 

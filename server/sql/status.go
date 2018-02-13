@@ -44,10 +44,6 @@ func (s *Status) Create(db *mysql.DB) (interface{}, error) {
 	}, nil
 }
 
-func (s *Status) Read(db *mysql.DB) (interface{}, error) {
-	return nil, nil
-}
-
 func (s *Status) Update(db *mysql.DB) (interface{}, error) {
 	payload := s.Data.(*app.StatusPayload)
 	stmt, err := db.Prepare(s.Stmt["UPDATE"])

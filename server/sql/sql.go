@@ -13,12 +13,20 @@ type Hasher interface {
 	Hash(clearText string) string
 }
 
-type SQL interface {
+type CRUD interface {
 	Create(db *mysql.DB) (interface{}, error)
-	Read(db *mysql.DB) (interface{}, error)
 	Update(db *mysql.DB) (interface{}, error)
 	Delete(db *mysql.DB) error
+	Lister
+	//	Reader
+}
+
+type Lister interface {
 	List(db *mysql.DB) (interface{}, error)
+}
+
+type Reader interface {
+	Read(db *mysql.DB) (interface{}, error)
 }
 
 type Verifier interface {
@@ -33,7 +41,7 @@ func connect() (*mysql.DB, error) {
 	return mysql.Open("mysql", ":@/?charset=utf8")
 }
 
-func Create(s SQL) (interface{}, error) {
+func Create(s CRUD) (interface{}, error) {
 	db, err := connect()
 	if err != nil {
 		return -1, err
@@ -46,12 +54,12 @@ func Create(s SQL) (interface{}, error) {
 	return rec, nil
 }
 
-func Read(s SQL) (interface{}, error) {
+func Read(r Reader) (interface{}, error) {
 	db, err := connect()
 	if err != nil {
 		return nil, err
 	}
-	coll, err := s.Read(db)
+	coll, err := r.Read(db)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +67,7 @@ func Read(s SQL) (interface{}, error) {
 	return coll, nil
 }
 
-func Update(s SQL) (interface{}, error) {
+func Update(s CRUD) (interface{}, error) {
 	db, err := connect()
 	if err != nil {
 		return nil, err
@@ -72,7 +80,7 @@ func Update(s SQL) (interface{}, error) {
 	return rec, nil
 }
 
-func Delete(s SQL) error {
+func Delete(s CRUD) error {
 	db, err := connect()
 	if err != nil {
 		return err
@@ -82,12 +90,12 @@ func Delete(s SQL) error {
 	return nil
 }
 
-func List(s SQL) (interface{}, error) {
+func List(l Lister) (interface{}, error) {
 	db, err := connect()
 	if err != nil {
 		return nil, err
 	}
-	coll, err := s.List(db)
+	coll, err := l.List(db)
 	if err != nil {
 		return nil, err
 	}

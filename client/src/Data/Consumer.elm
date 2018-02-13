@@ -1,24 +1,23 @@
 module Data.Consumer exposing (Consumer, decoder, encoder, manyDecoder, new, succeed)
 
-import Json.Decode as Decode exposing (Decoder, bool, float, list, string)
+import Json.Decode as Decode exposing (Decoder, bool, float, int, list, string)
 import Json.Decode.Pipeline exposing (decode, optional, required)
 import Json.Encode as Encode
 
 
 
 type alias Consumer =
-    { id : String
+    { id : Int
     , firstname : String
     , lastname : String
     , active : Bool
-    , countyName : String
+    , county : Int
     , countyCode : String
     , fundingSource : String
     , zip : String
     , bsu : String
     , recipientID : String
     , diaCode : String
-    , consumerID : String
     , copay : Float
     , dischargeDate : String
     , other : String
@@ -27,18 +26,17 @@ type alias Consumer =
 
 new : Consumer
 new =
-    { id = ""
+    { id = -1
     , firstname = ""
     , lastname = ""
     , active = True
-    , countyName = ""
+    , county = -1
     , countyCode = ""
     , fundingSource = ""
     , zip = ""
     , bsu = ""
     , recipientID = ""
     , diaCode = ""
-    , consumerID = ""
     , copay = 0.00
     , dischargeDate = ""
     , other = ""
@@ -48,21 +46,20 @@ new =
 decoder : Decoder Consumer
 decoder =
     decode Consumer
-        |> required "id" string
-        |> required "firstname" string
-        |> required "lastname" string
-        |> required "active" bool
-        |> required "countyName" string
-        |> required "countyCode" string
-        |> required "fundingSource" string
-        |> required "zip" string
-        |> required "bsu" string
-        |> required "recipientID" string
-        |> required "diaCode" string
-        |> required "consumerID" string
-        |> required "copay" float
-        |> required "dischargeDate" string
-        |> required "other" string
+        |> required "id" int
+        |> optional "firstname" string ""
+        |> optional "lastname" string ""
+        |> optional "active" bool True
+        |> optional "county" int -1
+        |> optional "countyCode" string ""
+        |> optional "fundingSource" string ""
+        |> optional "zip" string ""
+        |> optional "bsu" string ""
+        |> optional "recipientID" string ""
+        |> optional "diaCode" string ""
+        |> optional "copay" float 0.0
+        |> optional "dischargeDate" string ""
+        |> optional "other" string ""
 
 
 manyDecoder : Decoder ( List Consumer )
@@ -73,21 +70,22 @@ manyDecoder =
 encoder : Consumer -> Encode.Value
 encoder consumer =
     Encode.object
-        [ ( "firstname", Encode.string consumer.firstname )
+        [ ( "id", Encode.int consumer.id )
+        , ( "firstname", Encode.string consumer.firstname )
         , ( "lastname", Encode.string consumer.lastname )
         , ( "active", Encode.bool consumer.active )
-        , ( "countyName", Encode.string consumer.countyName )
-        , ( "countyName", Encode.string consumer.countyCode )
+        , ( "county", Encode.int consumer.county )
+        , ( "countyCode", Encode.string consumer.countyCode )
         , ( "fundingSource", Encode.string consumer.fundingSource )
         , ( "zip", Encode.string consumer.zip )
         , ( "bsu", Encode.string consumer.bsu )
         , ( "recipientID", Encode.string consumer.recipientID )
         , ( "diaCode", Encode.string consumer.diaCode )
-        , ( "consumerID", Encode.string consumer.consumerID )
         , ( "copay", Encode.float consumer.copay )
         , ( "dischargeDate", Encode.string consumer.dischargeDate )
         , ( "other", Encode.string consumer.other )
         ]
+
 
 succeed : a -> Decoder a
 succeed =

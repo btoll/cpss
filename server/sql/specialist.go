@@ -51,17 +51,12 @@ func (s *Specialist) Create(db *mysql.DB) (interface{}, error) {
 	}, nil
 }
 
-func (s *Specialist) Read(db *mysql.DB) (interface{}, error) {
-	return nil, nil
-}
-
 func (s *Specialist) Update(db *mysql.DB) (interface{}, error) {
 	payload := s.Data.(*app.SpecialistPayload)
 	stmt, err := db.Prepare(s.Stmt["UPDATE"])
 	if err != nil {
 		return nil, err
 	}
-
 	_, err = stmt.Exec(payload.Username, payload.Password, payload.Firstname, payload.Lastname, payload.Email, payload.Payrate, payload.AuthLevel, payload.ID)
 	if err != nil {
 		return nil, err

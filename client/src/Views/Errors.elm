@@ -14,7 +14,7 @@ view errors =
                     tipe = t |> Tuple.first |> toString
                     description = t |> Tuple.second
                 in
-                p [ class "error" ] [ (++) tipe description |> text ]
+                p [ class "error" ] [ tipe ++ ": " ++ description |> text ]
             )
         |> div []
 

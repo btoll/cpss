@@ -1,13 +1,15 @@
 module Page.Consumer exposing (Model, Msg, init, update, view)
 
 import Data.Consumer exposing (Consumer, new)
+import Data.County exposing (County, CountyData)
 import Date exposing (Date, Day(..), day, dayOfWeek, month, year)
 import DatePicker exposing (defaultSettings, DateEvent(..))
 import Html exposing (Html, Attribute, button, div, form, h1, input, label, node, section, text)
-import Html.Attributes exposing (action, checked, disabled, for, id, style, type_, value)
-import Html.Events exposing (onClick, onInput, onSubmit)
+import Html.Attributes exposing (action, autofocus, checked, disabled, for, id, style, type_, value)
+import Html.Events exposing (onCheck, onClick, onInput, onSubmit)
 import Http
 import Request.Consumer
+import Request.County
 import Table exposing (defaultCustomizations)
 import Task exposing (Task)
 import Util.Date
@@ -20,7 +22,6 @@ import Views.Modal as Modal
 
 -- MODEL
 
-
 type alias Model =
     { errors : List ( Validate.Consumer.Field, String )
     , tableState : Table.State
@@ -30,6 +31,7 @@ type alias Model =
     , showModal : ( Bool, Maybe Modal.Modal )
     , date : Maybe Date
     , datePicker : DatePicker.DatePicker
+    , countyData : CountyData
     , consumers : List Consumer
     }
 
@@ -77,9 +79,11 @@ init url =
     , showModal = ( False, Nothing )
     , date = Nothing
     , datePicker = datePicker
+    , countyData = ( [], [] )
     , consumers = []
     } ! [ Cmd.map DatePicker datePickerFx
-    , Request.Consumer.get url |> Http.send FetchedConsumers
+    , Request.County.list url |> Http.send FetchedCounties
+    , Request.Consumer.list url |> Http.send FetchedConsumers
     ]
 
 
@@ -91,14 +95,19 @@ type Msg
     | Cancel
     | DatePicker DatePicker.Msg
     | Delete Consumer
-    | Deleted ( Result Http.Error () )
+    | Deleted ( Result Http.Error Int )
     | Edit Consumer
+    | FetchedCities ( Result Http.Error ( List County ) )
     | FetchedConsumers ( Result Http.Error ( List Consumer ) )
+    | FetchedCounties ( Result Http.Error ( List County ) )
     | ModalMsg Modal.Msg
     | Post
     | Posted ( Result Http.Error Consumer )
     | Put
     | Putted ( Result Http.Error Consumer )
+    | SelectCounty Consumer String
+    | SelectZip Consumer String
+    | SetCheckboxValue ( Bool -> Consumer ) Bool
     | SetFormValue ( String -> Consumer ) String
     | SetTableState Table.State
     | Submit
@@ -157,37 +166,39 @@ update url msg model =
             } ! [ Cmd.map DatePicker datePickerFx ]
 
         Delete consumer ->
-            model ! []
---            { model |
---                showModal =
---                    ( True
---                    , specialist |> Modal.Delete |> Just
---                    )
---            } ! []
---            let
---                subCmd =
---                    Request.Consumer.delete url consumer
---                        |> Http.toTask
---                        |> Task.attempt Deleted
---            in
---                { model |
---                    action = None
---                    , editing = Nothing
---                } ! [ subCmd ]
+            { model |
+                editing = Just consumer
+                , showModal = ( True , Modal.Delete |> Just )
+            } ! []
 
-        Deleted ( Ok consumer ) ->
-            model ! []
+        Deleted ( Ok id ) ->
+            { model |
+                consumers = model.consumers |> List.filter ( \m -> id /= m.id )
+            } ! []
 
         Deleted ( Err err ) ->
-            let
-                gg = (Debug.log "err" err)
-            in
-            model ! []
+            { model |
+                action = None
+--                , errors = (::) "There was a problem, the record could not be deleted!" model.errors
+            } ! []
 
         Edit consumer ->
             { model |
                 action = Editing
                 , editing = Just consumer
+            -- Fetch the county's zip codes to set the zip code drop-down to the correct value.
+            } ! [ consumer.county |> toString |> Request.County.cities url |> Http.send FetchedCities ]
+
+        FetchedCities ( Ok cities ) ->
+            { model |
+                countyData = ( model.countyData |> Tuple.first, cities )
+                , tableState = Table.initialSort "ID"
+            } ! []
+
+        FetchedCities ( Err err ) ->
+            { model |
+                countyData = ( model.countyData |> Tuple.first, [] )
+                , tableState = Table.initialSort "ID"
             } ! []
 
         FetchedConsumers ( Ok consumers ) ->
@@ -202,19 +213,34 @@ update url msg model =
                 , tableState = Table.initialSort "ID"
             } ! []
 
+        FetchedCounties ( Ok counties ) ->
+            { model |
+                countyData = ( counties, model.countyData |> Tuple.second )
+                , tableState = Table.initialSort "ID"
+            } ! []
+
+        FetchedCounties ( Err err ) ->
+            { model |
+                countyData = ( [], model.countyData |> Tuple.second )
+                , tableState = Table.initialSort "ID"
+            } ! []
+
         ModalMsg subMsg ->
-            model ! []
---            let
---                ( bool, cmd ) =
---                    ( \invoice ->
---                        Request.Specialist.delete url invoice
---                            |> Http.toTask
---                            |> Task.attempt Deleted
---                    ) |> Modal.update subMsg
---            in
---            { model |
---                showModal = ( bool, Nothing )
---            } ! [ cmd ]
+            let
+                cmd =
+                    case ( subMsg |> Modal.update ) of
+                        False ->
+                            Cmd.none
+
+                        True ->
+                            Maybe.withDefault new model.editing
+                                |> Request.Consumer.delete url
+                                |> Http.toTask
+                                |> Task.attempt Deleted
+            in
+            { model |
+                showModal = ( False, Nothing )
+            } ! [ cmd ]
 
         Post ->
             let
@@ -242,55 +268,102 @@ update url msg model =
             in
                 { model |
                     action = action
-                    , editing = Nothing
                     , errors = errors
                 } ! [ subCmd ]
 
         Posted ( Ok consumer ) ->
-            model ! []
+            let
+                consumers =
+                    case model.editing of
+                        Nothing ->
+                            model.consumers
+
+                        Just newConsumer ->
+                            model.consumers
+                                |> (::) { newConsumer | id = consumer.id }
+            in
+            { model |
+                consumers = consumers
+                , editing = Nothing
+            } ! []
 
         Posted ( Err err ) ->
-            model ! []
+            { model |
+                editing = Nothing
+--                , errors = (::) "There was a problem, the record could not be saved!" model.errors
+            } ! []
 
         Put ->
---            let
---                errors =
---                    case model.editing of
---                        Nothing ->
---                            []
---
---                        Just consumer ->
---                            Validate.Consumer.errors consumer
---
---                ( action, subCmd ) = if errors |> List.isEmpty then
---                    case model.editing of
---                        Nothing ->
---                            ( None, Cmd.none )
---
---                        Just consumer ->
---                            ( None
---                            , Request.Consumer.put url consumer
---                                |> Http.toTask
---                                |> Task.attempt Putted
---                            )
---                    else
---                        ( Editing, Cmd.none )
---            in
---                { model |
---                    action = action
---                    , errors = errors
---                } ! [ subCmd ]
-            model ! []
+            let
+                errors =
+                    case model.editing of
+                        Nothing ->
+                            []
+
+                        Just consumer ->
+                            Validate.Consumer.errors consumer
+
+                ( action, subCmd ) = if errors |> List.isEmpty then
+                    case model.editing of
+                        Nothing ->
+                            ( None, Cmd.none )
+
+                        Just consumer ->
+                            ( None
+                            , Request.Consumer.put url consumer
+                                |> Http.toTask
+                                |> Task.attempt Putted
+                            )
+                    else
+                        ( Editing, Cmd.none )
+            in
+            { model |
+                action = action
+                , errors = errors
+            } ! [ subCmd ]
 
         Putted ( Ok consumer ) ->
-            model ! []
+            let
+                consumers =
+                    case model.editing of
+                        Nothing ->
+                            model.consumers
+
+                        Just newConsumer ->
+                            model.consumers
+                                |> List.filter ( \m -> consumer.id /= m.id )
+                                |> (::) { newConsumer | id = consumer.id }
+            in
+                { model |
+                    consumers = consumers
+                    , editing = Nothing
+                } ! []
 
         Putted ( Err err ) ->
-            model ! []
+            { model |
+                editing = Nothing
+--                , errors = (::) "There was a problem, the record could not be updated!" model.errors
+            } ! []
+
+        SelectCounty consumer countyID ->
+            { model |
+                editing = { consumer | county = countyID |> Form.toInt } |> Just
+            } ! [ countyID |> Request.County.cities url |> Http.send FetchedCities ]
+
+        SelectZip consumer zip ->
+            { model |
+                editing = { consumer | zip = zip } |> Just
+            } ! []
+
+        SetCheckboxValue setBoolValue b ->
+            { model |
+                editing = setBoolValue b |> Just
+                , disabled = False
+            } ! []
 
         SetFormValue setFormValue s ->
             { model |
-                editing = Just ( setFormValue s )
+                editing = setFormValue s |> Just
                 , disabled = False
             } ! []
 
@@ -323,6 +396,7 @@ view model =
 drawView : Model -> List ( Html Msg )
 drawView (
     { action
+    , countyData
     , date
     , datePicker
     , disabled
@@ -338,11 +412,18 @@ drawView (
 
             Just consumer ->
                 consumer
+
+        showList =
+            case consumers |> List.length of
+                0 ->
+                    div [] []
+                _ ->
+                    Table.view config tableState consumers
     in
     case action of
         None ->
             [ button [ onClick Add ] [ text "Add Consumer" ]
-            , Table.view config tableState consumers
+            , showList
             , model.showModal
                 |> Modal.view
                 |> Html.map ModalMsg
@@ -351,7 +432,7 @@ drawView (
         Adding ->
             [ form [ onSubmit Post ]
                 ( (++)
-                    ( ( editable, date, datePicker ) |> formRows )
+                    ( ( editable, date, datePicker, countyData ) |> formRows )
                     [ Form.submit disabled Cancel ]
                 )
             ]
@@ -359,51 +440,69 @@ drawView (
         Editing ->
             [ form [ onSubmit Put ]
                 ( (++)
-                    ( ( editable, date, datePicker ) |> formRows )
+                    ( ( editable, date, datePicker, countyData ) |> formRows )
                     [ Form.submit disabled Cancel ]
                 )
             ]
 
 
-formRows : ( Consumer, Maybe Date, DatePicker.DatePicker ) -> List ( Html Msg )
-formRows ( editable, date, datePicker ) =
--- , Form.textRow "Active" editable.active ( SetFormValue (\v -> { editable | active = v }) )
-    [ Form.text "ID"
-        [ value editable.id
-        , onInput ( SetFormValue ( \v -> { editable | id = v } ) )
-        , disabled True
-        ]
-        []
-    , Form.text "First Name"
+formRows : ( Consumer, Maybe Date, DatePicker.DatePicker, CountyData ) -> List ( Html Msg )
+formRows ( editable, date, datePicker, countyData ) =
+    let
+        focusedDate : Maybe Date
+        focusedDate =
+            case (/=) editable.dischargeDate "" of
+                True ->
+                    editable.dischargeDate |> Util.Date.unsafeFromString |> Just
+                False ->
+                    date
+    in
+    [ Form.text "First Name"
         [ value editable.firstname
-        , onInput ( SetFormValue (\v -> { editable | firstname = v } ) )
+        , onInput ( SetFormValue ( \v -> { editable | firstname = v } ) )
+        , autofocus True
         ]
         []
     , Form.text "Last Name"
         [ value editable.lastname
-        , onInput ( SetFormValue (\v -> { editable | lastname = v } ) )
+        , onInput ( SetFormValue ( \v -> { editable | lastname = v } ) )
         ]
         []
-    , Form.text "County Name"
-        [ value editable.countyName
-        , onInput ( SetFormValue (\v -> { editable | countyName = v } ) )
+    , Form.checkbox "Active"
+        [ checked editable.active
+        , onCheck ( SetCheckboxValue ( \v -> { editable | active = v } ) )
         ]
         []
+    , Form.select "County"
+        [ id "countySelection"
+        , editable |> SelectCounty |> onInput
+        ] (
+            countyData
+                |> Tuple.first
+                |> List.map ( \m -> ( m.id |> toString, m.county ) )
+                |> (::) ( "-1", "-- Select a county --" )
+                |> List.map ( editable.county |> toString |> Form.option )
+        )
     , Form.text "County Code"
         [ value editable.countyCode
-        , onInput ( SetFormValue (\v -> { editable | countyCode = v } ) )
+        , onInput ( SetFormValue ( \v -> { editable | countyCode = v } ) )
         ]
         []
     , Form.text "Funding Source"
         [ value editable.fundingSource
-        , onInput ( SetFormValue (\v -> { editable | fundingSource = v } ) )
+        , onInput ( SetFormValue ( \v -> { editable | fundingSource = v } ) )
         ]
         []
-    , Form.text "Zip Code"
-        [ value editable.zip
-        , onInput ( SetFormValue (\v -> { editable | zip = v } ) )
-        ]
-        []
+    , Form.select "Zip Code"
+        [ id "zipCodeSelection"
+        , editable |> SelectZip |> onInput
+        ] (
+            countyData
+                |> Tuple.second
+                |> List.map ( \m -> ( m.zip, m.zip ) )
+                |> (::) ( "-1", "-- Select a zip code --" )
+                |> List.map ( editable.zip |> Form.option )
+        )
     , Form.text "BSU"
         [ value editable.bsu
         , onInput ( SetFormValue (\v -> { editable | bsu = v } ) )
@@ -411,32 +510,27 @@ formRows ( editable, date, datePicker ) =
         []
     , Form.text "Recipient ID"
         [ value editable.recipientID
-        , onInput ( SetFormValue (\v -> { editable | recipientID = v } ) )
+        , onInput ( SetFormValue ( \v -> { editable | recipientID = v } ) )
         ]
         []
     , Form.text "DIA Code"
         [ value editable.diaCode
-        , onInput ( SetFormValue (\v -> { editable | diaCode = v } ) )
-        ]
-        []
-    , Form.text "Consumer ID"
-        [ value editable.consumerID
-        , onInput ( SetFormValue (\v -> { editable | consumerID = v } ) )
+        , onInput ( SetFormValue ( \v -> { editable | diaCode = v } ) )
         ]
         []
     , Form.float "Copay"
         [ value ( toString editable.copay )
-        , onInput ( SetFormValue (\v -> { editable | copay = Form.toFloat v } ) )
+        , onInput ( SetFormValue ( \v -> { editable | copay = Form.toFloat v } ) )
         ]
         []
     , div []
         [ label [] [ text "Discharge Date" ]
-        , DatePicker.view date ( settings date ) datePicker
+        , DatePicker.view focusedDate ( date |> settings ) datePicker
             |> Html.map DatePicker
         ]
     , Form.text "Other"
         [ value editable.other
-        , onInput ( SetFormValue (\v -> { editable | other = v } ) )
+        , onInput ( SetFormValue ( \v -> { editable | other = v } ) )
         ]
         []
     ]
@@ -447,51 +541,49 @@ formRows ( editable, date, datePicker ) =
 config : Table.Config Consumer Msg
 config =
     Table.customConfig
-    { toId = .id
+    { toId = .id >> toString
     , toMsg = SetTableState
     , columns =
-        [ Table.stringColumn "ID" .id
-        , Table.stringColumn "First Name" .firstname
+        [ Table.stringColumn "First Name" .firstname
         , Table.stringColumn "Last Name" .lastname
---        , Table.stringColumn "Active" .active
-        , Table.stringColumn "County Name" .countyName
+        , customColumn viewCheckbox "Active"
+        , Table.intColumn "County" .county
         , Table.stringColumn "County Code" .countyCode
         , Table.stringColumn "Funding Source" .fundingSource
         , Table.stringColumn "Zip Code" .zip
         , Table.stringColumn "BSU" .bsu
         , Table.stringColumn "Recipient ID" .recipientID
         , Table.stringColumn "DIA Code" .diaCode
-        , Table.stringColumn "Consumer ID" .consumerID
         , Table.floatColumn "Copay" .copay
         , Table.stringColumn "Discharge Date" .dischargeDate
         , Table.stringColumn "Other" .other
-        , customColumn ( viewButton Edit "Edit" )
-        , customColumn ( viewButton Delete "Delete" )
+        , customColumn ( viewButton Edit "Edit" ) ""
+        , customColumn ( viewButton Delete "Delete" ) ""
         ]
-    , customizations =
-        { defaultCustomizations | rowAttrs = toRowAttrs }
+    , customizations = defaultCustomizations
     }
 
 
-toRowAttrs : Consumer -> List ( Attribute Msg )
-toRowAttrs { id } =
-    [ style [ ( "background", "white" ) ]
-    ]
-
-
-customColumn : ( Consumer -> Table.HtmlDetails Msg ) -> Table.Column Consumer Msg
-customColumn viewElement =
+customColumn : ( Consumer -> Table.HtmlDetails Msg ) -> String -> Table.Column Consumer Msg
+customColumn viewElement header =
     Table.veryCustomColumn
-        { name = ""
+        { name = header
         , viewData = viewElement
         , sorter = Table.unsortable
         }
 
 
-viewButton : ( Consumer -> msg ) -> String -> Consumer -> Table.HtmlDetails msg
+viewButton : ( Consumer -> msg ) -> String -> ( Consumer -> Table.HtmlDetails msg )
 viewButton msg name consumer =
     Table.HtmlDetails []
         [ button [ onClick <| msg <| consumer ] [ text name ]
         ]
+
+
+viewCheckbox : Consumer -> Table.HtmlDetails Msg
+viewCheckbox { active } =
+  Table.HtmlDetails []
+    [ input [ checked active, disabled True, type_ "checkbox" ] []
+    ]
 
 
