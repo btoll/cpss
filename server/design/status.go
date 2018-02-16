@@ -54,12 +54,12 @@ var StatusPayload = Type("StatusPayload", func() {
 		Metadata("struct:tag:datastore", "id,noindex")
 		Metadata("struct:tag:json", "id")
 	})
-	Attribute("status", String, "Status status", func() {
-		Metadata("struct:tag:datastore", "status,noindex")
-		Metadata("struct:tag:json", "status")
+	Attribute("name", String, "Status name", func() {
+		Metadata("struct:tag:datastore", "name,noindex")
+		Metadata("struct:tag:json", "name")
 	})
 
-	Required("status")
+	Required("name")
 })
 
 var StatusMedia = MediaType("application/statusapi.statusentity", func() {
@@ -70,14 +70,14 @@ var StatusMedia = MediaType("application/statusapi.statusentity", func() {
 
 	Attributes(func() {
 		Attribute("id")
-		Attribute("status")
+		Attribute("name")
 
-		Required("id", "status")
+		Required("id", "name")
 	})
 
 	View("default", func() {
 		Attribute("id")
-		Attribute("status")
+		Attribute("name")
 	})
 
 	View("tiny", func() {

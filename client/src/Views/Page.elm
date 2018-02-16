@@ -11,6 +11,7 @@ type ActivePage
     | Home
     | BillSheet
     | Consumer
+    | County
     | Login
     | Logout
     | Specialist
@@ -38,6 +39,7 @@ siteLinks user page =
                     , SiteLink Consumer Route.Consumer [ text "Consumer" ]
                     , SiteLink Specialist Route.Specialist [ text "Specialist" ]
                     , SiteLink Status Route.Status [ text "Status" ]
+                    , SiteLink County Route.County [ text "Cities / Counties" ]
                     , SiteLink Logout Route.Logout [ text "Logout" ]
                     ]
                 _ ->

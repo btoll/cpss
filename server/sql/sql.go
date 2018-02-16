@@ -17,7 +17,7 @@ type CRUD interface {
 	Create(db *mysql.DB) (interface{}, error)
 	Update(db *mysql.DB) (interface{}, error)
 	Delete(db *mysql.DB) error
-	Lister
+	//	Lister
 	//	Reader
 }
 

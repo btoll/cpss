@@ -13,5 +13,5 @@ CREATE TABLE IF NOT EXISTS `specialist` (
   `authLevel` int DEFAULT 1,
   PRIMARY KEY (`id`),
   KEY `ID` (`id`)
-) ;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 ;
 

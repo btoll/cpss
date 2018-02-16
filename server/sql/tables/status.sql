@@ -4,10 +4,10 @@ DROP TABLE IF EXISTS `status` ;
 
 CREATE TABLE IF NOT EXISTS `status` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `status` varchar(255) NOT NULL,
+  `name` varchar(255) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `ID` (`id`)
-) ;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 ;
 
 LOCK TABLES `status` WRITE;
 /*!40000 ALTER TABLE `status` DISABLE KEYS */;

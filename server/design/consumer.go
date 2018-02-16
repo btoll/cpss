@@ -13,7 +13,7 @@ var _ = Resource("Consumer", func() {
 
 	Action("create", func() {
 		Routing(POST("/"))
-		Description("Create a new sport.")
+		Description("Create a new consumer.")
 		Payload(ConsumerPayload)
 		Response(OK, func() {
 			Status(200)

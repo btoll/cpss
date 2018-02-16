@@ -8,14 +8,14 @@ import Json.Encode as Encode
 
 type alias Status =
     { id : Int
-    , status : String
+    , name : String
     }
 
 
 new : Status
 new =
     { id = -1
-    , status = ""
+    , name = ""
     }
 
 
@@ -23,7 +23,7 @@ decoder : Decoder Status
 decoder =
     decode Status
         |> required "id" int
-        |> optional "status" string ""
+        |> optional "name" string ""
 
 
 manyDecoder : Decoder ( List Status )
@@ -35,7 +35,7 @@ encoder : Status -> Encode.Value
 encoder status =
     Encode.object
         [ ( "id", Encode.int status.id )
-        , ( "status", Encode.string status.status )
+        , ( "name", Encode.string status.name )
         ]
 
 

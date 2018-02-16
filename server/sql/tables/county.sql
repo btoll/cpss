@@ -4,14 +4,14 @@ DROP TABLE IF EXISTS `county` ;
 
 CREATE TABLE IF NOT EXISTS `county` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `county` varchar(50) DEFAULT NULL,
+  `name` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `ID` (`id`)
-) ;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 ;
 
 LOCK TABLES `county` WRITE;
 /*!40000 ALTER TABLE `county` DISABLE KEYS */;
-INSERT `county` (`id`, `county`) VALUES
+INSERT `county` (`id`, `name`) VALUES
 	(NULL, 'Adams'),
 	(NULL, 'Allegheny'),
 	(NULL, 'Armstrong'),

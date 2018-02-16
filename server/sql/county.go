@@ -16,45 +16,9 @@ func NewCounty(payload interface{}) *County {
 	return &County{
 		Data: payload,
 		Stmt: map[string]string{
-			"SELECT":     "SELECT * FROM county",
-			"GET_CITIES": "SELECT %s FROM city INNER JOIN county ON city.county=county.id WHERE county.id=%d",
+			"SELECT": "SELECT * FROM county ORDER BY name",
 		},
 	}
-}
-
-func (c *County) Read(db *mysql.DB) (interface{}, error) {
-	countyID := c.Data.(int)
-	rows, err := db.Query(fmt.Sprintf(c.Stmt["GET_CITIES"], "COUNT(city)", countyID))
-	if err != nil {
-		return nil, err
-	}
-	var count int
-	for rows.Next() {
-		err = rows.Scan(&count)
-		if err != nil {
-			return nil, err
-		}
-	}
-	rows, err = db.Query(fmt.Sprintf(c.Stmt["GET_CITIES"], "city,zip", countyID))
-	if err != nil {
-		return nil, err
-	}
-	coll := make(app.CountyMediaCityCollection, count)
-	i := 0
-	for rows.Next() {
-		var city string
-		var zip string
-		err := rows.Scan(&city, &zip)
-		if err != nil {
-			return nil, err
-		}
-		coll[i] = &app.CountyMediaCity{
-			City: &city,
-			Zip:  &zip,
-		}
-		i++
-	}
-	return coll, nil
 }
 
 func (c *County) List(db *mysql.DB) (interface{}, error) {
@@ -68,14 +32,14 @@ func (c *County) List(db *mysql.DB) (interface{}, error) {
 	i := 0
 	for rows.Next() {
 		var id int
-		var county string
-		err := rows.Scan(&id, &county)
+		var name string
+		err := rows.Scan(&id, &name)
 		if err != nil {
 			return nil, err
 		}
 		coll[i] = &app.CountyMedia{
-			ID:     id,
-			County: county,
+			ID:   id,
+			Name: name,
 		}
 		i++
 	}

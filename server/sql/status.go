@@ -17,9 +17,9 @@ func NewStatus(payload interface{}) *Status {
 		Data: payload,
 		Stmt: map[string]string{
 			"DELETE": "DELETE FROM status WHERE id=?",
-			"INSERT": "INSERT status SET status=?",
-			"SELECT": "SELECT %s FROM status",
-			"UPDATE": "UPDATE status SET status=? WHERE id=?",
+			"INSERT": "INSERT status SET name=?",
+			"SELECT": "SELECT %s FROM status ORDER BY name",
+			"UPDATE": "UPDATE status SET name=? WHERE id=?",
 		},
 	}
 }
@@ -30,7 +30,7 @@ func (s *Status) Create(db *mysql.DB) (interface{}, error) {
 	if err != nil {
 		return -1, err
 	}
-	res, err := stmt.Exec(payload.Status)
+	res, err := stmt.Exec(payload.Name)
 	if err != nil {
 		return -1, err
 	}
@@ -39,8 +39,8 @@ func (s *Status) Create(db *mysql.DB) (interface{}, error) {
 		return -1, err
 	}
 	return &app.StatusMedia{
-		ID:     int(id),
-		Status: payload.Status,
+		ID:   int(id),
+		Name: payload.Name,
 	}, nil
 }
 
@@ -51,13 +51,13 @@ func (s *Status) Update(db *mysql.DB) (interface{}, error) {
 		return nil, err
 	}
 
-	_, err = stmt.Exec(payload.Status, payload.ID)
+	_, err = stmt.Exec(payload.Name, payload.ID)
 	if err != nil {
 		return nil, err
 	}
 	return &app.StatusMedia{
-		ID:     *payload.ID,
-		Status: payload.Status,
+		ID:   *payload.ID,
+		Name: payload.Name,
 	}, nil
 }
 
@@ -91,14 +91,14 @@ func (s *Status) List(db *mysql.DB) (interface{}, error) {
 	i := 0
 	for rows.Next() {
 		var id int
-		var status string
-		err = rows.Scan(&id, &status)
+		var name string
+		err = rows.Scan(&id, &name)
 		if err != nil {
 			return nil, err
 		}
 		coll[i] = &app.StatusMedia{
-			ID:     id,
-			Status: status,
+			ID:   id,
+			Name: name,
 		}
 		i++
 	}

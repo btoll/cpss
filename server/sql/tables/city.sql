@@ -4,17 +4,17 @@ DROP TABLE IF EXISTS `city` ;
 
 CREATE TABLE IF NOT EXISTS `city` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `city` varchar(100) DEFAULT NULL,
+  `name` varchar(100) DEFAULT NULL,
   `zip` varchar(30) DEFAULT NULL,
-  `county` mediumint NOT NULL,
+  `county_id` int NOT NULL,
   `state` char(2) DEFAULT 'PA',
   PRIMARY KEY (`id`),
-  KEY `ID` (`id`)
-) ;
+  KEY `ID` (`id`),
+  CONSTRAINT `fkcounty_id` FOREIGN KEY (`county_id`) REFERENCES `county` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 ;
 
 LOCK TABLES `city` WRITE;
-/*!40000 ALTER TABLE `city` DISABLE KEYS */;
-INSERT `city` (`id`, `city`, `zip`, `county`, `state`) VALUES
+INSERT `city` (`id`, `name`, `zip`, `county_id`, `state`) VALUES
 (NULL, 'Aliquippa', '15001', 4, 'PA'),
 (NULL, 'Ambridge', '15003', 4, 'PA'),
 (NULL, 'Atlasburg', '15004', 63, 'PA'),
@@ -998,8 +998,7 @@ INSERT `city` (`id`, `city`, `zip`, `county`, `state`) VALUES
 (NULL, 'Covington', '16917', 59, 'PA'),
 (NULL, 'Cowanesque', '16918', 59, 'PA'),
 (NULL, 'Elkland', '16920', 59, 'PA'),
-(NULL, 'Gaines', '16921', 59, 'PA');
-INSERT `city` (`id`, `city`, `zip`, `county`, `state`) VALUES
+(NULL, 'Gaines', '16921', 59, 'PA'),
 (NULL, 'Galeton', '16922', 53, 'PA'),
 (NULL, 'Genesee', '16923', 53, 'PA'),
 (NULL, 'Gillett', '16925', 8, 'PA'),
@@ -1895,7 +1894,7 @@ INSERT `city` (`id`, `city`, `zip`, `county`, `state`) VALUES
 (NULL, 'Chester', '19016', 23, 'PA'),
 (NULL, 'Chester Heights', '19017', 23, 'PA'),
 (NULL, 'Clifton Heights', '19018', 23, 'PA'),
-(NULL, 'Philadelphia', '19019', 'Philadelphia', 'PA'),
+(NULL, 'Philadelphia', '19019', 51, 'PA'),
 (NULL, 'Bensalem', '19020', 9, 'PA'),
 (NULL, 'Croydon', '19021', 9, 'PA'),
 (NULL, 'Crum Lynne', '19022', 23, 'PA'),
@@ -1956,10 +1955,9 @@ INSERT `city` (`id`, `city`, `zip`, `county`, `state`) VALUES
 (NULL, 'Wayne', '19089', 23, 'PA'),
 (NULL, 'Willow Grove', '19090', 46, 'PA'),
 (NULL, 'Media', '19091', 23, 'PA'),
-(NULL, 'Philadelphia', '19092', 'Philadelphia', 'PA'),
-(NULL, 'Philadelphia', '19093', 'Philadelphia', 'PA'),
-(NULL, 'Woodlyn', '19094', 23, 'PA');
-INSERT `city` (`id`, `city`, `zip`, `county`, `state`) VALUES
+(NULL, 'Philadelphia', '19092', 51, 'PA'),
+(NULL, 'Philadelphia', '19093', 51, 'PA'),
+(NULL, 'Woodlyn', '19094', 23, 'PA'),
 (NULL, 'Wyncote', '19095', 46, 'PA'),
 (NULL, 'Wynnewood', '19096', 46, 'PA'),
 (NULL, 'Holmes', '19098', 23, 'PA'),
@@ -2224,6 +2222,5 @@ INSERT `city` (`id`, `city`, `zip`, `county`, `state`) VALUES
 (NULL, 'Reading', '19640', 6, 'PA'),
 (NULL, 'McAlisterville', '17049', 34, 'PA'),
 (NULL, 'Steelton', '17113', 22, 'PA');
-/*!40000 ALTER TABLE `city` ENABLE KEYS */;
 UNLOCK TABLES;
 

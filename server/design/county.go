@@ -9,24 +9,11 @@ var _ = Resource("County", func() {
 	BasePath("/county")
 	Description("PA counties")
 
-	Action("show", func() {
-		Routing(GET("/city/:id"))
-		Params(func() {
-			Param("id", Integer, "County ID")
-		})
-		Description("Get a cities by county id.")
-		Response(OK, func() {
-			Status(200)
-			Media(CollectionOf(CountyMedia), "city")
-		})
-	})
-
 	Action("list", func() {
 		Routing(GET("/list"))
 		Description("Get a list of all the PA counties")
 		Response(OK, CollectionOf(CountyMedia))
 	})
-
 })
 
 var CountyPayload = Type("CountyPayload", func() {
@@ -46,20 +33,13 @@ var CountyMedia = MediaType("application/countyapi.countyentity", func() {
 
 	Attributes(func() {
 		Attribute("id")
-		Attribute("county", String)
-		Attribute("city", String)
-		Attribute("zip", String)
+		Attribute("name", String)
 
-		Required("id", "county")
+		Required("id", "name")
 	})
 
 	View("default", func() {
 		Attribute("id")
-		Attribute("county", String)
-	})
-
-	View("city", func() {
-		Attribute("city", String)
-		Attribute("zip", String)
+		Attribute("name")
 	})
 })

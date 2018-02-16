@@ -16,5 +16,5 @@ CREATE TABLE IF NOT EXISTS `billsheet` (
   `recordNumber` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `ID` (`id`)
-) ;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 ;
 

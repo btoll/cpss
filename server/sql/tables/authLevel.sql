@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS `authLevel` (
   `level` varchar(50) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `ID` (`id`)
-) ;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 ;
 
 LOCK TABLES `authLevel` WRITE;
 /*!40000 ALTER TABLE `authLevel` DISABLE KEYS */;

@@ -1,15 +1,16 @@
-module Page.Status exposing (Model, Msg, init, update, view)
+module Page.County exposing (Model, Msg, init, update, view)
 
-import Data.Status as Status exposing (Status, new)
-import Html exposing (Html, Attribute, button, div, form, h1, input, label, section, text)
+import Data.City exposing (City, new)
+import Data.County exposing (County)
+import Html exposing (Html, Attribute, button, div, form, h1, input, label, node, section, text)
 import Html.Attributes exposing (action, autofocus, checked, disabled, for, id, style, type_, value)
-import Html.Events exposing (onClick, onInput, onSubmit)
-import Html.Lazy exposing (lazy)
+import Html.Events exposing (onCheck, onClick, onInput, onSubmit)
 import Http
-import Request.Status
+import Request.City
+import Request.County
 import Table exposing (defaultCustomizations)
 import Task exposing (Task)
-import Validate.Status
+import Validate.City
 import Views.Errors as Errors
 import Views.Form as Form
 import Views.Modal as Modal
@@ -18,22 +19,20 @@ import Views.Modal as Modal
 
 -- MODEL
 
-
 type alias Model =
-    { errors : List ( Validate.Status.Field, String )
+    { errors : List ( Validate.City.Field, String )
     , tableState : Table.State
     , action : Action
-    , editing : Maybe Status
+    , editing : Maybe City
     , disabled : Bool
     , showModal : ( Bool, Maybe Modal.Modal )
-    , status : List Status
+    , cities : List City
+    , counties : List County
     }
 
 
-type Action
-    = None
-    | Adding
-    | Editing
+type Action = None | Adding | Editing
+
 
 
 init : String -> ( Model, Cmd Msg )
@@ -44,9 +43,11 @@ init url =
     , editing = Nothing
     , disabled = True
     , showModal = ( False, Nothing )
-    , status = []
-    } ! [ Request.Status.list url |> Http.send FetchedStatus ]
-
+    , cities = []
+    , counties = []
+    } ! [ Request.County.list url |> Http.send FetchedCounties
+    , Request.City.list url |> Http.send FetchedCities
+    ]
 
 
 -- UPDATE
@@ -55,16 +56,18 @@ init url =
 type Msg
     = Add
     | Cancel
-    | Delete Status
-    | Deleted ( Result Http.Error Status )
-    | Edit Status
-    | FetchedStatus ( Result Http.Error ( List Status ) )
+    | Delete City
+    | Deleted ( Result Http.Error Int )
+    | Edit City
+    | FetchedCities ( Result Http.Error ( List City ) )
+    | FetchedCounties ( Result Http.Error ( List County ) )
     | ModalMsg Modal.Msg
     | Post
-    | Posted ( Result Http.Error Status )
+    | Posted ( Result Http.Error City )
     | Put
-    | Putted ( Result Http.Error Status )
-    | SetFormValue ( String -> Status ) String
+    | Putted ( Result Http.Error City )
+    | SelectCounty City String
+    | SetFormValue ( String -> City ) String
     | SetTableState Table.State
     | Submit
 
@@ -85,40 +88,50 @@ update url msg model =
                 , errors = []
             } ! []
 
-        Delete status ->
+        Delete city ->
             { model |
-                editing = Just status
+                editing = Just city
                 , showModal = ( True , Modal.Delete |> Just )
             } ! []
 
-        Deleted ( Ok status ) ->
+        Deleted ( Ok id ) ->
             { model |
-                status = model.status |> List.filter ( \m -> status.id /= m.id )
+                cities = model.cities |> List.filter ( \m -> id /= m.id )
             } ! []
 
         Deleted ( Err err ) ->
-            model ! []
-            -- TODO!
---            { model |
---                errors = [ "There was a problem when attempting to delete the status!" ]
---            } ! []
+            { model |
+                action = None
+--                , errors = (::) "There was a problem, the record could not be deleted!" model.errors
+            } ! []
 
-        Edit status ->
+        Edit county ->
             { model |
                 action = Editing
-                , editing = Just status
+                , editing = Just county
             } ! []
 
-        FetchedStatus ( Ok status ) ->
+        FetchedCities ( Ok cities ) ->
             { model |
-                status = status
+                cities = cities
                 , tableState = Table.initialSort "ID"
             } ! []
 
-        FetchedStatus ( Err err ) ->
+        FetchedCities ( Err err ) ->
             { model |
-                status = []
+                cities = []
                 , tableState = Table.initialSort "ID"
+            } ! []
+
+        FetchedCounties ( Ok counties ) ->
+            { model |
+                counties = counties
+                , tableState = Table.initialSort "ID"
+            } ! []
+
+        FetchedCounties ( Err err ) ->
+            { model |
+                tableState = Table.initialSort "ID"
             } ! []
 
         ModalMsg subMsg ->
@@ -130,7 +143,7 @@ update url msg model =
 
                         True ->
                             Maybe.withDefault new model.editing
-                                |> Request.Status.delete url
+                                |> Request.City.delete url
                                 |> Http.toTask
                                 |> Task.attempt Deleted
             in
@@ -145,17 +158,17 @@ update url msg model =
                         Nothing ->
                             []
 
-                        Just status ->
-                            Validate.Status.errors status
+                        Just city ->
+                            Validate.City.errors city
 
                 ( action, subCmd ) = if errors |> List.isEmpty then
                     case model.editing of
                         Nothing ->
                             ( None, Cmd.none )
 
-                        Just status ->
+                        Just city ->
                             ( None
-                            , Request.Status.post url status
+                            , Request.City.post url city
                                 |> Http.toTask
                                 |> Task.attempt Posted
                             )
@@ -164,29 +177,29 @@ update url msg model =
             in
                 { model |
                     action = action
-                    , editing = Nothing
                     , errors = errors
                 } ! [ subCmd ]
 
-        Posted ( Ok status ) ->
+        Posted ( Ok city ) ->
             let
-                st =
+                cities =
                     case model.editing of
                         Nothing ->
-                            model.status
+                            model.cities
 
-                        Just newstatus ->
-                            model.status
-                                |> (::) { newstatus | id = status.id }
+                        Just newCity ->
+                            model.cities
+                                |> (::) { newCity | id = city.id }
             in
-                { model |
-                    status = st
-                    , editing = Nothing
-                } ! []
+            { model |
+                cities = cities
+                , editing = Nothing
+            } ! []
 
         Posted ( Err err ) ->
             { model |
                 editing = Nothing
+--                , errors = (::) "There was a problem, the record could not be saved!" model.errors
             } ! []
 
         Put ->
@@ -196,42 +209,42 @@ update url msg model =
                         Nothing ->
                             []
 
-                        Just status ->
-                            Validate.Status.errors status
+                        Just city ->
+                            Validate.City.errors city
 
                 ( action, subCmd ) = if errors |> List.isEmpty then
                     case model.editing of
                         Nothing ->
                             ( None, Cmd.none )
 
-                        Just status ->
+                        Just city ->
                             ( None
-                            , Request.Status.put url status
+                            , Request.City.put url city
                                 |> Http.toTask
                                 |> Task.attempt Putted
                             )
                     else
                         ( Editing, Cmd.none )
             in
-                { model |
-                    action = action
-                    , errors = errors
-                } ! [ subCmd ]
+            { model |
+                action = action
+                , errors = errors
+            } ! [ subCmd ]
 
-        Putted ( Ok st ) ->
+        Putted ( Ok city ) ->
             let
-                status =
+                cities =
                     case model.editing of
                         Nothing ->
-                            model.status
+                            model.cities
 
-                        Just newStatus ->
-                            model.status
-                                |> List.filter ( \m -> st.id /= m.id )
-                                |> (::) { newStatus | id = st.id }
+                        Just newCity ->
+                            model.cities
+                                |> List.filter ( \m -> city.id /= m.id )
+                                |> (::) { newCity | id = city.id }
             in
                 { model |
-                    status = status
+                    cities = cities
                     , editing = Nothing
                 } ! []
 
@@ -241,14 +254,20 @@ update url msg model =
 --                , errors = (::) "There was a problem, the record could not be updated!" model.errors
             } ! []
 
-        SetTableState newState ->
-            { model | tableState = newState
+        SelectCounty city countyID ->
+            { model |
+                editing = { city | countyID = countyID |> Form.toInt } |> Just
+                , disabled = False
             } ! []
 
         SetFormValue setFormValue s ->
             { model |
-                editing = Just ( setFormValue s )
+                editing = setFormValue s |> Just
                 , disabled = False
+            } ! []
+
+        SetTableState newState ->
+            { model | tableState = newState
             } ! []
 
         Submit ->
@@ -266,7 +285,7 @@ view : Model -> Html Msg
 view model =
     section []
         ( (++)
-            [ h1 [] [ text "Status" ]
+            [ h1 [] [ text "Cities / Counties" ]
             , Errors.view model.errors
             ]
             ( drawView model )
@@ -276,30 +295,31 @@ view model =
 drawView : Model -> List ( Html Msg )
 drawView (
     { action
+    , cities
     , disabled
     , editing
     , tableState
-    , status
+    , counties
     } as model ) =
     let
-        editable : Status
+        editable : City
         editable = case editing of
             Nothing ->
                 new
 
-            Just status ->
-                status
+            Just city ->
+                city
 
         showList =
-            case status |> List.length of
+            case cities |> List.length of
                 0 ->
                     div [] []
                 _ ->
-                    Table.view config tableState status
+                    Table.view config tableState cities
     in
     case action of
         None ->
-            [ button [ onClick Add ] [ text "Add Status" ]
+            [ button [ onClick Add ] [ text "Add City" ]
             , showList
             , model.showModal
                 |> Modal.view
@@ -309,7 +329,7 @@ drawView (
         Adding ->
             [ form [ onSubmit Post ]
                 ( (++)
-                    ( editable |> formRows )
+                    ( ( editable, counties ) |> formRows )
                     [ Form.submit disabled Cancel ]
                 )
             ]
@@ -317,53 +337,73 @@ drawView (
         Editing ->
             [ form [ onSubmit Put ]
                 ( (++)
-                    ( editable |> formRows )
+                    ( ( editable, counties ) |> formRows )
                     [ Form.submit disabled Cancel ]
                 )
             ]
 
 
-formRows : Status -> List ( Html Msg )
-formRows editable =
-    [ Form.text "Status"
+formRows : ( City, List County ) -> List ( Html Msg )
+formRows ( editable, counties ) =
+    [ Form.text "City"
         [ value editable.name
         , onInput ( SetFormValue ( \v -> { editable | name = v } ) )
-        , autofocus True
         ]
         []
+    , Form.text "State"
+        [ value editable.state
+        , onInput ( SetFormValue ( \v -> { editable | state = v } ) )
+        ]
+        []
+    , Form.text "Zip Code"
+        [ value editable.zip
+        , onInput ( SetFormValue ( \v -> { editable | zip = v } ) )
+        ]
+        []
+    , Form.select "County"
+        [ id "countieselection"
+        , editable |> SelectCounty |> onInput
+        ] (
+            counties
+                |> List.map ( \m -> ( m.id |> toString, m.name ) )
+                |> (::) ( "-1", "-- Select a county --" )
+                |> List.map ( editable.countyID |> toString |> Form.option )
+        )
     ]
+
 -- TABLE CONFIGURATION
 
 
-config : Table.Config Status Msg
+config : Table.Config City Msg
 config =
     Table.customConfig
-    -- TODO: Figure out why .id is giving me trouble!
---    { toId = .id
-    { toId = .name
+    { toId = .id >> toString
     , toMsg = SetTableState
     , columns =
-        [ Table.stringColumn "Status" .name
-        , customColumn ( viewButton Edit "Edit" )
-        , customColumn ( viewButton Delete "Delete" )
+        [ Table.stringColumn "City" .name
+        , Table.stringColumn "State" .state
+        , Table.stringColumn "Zip Code" .zip
+        , Table.intColumn "County" .countyID
+        , customColumn ( viewButton Edit "Edit" ) ""
+        , customColumn ( viewButton Delete "Delete" ) ""
         ]
     , customizations = defaultCustomizations
     }
 
 
-customColumn : ( Status -> Table.HtmlDetails Msg ) -> Table.Column Status Msg
-customColumn viewElement =
+customColumn : ( City -> Table.HtmlDetails Msg ) -> String -> Table.Column City Msg
+customColumn viewElement header =
     Table.veryCustomColumn
-        { name = ""
+        { name = header
         , viewData = viewElement
         , sorter = Table.unsortable
         }
 
 
-viewButton : ( Status -> msg ) -> String -> Status -> Table.HtmlDetails msg
-viewButton msg name status =
+viewButton : ( City -> msg ) -> String -> ( City -> Table.HtmlDetails msg )
+viewButton msg name city =
     Table.HtmlDetails []
-        [ button [ onClick <| msg <| status ] [ text name ]
+        [ button [ onClick <| msg <| city ] [ text name ]
         ]
 
 

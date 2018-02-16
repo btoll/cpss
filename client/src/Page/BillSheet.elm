@@ -536,7 +536,7 @@ formRows ( editable, date, datePicker, pageLists ) =
         , editable |> SelectStatus |> onInput
         ] (
             pageLists.status
-                |> List.map ( \m -> ( m.id |> toString, m.status ) )
+                |> List.map ( \m -> ( m.id |> toString, m.name ) )
                 |> (::) ( "-1", "-- Select a status --" )
                 |> List.map ( editable.status |> toString |> Form.option )
         )
@@ -555,7 +555,7 @@ formRows ( editable, date, datePicker, pageLists ) =
         , editable |> SelectCounty |> onInput
         ] (
             pageLists.counties
-                |> List.map ( \m -> ( m.id |> toString, m.county ) )
+                |> List.map ( \m -> ( m.id |> toString, m.name ) )
                 |> (::) ( "-1", "-- Select a county --" )
                 |> List.map ( editable.county |> toString |> Form.option )
         )

@@ -18,7 +18,7 @@ func NewSpecialist(payload interface{}) *Specialist {
 		Stmt: map[string]string{
 			"DELETE": "DELETE FROM specialist WHERE id=?",
 			"INSERT": "INSERT specialist SET username=?,password=?,firstname=?,lastname=?,email=?,payrate=?,authLevel=?",
-			"SELECT": "SELECT %s FROM specialist",
+			"SELECT": "SELECT %s FROM specialist ORDER BY lastname,firstname",
 			"UPDATE": "UPDATE specialist SET username=?,password=?,firstname=?,lastname=?,email=?,payrate=?,authLevel=? WHERE id=?",
 		},
 	}

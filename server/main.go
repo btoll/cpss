@@ -31,6 +31,8 @@ func main() {
 	app.MountStatusController(service, g)
 	h := NewCountyController(service)
 	app.MountCountyController(service, h)
+	i := NewCityController(service)
+	app.MountCityController(service, i)
 
 	// Start service
 	if err := service.ListenAndServe(":8080"); err != nil {

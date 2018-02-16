@@ -1,13 +1,15 @@
 module Page.Consumer exposing (Model, Msg, init, update, view)
 
+import Data.City exposing (City)
 import Data.Consumer exposing (Consumer, new)
-import Data.County exposing (County, CountyData)
+import Data.County exposing (County)
 import Date exposing (Date, Day(..), day, dayOfWeek, month, year)
 import DatePicker exposing (defaultSettings, DateEvent(..))
 import Html exposing (Html, Attribute, button, div, form, h1, input, label, node, section, text)
 import Html.Attributes exposing (action, autofocus, checked, disabled, for, id, style, type_, value)
 import Html.Events exposing (onCheck, onClick, onInput, onSubmit)
 import Http
+import Request.City
 import Request.Consumer
 import Request.County
 import Table exposing (defaultCustomizations)
@@ -35,6 +37,9 @@ type alias Model =
     , consumers : List Consumer
     }
 
+
+type alias CountyData
+    = ( List County, List City )
 
 type Action = None | Adding | Editing
 
@@ -97,7 +102,7 @@ type Msg
     | Delete Consumer
     | Deleted ( Result Http.Error Int )
     | Edit Consumer
-    | FetchedCities ( Result Http.Error ( List County ) )
+    | FetchedCities ( Result Http.Error ( List City ) )
     | FetchedConsumers ( Result Http.Error ( List Consumer ) )
     | FetchedCounties ( Result Http.Error ( List County ) )
     | ModalMsg Modal.Msg
@@ -187,7 +192,7 @@ update url msg model =
                 action = Editing
                 , editing = Just consumer
             -- Fetch the county's zip codes to set the zip code drop-down to the correct value.
-            } ! [ consumer.county |> toString |> Request.County.cities url |> Http.send FetchedCities ]
+            } ! [ consumer.county |> toString |> Request.City.get url |> Http.send FetchedCities ]
 
         FetchedCities ( Ok cities ) ->
             { model |
@@ -348,11 +353,14 @@ update url msg model =
         SelectCounty consumer countyID ->
             { model |
                 editing = { consumer | county = countyID |> Form.toInt } |> Just
-            } ! [ countyID |> Request.County.cities url |> Http.send FetchedCities ]
+                , disabled = False
+            -- Fetch the county's zip codes to set the zip code drop-down to the correct value.
+            } ! [ countyID |> Request.City.get url |> Http.send FetchedCities ]
 
         SelectZip consumer zip ->
             { model |
                 editing = { consumer | zip = zip } |> Just
+                , disabled = False
             } ! []
 
         SetCheckboxValue setBoolValue b ->
@@ -479,7 +487,7 @@ formRows ( editable, date, datePicker, countyData ) =
         ] (
             countyData
                 |> Tuple.first
-                |> List.map ( \m -> ( m.id |> toString, m.county ) )
+                |> List.map ( \m -> ( m.id |> toString, m.name ) )
                 |> (::) ( "-1", "-- Select a county --" )
                 |> List.map ( editable.county |> toString |> Form.option )
         )

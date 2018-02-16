@@ -18,7 +18,7 @@ func NewConsumer(payload interface{}) *Consumer {
 		Stmt: map[string]string{
 			"DELETE": "DELETE FROM consumer WHERE id=?",
 			"INSERT": "INSERT consumer SET firstname=?,lastname=?,active=?,county=?,countyCode=?,fundingSource=?,zip=?,bsu=?,recipientID=?,diaCode=?,copay=?,dischargeDate=?,other=?",
-			"SELECT": "SELECT %s FROM consumer",
+			"SELECT": "SELECT %s FROM consumer ORDER BY lastname,firstname",
 			"UPDATE": "UPDATE consumer SET firstname=?,lastname=?,active=?,county=?,countyCode=?,fundingSource=?,zip=?,bsu=?,recipientID=?,diaCode=?,copay=?,dischargeDate=?,other=? WHERE id=?",
 		},
 	}

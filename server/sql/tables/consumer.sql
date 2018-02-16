@@ -19,5 +19,5 @@ CREATE TABLE IF NOT EXISTS `consumer` (
   `other` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `ID` (`id`)
-) ;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 ;
 

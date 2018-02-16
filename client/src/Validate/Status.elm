@@ -6,7 +6,7 @@ import Validate exposing (Validator, ifBlank, validate)
 
 
 type Field
-    = Status
+    = Name
 
 
 
@@ -23,7 +23,7 @@ message =
 modelValidator : Validator ( Field, String ) Status
 modelValidator =
     Validate.all
-        [ ifBlank .status ( Status, message )
+        [ ifBlank .name ( Name, message )
         ]
 
 

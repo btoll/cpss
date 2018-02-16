@@ -55,14 +55,11 @@ func (c *StatusController) List(ctx *app.ListStatusContext) error {
 	// StatusController_List: end_implement
 }
 
+// Update runs the update action.
 func (c *StatusController) Update(ctx *app.UpdateStatusContext) error {
 	// StatusController_Update: start_implement
 
-	rec, err := sql.Update(sql.NewStatus(ctx.Payload))
-	if err != nil {
-		return err
-	}
-	return ctx.OK(rec.(*app.StatusMedia))
+	return nil
 
-	// SpecialistController_Update: end_implement
+	// StatusController_Update: end_implement
 }

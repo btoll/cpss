@@ -2,6 +2,7 @@ module Main exposing (..)
 
 import Data.BillSheet exposing (BillSheet)
 import Data.Consumer exposing (Consumer)
+import Data.County exposing (County)
 import Data.Session exposing (Session)
 import Data.Status exposing (Status)
 import Data.User exposing (User)
@@ -10,6 +11,7 @@ import Http
 import Navigation
 import Page.BillSheet as BillSheet
 import Page.Consumer as Consumer
+import Page.County as County
 import Page.Login as Login
 import Page.NotFound as NotFound
 import Page.Specialist as Specialist
@@ -40,6 +42,7 @@ type Page
 --    | Home Home.Model
     | BillSheet BillSheet.Model
     | Consumer Consumer.Model
+    | County County.Model
     | Login Login.Model
     | Specialist Specialist.Model
     | Status Status.Model
@@ -86,6 +89,7 @@ type Msg
     = SetRoute ( Maybe Route )
     | BillSheetMsg BillSheet.Msg
     | ConsumerMsg Consumer.Msg
+    | CountyMsg County.Msg
     | LoginMsg Login.Msg
     | SpecialistMsg Specialist.Msg
     | StatusLoaded ( Result Http.Error Status.Model )
@@ -135,6 +139,28 @@ setRoute maybeRoute model =
                                 { model |
                                     page = Consumer subModel
                                 } ! [ Cmd.map ConsumerMsg subMsg ]
+
+                        _ ->
+                            { model | page = Errored "You are not authorized to view this page" } ! []
+
+        Just Route.County ->
+            case model.session.user of
+                Nothing ->
+                    { model |
+                        page = Login Login.init
+                        , onLogin = maybeRoute
+                    } ! []
+
+                Just user ->
+                    case user.authLevel of
+                        1 ->
+                            let
+                                ( subModel, subMsg ) =
+                                    County.init model.build.url
+                            in
+                                { model |
+                                    page = County subModel
+                                } ! [ Cmd.map CountyMsg subMsg ]
 
                         _ ->
                             { model | page = Errored "You are not authorized to view this page" } ! []
@@ -246,6 +272,9 @@ update msg model =
             ( ConsumerMsg subMsg, Consumer subModel ) ->
                 toPage Consumer ConsumerMsg Consumer.update subMsg subModel
 
+            ( CountyMsg subMsg, County subModel ) ->
+                toPage County CountyMsg County.update subMsg subModel
+
             ( LoginMsg subMsg, Login subModel ) ->
                 let
                     ( ( pageModel, cmd ), msgFromPage ) =
@@ -304,6 +333,11 @@ view model =
             Consumer.view subModel
                 |> frame model.session.user Page.Consumer
                 |> Html.map ConsumerMsg
+
+        County subModel ->
+            County.view subModel
+                |> frame model.session.user Page.County
+                |> Html.map CountyMsg
 
         Errored err ->
             text err
