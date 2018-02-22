@@ -1,5 +1,6 @@
-module Data.City exposing (City, decoder, encoder, manyDecoder, new, succeed)
+module Data.City exposing (City, Cities, decoder, encoder, new, pagingDecoder, succeed)
 
+import Data.Pager
 import Json.Decode as Decode exposing (Decoder, int, list, string)
 import Json.Decode.Pipeline exposing (decode, optional, required)
 import Json.Encode as Encode
@@ -14,6 +15,11 @@ type alias City =
     , state : String
     }
 
+
+type alias Cities =
+    { cities : List City
+    , pager : Data.Pager.Pager
+    }
 
 
 new : City
@@ -37,11 +43,6 @@ decoder =
         |> required "state" string
 
 
-manyDecoder : Decoder ( List City )
-manyDecoder =
-    list decoder
-
-
 encoder : City -> Encode.Value
 encoder city =
     Encode.object
@@ -51,6 +52,13 @@ encoder city =
         , ( "countyID", Encode.int city.countyID )
         , ( "state", Encode.string city.state )
         ]
+
+
+pagingDecoder : Decoder Cities
+pagingDecoder =
+    decode Cities
+        |> required "cities" ( list decoder )
+        |> required "pager" Data.Pager.decoder
 
 
 succeed : a -> Decoder a

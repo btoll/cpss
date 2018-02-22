@@ -1,7 +1,7 @@
 module Request.City exposing (delete, get, post, put, list)
 
 import Http
-import Data.City exposing (City, decoder, encoder, manyDecoder, succeed)
+import Data.City exposing (City, Cities, decoder, encoder, pagingDecoder, succeed)
 
 
 
@@ -18,15 +18,17 @@ delete url city =
         }
 
 
-get : String -> String -> Http.Request ( List City )
+get : String -> String -> Http.Request Cities
 get url method =
-    manyDecoder
+    pagingDecoder
         |> Http.get ( url ++ "/city/" ++ method )
 
 
-list : String -> Http.Request ( List City )
-list url =
-    "list"
+list : String -> Int -> Http.Request Cities
+list url limit =
+    limit
+        |> toString
+        |> (++) "list/"
         |> get url
 
 

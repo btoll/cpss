@@ -18,16 +18,16 @@ func NewCity(payload interface{}) *City {
 		Stmt: map[string]string{
 			"DELETE":     "DELETE FROM city WHERE id=?",
 			"INSERT":     "INSERT city SET name=?,zip=?,county_id=?,state=?",
-			"SELECT":     "SELECT %s FROM city ORDER BY name LIMIT 20",
+			"SELECT":     "SELECT %s FROM city ORDER BY name %s",
 			"GET_CITIES": "SELECT %s FROM city WHERE county_id=%d",
 			"UPDATE":     "UPDATE city SET name=?,zip=?,county_id=?,state=? WHERE id=?",
 		},
 	}
 }
 
-func (s *City) Create(db *mysql.DB) (interface{}, error) {
-	payload := s.Data.(*app.CityPayload)
-	stmt, err := db.Prepare(s.Stmt["INSERT"])
+func (c *City) Create(db *mysql.DB) (interface{}, error) {
+	payload := c.Data.(*app.CityPayload)
+	stmt, err := db.Prepare(c.Stmt["INSERT"])
 	if err != nil {
 		return -1, err
 	}
@@ -83,9 +83,9 @@ func (c *City) Read(db *mysql.DB) (interface{}, error) {
 	return coll, nil
 }
 
-func (s *City) Update(db *mysql.DB) (interface{}, error) {
-	payload := s.Data.(*app.CityPayload)
-	stmt, err := db.Prepare(s.Stmt["UPDATE"])
+func (c *City) Update(db *mysql.DB) (interface{}, error) {
+	payload := c.Data.(*app.CityPayload)
+	stmt, err := db.Prepare(c.Stmt["UPDATE"])
 	if err != nil {
 		return nil, err
 	}
@@ -102,34 +102,43 @@ func (s *City) Update(db *mysql.DB) (interface{}, error) {
 	}, nil
 }
 
-func (s *City) Delete(db *mysql.DB) error {
-	stmt, err := db.Prepare(s.Stmt["DELETE"])
+func (c *City) Delete(db *mysql.DB) error {
+	stmt, err := db.Prepare(c.Stmt["DELETE"])
 	if err != nil {
 		return err
 	}
-	id := s.Data.(int)
+	id := c.Data.(int)
 	_, err = stmt.Exec(&id)
 	return err
 }
 
 func (c *City) List(db *mysql.DB) (interface{}, error) {
-	rows, err := db.Query(fmt.Sprintf(c.Stmt["SELECT"], "COUNT(*)"))
+	// page * recordsPerPage = limit
+	limit := c.Data.(int) * 50
+	rows, err := db.Query(fmt.Sprintf(c.Stmt["SELECT"], "COUNT(*)", ""))
 	if err != nil {
 		return nil, err
 	}
-	var count int
+	var totalCount int
 	for rows.Next() {
-		err = rows.Scan(&count)
+		err = rows.Scan(&totalCount)
 		if err != nil {
 			return nil, err
 		}
 	}
-	rows, err = db.Query(fmt.Sprintf(c.Stmt["SELECT"], "*"))
+	rows, err = db.Query(fmt.Sprintf(c.Stmt["SELECT"], "*", fmt.Sprintf("LIMIT %d,50", limit)))
 	if err != nil {
 		return nil, err
 	}
-	// TODO
-	coll := make(app.CityMediaCollection, 20)
+	// Only return 50 rows at a clip.
+	paging := &app.CityMediaPaging{
+		Pager: &app.Pager{
+			CurrentPage:    limit / 50,
+			RecordsPerPage: 50,
+			TotalCount:     totalCount,
+		},
+		Cities: make([]*app.Item, 50),
+	}
 	i := 0
 	for rows.Next() {
 		var id int
@@ -141,7 +150,7 @@ func (c *City) List(db *mysql.DB) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-		coll[i] = &app.CityMedia{
+		paging.Cities[i] = &app.Item{
 			ID:       id,
 			Name:     name,
 			Zip:      zip,
@@ -150,5 +159,5 @@ func (c *City) List(db *mysql.DB) (interface{}, error) {
 		}
 		i++
 	}
-	return coll, nil
+	return paging, nil
 }

@@ -46,11 +46,11 @@ func (c *CityController) Delete(ctx *app.DeleteCityContext) error {
 func (c *CityController) List(ctx *app.ListCityContext) error {
 	// CityController_List: start_implement
 
-	collection, err := sql.List(sql.NewCity(nil))
+	collection, err := sql.List(sql.NewCity(ctx.Limit))
 	if err != nil {
 		return err
 	}
-	return ctx.OK(collection.(app.CityMediaCollection))
+	return ctx.OKPaging(collection.(*app.CityMediaPaging))
 
 	// CityController_List: end_implement
 }

@@ -1,6 +1,6 @@
 module Page.Consumer exposing (Model, Msg, init, update, view)
 
-import Data.City exposing (City)
+import Data.City exposing (City, Cities)
 import Data.Consumer exposing (Consumer, new)
 import Data.County exposing (County)
 import Date exposing (Date, Day(..), day, dayOfWeek, month, year)
@@ -102,7 +102,7 @@ type Msg
     | Delete Consumer
     | Deleted ( Result Http.Error Int )
     | Edit Consumer
-    | FetchedCities ( Result Http.Error ( List City ) )
+    | FetchedCities ( Result Http.Error Cities )
     | FetchedConsumers ( Result Http.Error ( List Consumer ) )
     | FetchedCounties ( Result Http.Error ( List County ) )
     | ModalMsg Modal.Msg
@@ -196,7 +196,7 @@ update url msg model =
 
         FetchedCities ( Ok cities ) ->
             { model |
-                countyData = ( model.countyData |> Tuple.first, cities )
+                countyData = ( model.countyData |> Tuple.first, cities.cities )
                 , tableState = Table.initialSort "ID"
             } ! []
 

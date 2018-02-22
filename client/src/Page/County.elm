@@ -1,9 +1,10 @@
 module Page.County exposing (Model, Msg, init, update, view)
 
-import Data.City exposing (City, new)
+import Data.City exposing (City, Cities, new)
 import Data.County exposing (County)
-import Html exposing (Html, Attribute, button, div, form, h1, input, label, node, section, text)
-import Html.Attributes exposing (action, autofocus, checked, disabled, for, id, style, type_, value)
+import Data.Pager exposing (Pager)
+import Html exposing (Html, Attribute, button, div, form, h1, input, label, node, section, span, text)
+import Html.Attributes exposing (action, autofocus, checked, for, id, style, type_, value)
 import Html.Events exposing (onCheck, onClick, onInput, onSubmit)
 import Http
 import Request.City
@@ -28,6 +29,7 @@ type alias Model =
     , showModal : ( Bool, Maybe Modal.Modal )
     , cities : List City
     , counties : List County
+    , pager : Pager
     }
 
 
@@ -45,8 +47,13 @@ init url =
     , showModal = ( False, Nothing )
     , cities = []
     , counties = []
+    , pager =
+        { currentPage = 0
+        , recordsPerPage = 0
+        , totalCount = 0
+        }
     } ! [ Request.County.list url |> Http.send FetchedCounties
-    , Request.City.list url |> Http.send FetchedCities
+    , 0 |> Request.City.list url |> Http.send FetchedCities
     ]
 
 
@@ -59,7 +66,7 @@ type Msg
     | Delete City
     | Deleted ( Result Http.Error Int )
     | Edit City
-    | FetchedCities ( Result Http.Error ( List City ) )
+    | FetchedCities ( Result Http.Error Cities )
     | FetchedCounties ( Result Http.Error ( List County ) )
     | ModalMsg Modal.Msg
     | Post
@@ -70,6 +77,9 @@ type Msg
     | SetFormValue ( String -> City ) String
     | SetTableState Table.State
     | Submit
+
+    | Next
+    | Prev
 
 
 update : String -> Msg -> Model -> ( Model, Cmd Msg )
@@ -113,7 +123,8 @@ update url msg model =
 
         FetchedCities ( Ok cities ) ->
             { model |
-                cities = cities
+                cities = cities.cities
+                , pager = cities.pager
                 , tableState = Table.initialSort "ID"
             } ! []
 
@@ -276,6 +287,22 @@ update url msg model =
                 , disabled = True
             } ! []
 
+        Next ->
+            model !
+            [ 1
+                |> (+) model.pager.currentPage
+                |> Request.City.list url
+                |> Http.send FetchedCities
+            ]
+
+        Prev ->
+            model !
+            [ 1
+                |> (-) model.pager.currentPage
+                |> Request.City.list url
+                |> Http.send FetchedCities
+            ]
+
 
 
 -- VIEW
@@ -315,12 +342,30 @@ drawView (
                 0 ->
                     div [] []
                 _ ->
-                    Table.view config tableState cities
+                    cities
+                    |> Table.view config tableState
+
+        isPrevDisabled =
+            (==) model.pager.currentPage 0
+
+--        isNextDisabled =
+--            model.pager.currentPage
+--                |> (>) 0
     in
     case action of
         None ->
             [ button [ onClick Add ] [ text "Add City" ]
+
+            , button [ Html.Attributes.disabled isPrevDisabled, onClick Prev ] [ text "Prev" ]
+            , span [] [ 1 |> (+) model.pager.currentPage |> toString |> text ]
+            , button [ Html.Attributes.disabled False, onClick Next ] [ text "Next" ]
+
             , showList
+
+            , button [ Html.Attributes.disabled isPrevDisabled, onClick Prev ] [ text "Prev" ]
+            , span [] [ 1 |> (+) model.pager.currentPage |> toString |> text ]
+            , button [ Html.Attributes.disabled False, onClick Next ] [ text "Next" ]
+
             , model.showModal
                 |> Modal.view
                 |> Html.map ModalMsg
