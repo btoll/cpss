@@ -46,7 +46,7 @@ func (c *CityController) Delete(ctx *app.DeleteCityContext) error {
 func (c *CityController) List(ctx *app.ListCityContext) error {
 	// CityController_List: start_implement
 
-	collection, err := sql.List(sql.NewCity(ctx.Limit))
+	collection, err := sql.List(sql.NewCity(ctx.Page))
 	if err != nil {
 		return err
 	}

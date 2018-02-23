@@ -3,6 +3,7 @@ package sql
 import (
 	mysql "database/sql"
 	"fmt"
+	"math"
 
 	"github.com/btoll/cpss/server/app"
 )
@@ -114,7 +115,8 @@ func (c *City) Delete(db *mysql.DB) error {
 
 func (c *City) List(db *mysql.DB) (interface{}, error) {
 	// page * recordsPerPage = limit
-	limit := c.Data.(int) * 50
+	recordsPerPage := 50
+	limit := c.Data.(int) * recordsPerPage
 	rows, err := db.Query(fmt.Sprintf(c.Stmt["SELECT"], "COUNT(*)", ""))
 	if err != nil {
 		return nil, err
@@ -126,18 +128,24 @@ func (c *City) List(db *mysql.DB) (interface{}, error) {
 			return nil, err
 		}
 	}
-	rows, err = db.Query(fmt.Sprintf(c.Stmt["SELECT"], "*", fmt.Sprintf("LIMIT %d,50", limit)))
+	rows, err = db.Query(fmt.Sprintf(c.Stmt["SELECT"], "*", fmt.Sprintf("LIMIT %d,%d", limit, recordsPerPage)))
 	if err != nil {
 		return nil, err
 	}
-	// Only return 50 rows at a clip.
+	// Only the amount of rows equal to recordsPerPage unless the last page has been requested
+	// (determined by `totalCount - limit`).
+	capacity := totalCount - limit
+	if capacity >= recordsPerPage {
+		capacity = recordsPerPage
+	}
 	paging := &app.CityMediaPaging{
 		Pager: &app.Pager{
-			CurrentPage:    limit / 50,
-			RecordsPerPage: 50,
+			CurrentPage:    limit / recordsPerPage,
+			RecordsPerPage: recordsPerPage,
 			TotalCount:     totalCount,
+			TotalPages:     int(math.Ceil(float64(totalCount) / float64(recordsPerPage))),
 		},
-		Cities: make([]*app.Item, 50),
+		Cities: make([]*app.Item, capacity),
 	}
 	i := 0
 	for rows.Next() {

@@ -15,6 +15,7 @@ import Validate.City
 import Views.Errors as Errors
 import Views.Form as Form
 import Views.Modal as Modal
+import Views.Pager
 
 
 
@@ -47,11 +48,7 @@ init url =
     , showModal = ( False, Nothing )
     , cities = []
     , counties = []
-    , pager =
-        { currentPage = 0
-        , recordsPerPage = 0
-        , totalCount = 0
-        }
+    , pager = Data.Pager.new
     } ! [ Request.County.list url |> Http.send FetchedCounties
     , 0 |> Request.City.list url |> Http.send FetchedCities
     ]
@@ -69,6 +66,7 @@ type Msg
     | FetchedCities ( Result Http.Error Cities )
     | FetchedCounties ( Result Http.Error ( List County ) )
     | ModalMsg Modal.Msg
+    | PagerMsg Views.Pager.Msg
     | Post
     | Posted ( Result Http.Error City )
     | Put
@@ -77,9 +75,6 @@ type Msg
     | SetFormValue ( String -> City ) String
     | SetTableState Table.State
     | Submit
-
-    | Next
-    | Prev
 
 
 update : String -> Msg -> Model -> ( Model, Cmd Msg )
@@ -162,6 +157,28 @@ update url msg model =
                 showModal = ( False, Nothing )
             } ! [ cmd ]
 
+        PagerMsg subMsg ->
+            let
+                newPage : Int
+                newPage =
+                    case subMsg |> Views.Pager.update of
+                        0 ->
+                            0
+
+                        ( -1 ) ->
+                            1 |> (-) model.pager.currentPage
+
+                        1 ->
+                            1 |> (+) model.pager.currentPage
+
+                        9 ->
+                            1 |> (-) model.pager.totalPages
+
+                        _ ->
+                            -1
+            in
+            model ! [ newPage |> Request.City.list url |> Http.send FetchedCities ]
+
         Post ->
             let
                 errors =
@@ -186,10 +203,10 @@ update url msg model =
                     else
                         ( Adding, Cmd.none )
             in
-                { model |
-                    action = action
-                    , errors = errors
-                } ! [ subCmd ]
+            { model |
+                action = action
+                , errors = errors
+            } ! [ subCmd ]
 
         Posted ( Ok city ) ->
             let
@@ -254,10 +271,10 @@ update url msg model =
                                 |> List.filter ( \m -> city.id /= m.id )
                                 |> (::) { newCity | id = city.id }
             in
-                { model |
-                    cities = cities
-                    , editing = Nothing
-                } ! []
+            { model |
+                cities = cities
+                , editing = Nothing
+            } ! []
 
         Putted ( Err err ) ->
             { model |
@@ -278,30 +295,13 @@ update url msg model =
             } ! []
 
         SetTableState newState ->
-            { model | tableState = newState
-            } ! []
+            { model | tableState = newState } ! []
 
         Submit ->
             { model |
                 action = None
                 , disabled = True
             } ! []
-
-        Next ->
-            model !
-            [ 1
-                |> (+) model.pager.currentPage
-                |> Request.City.list url
-                |> Http.send FetchedCities
-            ]
-
-        Prev ->
-            model !
-            [ 1
-                |> (-) model.pager.currentPage
-                |> Request.City.list url
-                |> Http.send FetchedCities
-            ]
 
 
 
@@ -329,6 +329,10 @@ drawView (
     , counties
     } as model ) =
     let
+        pager : Pager
+        pager =
+            model.pager
+
         editable : City
         editable = case editing of
             Nothing ->
@@ -337,6 +341,7 @@ drawView (
             Just city ->
                 city
 
+        showList : Html Msg
         showList =
             case cities |> List.length of
                 0 ->
@@ -345,27 +350,19 @@ drawView (
                     cities
                     |> Table.view config tableState
 
-        isPrevDisabled =
-            (==) model.pager.currentPage 0
-
---        isNextDisabled =
---            model.pager.currentPage
---                |> (>) 0
+        showPager : Html Msg
+        showPager =
+            if 1 |> (>) pager.totalPages then
+                pager.currentPage |> Views.Pager.view pager.totalPages |> Html.map PagerMsg
+            else
+                div [] []
     in
     case action of
         None ->
             [ button [ onClick Add ] [ text "Add City" ]
-
-            , button [ Html.Attributes.disabled isPrevDisabled, onClick Prev ] [ text "Prev" ]
-            , span [] [ 1 |> (+) model.pager.currentPage |> toString |> text ]
-            , button [ Html.Attributes.disabled False, onClick Next ] [ text "Next" ]
-
+            , showPager
             , showList
-
-            , button [ Html.Attributes.disabled isPrevDisabled, onClick Prev ] [ text "Prev" ]
-            , span [] [ 1 |> (+) model.pager.currentPage |> toString |> text ]
-            , button [ Html.Attributes.disabled False, onClick Next ] [ text "Next" ]
-
+            , showPager
             , model.showModal
                 |> Modal.view
                 |> Html.map ModalMsg
