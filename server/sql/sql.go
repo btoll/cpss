@@ -17,12 +17,14 @@ type CRUD interface {
 	Create(db *mysql.DB) (interface{}, error)
 	Update(db *mysql.DB) (interface{}, error)
 	Delete(db *mysql.DB) error
-	//	Lister
-	//	Reader
 }
 
 type Lister interface {
 	List(db *mysql.DB) (interface{}, error)
+}
+
+type Pager interface {
+	Page(db *mysql.DB) (interface{}, error)
 }
 
 type Reader interface {
@@ -96,6 +98,19 @@ func List(l Lister) (interface{}, error) {
 		return nil, err
 	}
 	coll, err := l.List(db)
+	if err != nil {
+		return nil, err
+	}
+	cleanup(db)
+	return coll, nil
+}
+
+func Page(p Pager) (interface{}, error) {
+	db, err := connect()
+	if err != nil {
+		return nil, err
+	}
+	coll, err := p.Page(db)
 	if err != nil {
 		return nil, err
 	}

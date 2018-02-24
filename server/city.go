@@ -46,13 +46,26 @@ func (c *CityController) Delete(ctx *app.DeleteCityContext) error {
 func (c *CityController) List(ctx *app.ListCityContext) error {
 	// CityController_List: start_implement
 
-	collection, err := sql.List(sql.NewCity(ctx.Page))
+	collection, err := sql.List(sql.NewCity(nil))
+	if err != nil {
+		return err
+	}
+	return ctx.OK(collection.(app.CityMediaCollection))
+
+	// CityController_List: end_implement
+}
+
+// Page runs the page action.
+func (c *CityController) Page(ctx *app.PageCityContext) error {
+	// CityController_Page: start_implement
+
+	collection, err := sql.Page(sql.NewCity(ctx.Page))
 	if err != nil {
 		return err
 	}
 	return ctx.OKPaging(collection.(*app.CityMediaPaging))
 
-	// CityController_List: end_implement
+	// CityController_Page: end_implement
 }
 
 // Show runs the show action.

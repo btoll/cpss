@@ -25,8 +25,8 @@ get url method =
 
 
 list : String -> Int -> Http.Request Cities
-list url limit =
-    limit
+list url page =
+    page
         |> toString
         |> (++) "list/"
         |> get url

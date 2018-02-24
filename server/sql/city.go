@@ -114,6 +114,46 @@ func (c *City) Delete(db *mysql.DB) error {
 }
 
 func (c *City) List(db *mysql.DB) (interface{}, error) {
+	rows, err := db.Query(fmt.Sprintf(c.Stmt["SELECT"], "COUNT(*)", ""))
+	if err != nil {
+		return nil, err
+	}
+	var totalCount int
+	for rows.Next() {
+		err = rows.Scan(&totalCount)
+		if err != nil {
+			return nil, err
+		}
+	}
+	rows, err = db.Query(fmt.Sprintf(c.Stmt["SELECT"], "*", ""))
+	if err != nil {
+		return nil, err
+	}
+	coll := make(app.CityMediaCollection, totalCount)
+	i := 0
+	for rows.Next() {
+		var id int
+		var name string
+		var zip string
+		var countyID int
+		var state string
+		err := rows.Scan(&id, &name, &zip, &countyID, &state)
+		if err != nil {
+			return nil, err
+		}
+		coll[i] = &app.CityMedia{
+			ID:       id,
+			Name:     name,
+			Zip:      zip,
+			CountyID: countyID,
+			State:    state,
+		}
+		i++
+	}
+	return coll, nil
+}
+
+func (c *City) Page(db *mysql.DB) (interface{}, error) {
 	// page * recordsPerPage = limit
 	recordsPerPage := 50
 	limit := c.Data.(int) * recordsPerPage
