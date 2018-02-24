@@ -14,20 +14,20 @@ type Msg
 
 
 
-update : Msg -> Int
-update msg =
+update : ( Int, Int ) -> Msg -> Int
+update ( currentPage, totalPages ) msg =
     case msg of
         First ->
             0
 
         Prev ->
-            -1
+            1 |> (-) currentPage
 
         Next ->
-            1
+            1 |> (+) currentPage
 
         Last ->
-            9
+            1 |> (-) totalPages
 
 
 

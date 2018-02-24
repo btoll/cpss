@@ -1,4 +1,4 @@
-module Data.City exposing (City, Cities, decoder, encoder, new, pagingDecoder, succeed)
+module Data.City exposing (City, CityWithPager, decoder, encoder, manyDecoder, new, pagingDecoder, succeed)
 
 import Data.Pager
 import Json.Decode as Decode exposing (Decoder, int, list, string)
@@ -16,7 +16,7 @@ type alias City =
     }
 
 
-type alias Cities =
+type alias CityWithPager =
     { cities : List City
     , pager : Data.Pager.Pager
     }
@@ -54,10 +54,15 @@ encoder city =
         ]
 
 
-pagingDecoder : Decoder Cities
+manyDecoder : Decoder ( List City )
+manyDecoder =
+    list decoder
+
+
+pagingDecoder : Decoder CityWithPager
 pagingDecoder =
-    decode Cities
-        |> required "cities" ( list decoder )
+    decode CityWithPager
+        |> required "cities" manyDecoder
         |> required "pager" Data.Pager.decoder
 
 

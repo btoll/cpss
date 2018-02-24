@@ -1,6 +1,6 @@
 module Page.County exposing (Model, Msg, init, update, view)
 
-import Data.City exposing (City, Cities, new)
+import Data.City exposing (City, CityWithPager, new)
 import Data.County exposing (County)
 import Data.Pager exposing (Pager)
 import Html exposing (Html, Attribute, button, div, form, h1, input, label, node, section, span, text)
@@ -50,7 +50,7 @@ init url =
     , counties = []
     , pager = Data.Pager.new
     } ! [ Request.County.list url |> Http.send FetchedCounties
-    , 0 |> Request.City.list url |> Http.send FetchedCities
+    , 0 |> Request.City.page url |> Http.send FetchedCities
     ]
 
 
@@ -63,7 +63,7 @@ type Msg
     | Delete City
     | Deleted ( Result Http.Error Int )
     | Edit City
-    | FetchedCities ( Result Http.Error Cities )
+    | FetchedCities ( Result Http.Error CityWithPager )
     | FetchedCounties ( Result Http.Error ( List County ) )
     | ModalMsg Modal.Msg
     | PagerMsg Views.Pager.Msg
@@ -158,26 +158,12 @@ update url msg model =
             } ! [ cmd ]
 
         PagerMsg subMsg ->
-            let
-                newPage : Int
-                newPage =
-                    case subMsg |> Views.Pager.update of
-                        0 ->
-                            0
-
-                        ( -1 ) ->
-                            1 |> (-) model.pager.currentPage
-
-                        1 ->
-                            1 |> (+) model.pager.currentPage
-
-                        9 ->
-                            1 |> (-) model.pager.totalPages
-
-                        _ ->
-                            -1
-            in
-            model ! [ newPage |> Request.City.list url |> Http.send FetchedCities ]
+            model !
+            [ subMsg
+                |>Views.Pager.update ( model.pager.currentPage, model.pager.totalPages )
+                |> Request.City.page url
+                |> Http.send FetchedCities
+            ]
 
         Post ->
             let

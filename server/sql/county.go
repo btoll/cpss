@@ -16,7 +16,7 @@ func NewCounty(payload interface{}) *County {
 	return &County{
 		Data: payload,
 		Stmt: map[string]string{
-			"SELECT": "SELECT * FROM county ORDER BY name",
+			"SELECT": "SELECT * FROM county",
 		},
 	}
 }
