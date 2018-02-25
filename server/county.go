@@ -16,15 +16,16 @@ func NewCountyController(service *goa.Service) *CountyController {
 	return &CountyController{Controller: service.NewController("CountyController")}
 }
 
-// ListCounties runs the listCounties action.
+// List runs the list action.
 func (c *CountyController) List(ctx *app.ListCountyContext) error {
-	// CountyController_ListCounties: start_implement
+	// CountyController_List: start_implement
 
+	// Put your logic here
 	collection, err := sql.List(sql.NewCounty(nil))
 	if err != nil {
 		return err
 	}
 	return ctx.OK(collection.(app.CountyMediaCollection))
 
-	// CountyController_ListCounties: end_implement
+	// CountyController_List: end_implement
 }

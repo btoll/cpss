@@ -185,7 +185,7 @@ func (c *City) Page(db *mysql.DB) (interface{}, error) {
 			TotalCount:     totalCount,
 			TotalPages:     int(math.Ceil(float64(totalCount) / float64(recordsPerPage))),
 		},
-		Cities: make([]*app.Item, capacity),
+		Cities: make([]*app.CityItem, capacity),
 	}
 	i := 0
 	for rows.Next() {
@@ -198,7 +198,7 @@ func (c *City) Page(db *mysql.DB) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-		paging.Cities[i] = &app.Item{
+		paging.Cities[i] = &app.CityItem{
 			ID:       id,
 			Name:     name,
 			Zip:      zip,

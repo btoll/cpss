@@ -48,6 +48,18 @@ var _ = Resource("Consumer", func() {
 		Description("Get all consumers")
 		Response(OK, CollectionOf(ConsumerMedia))
 	})
+
+	Action("page", func() {
+		Routing(GET("/list/:page"))
+		Params(func() {
+			Param("page", Integer, "Given a page number, returns an object consisting of the slice of consumers and a pager object")
+		})
+		Description("Get a page of consumers")
+		Response(OK, func() {
+			Status(200)
+			Media(ConsumerMedia, "paging")
+		})
+	})
 })
 
 var ConsumerPayload = Type("ConsumerPayload", func() {
@@ -113,6 +125,28 @@ var ConsumerPayload = Type("ConsumerPayload", func() {
 	Required("firstname", "lastname", "active", "county", "countyCode", "fundingSource", "zip", "bsu", "recipientID", "diaCode", "copay", "dischargeDate", "other")
 })
 
+var ConsumerItem = Type("consumerItem", func() {
+	Reference(ConsumerPayload)
+
+	Attribute("id")
+	Attribute("firstname")
+	Attribute("lastname")
+	Attribute("active")
+	Attribute("county")
+	Attribute("countyCode")
+	Attribute("fundingSource")
+	Attribute("zip")
+	Attribute("bsu")
+	Attribute("recipientID")
+	Attribute("diaCode")
+	Attribute("copay")
+	Attribute("dischargeDate")
+	Attribute("other")
+
+	Required("id", "firstname", "lastname", "active", "county", "countyCode", "fundingSource", "zip", "bsu", "recipientID", "diaCode", "copay", "dischargeDate", "other")
+
+})
+
 var ConsumerMedia = MediaType("application/consumerapi.consumerentity", func() {
 	Description("Consumer response")
 	TypeName("ConsumerMedia")
@@ -134,8 +168,10 @@ var ConsumerMedia = MediaType("application/consumerapi.consumerentity", func() {
 		Attribute("copay")
 		Attribute("dischargeDate")
 		Attribute("other")
+		Attribute("consumers", ArrayOf("consumerItem"))
+		Attribute("pager", Pager)
 
-		Required("id", "firstname", "lastname", "active", "county", "countyCode", "fundingSource", "zip", "bsu", "recipientID", "diaCode", "copay", "dischargeDate", "other")
+		Required("id", "firstname", "lastname", "active", "county", "countyCode", "fundingSource", "zip", "bsu", "recipientID", "diaCode", "copay", "dischargeDate", "other", "consumers", "pager")
 	})
 
 	View("default", func() {
@@ -153,6 +189,11 @@ var ConsumerMedia = MediaType("application/consumerapi.consumerentity", func() {
 		Attribute("copay")
 		Attribute("dischargeDate")
 		Attribute("other")
+	})
+
+	View("paging", func() {
+		Attribute("consumers")
+		Attribute("pager")
 	})
 
 	View("tiny", func() {

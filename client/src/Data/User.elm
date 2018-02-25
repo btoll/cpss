@@ -1,5 +1,6 @@
-module Data.User exposing (User, authEncoder, decoder, encoder, hashEncoder, manyDecoder, new, succeed)
+module Data.User exposing (User, UserWithPager, authEncoder, decoder, encoder, hashEncoder, manyDecoder, new, pagingDecoder, succeed)
 
+import Data.Pager
 import Json.Decode as Decode exposing (Decoder, bool, float, int, list, string)
 import Json.Decode.Pipeline exposing (decode, optional, required)
 import Json.Encode as Encode
@@ -15,6 +16,12 @@ type alias User =
     , email : String
     , payrate : Float
     , authLevel : Int
+    }
+
+
+type alias UserWithPager =
+    { users : List User
+    , pager : Data.Pager.Pager
     }
 
 
@@ -47,6 +54,13 @@ decoder =
 manyDecoder : Decoder ( List User )
 manyDecoder =
     list decoder
+
+
+pagingDecoder : Decoder UserWithPager
+pagingDecoder =
+    decode UserWithPager
+        |> required "users" manyDecoder
+        |> required "pager" Data.Pager.decoder
 
 
 authEncoder : { r | username : String, password : String } -> Encode.Value

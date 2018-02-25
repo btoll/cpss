@@ -1,8 +1,9 @@
 module Page.Consumer exposing (Model, Msg, init, update, view)
 
-import Data.City exposing (City, CityWithPager)
-import Data.Consumer exposing (Consumer, new)
+import Data.City exposing (City)
+import Data.Consumer exposing (Consumer, ConsumerWithPager, new)
 import Data.County exposing (County)
+import Data.Pager exposing (Pager)
 import Date exposing (Date, Day(..), day, dayOfWeek, month, year)
 import DatePicker exposing (defaultSettings, DateEvent(..))
 import Html exposing (Html, Attribute, button, div, form, h1, input, label, node, section, text)
@@ -19,6 +20,7 @@ import Validate.Consumer
 import Views.Errors as Errors
 import Views.Form as Form
 import Views.Modal as Modal
+import Views.Pager
 
 
 
@@ -35,6 +37,7 @@ type alias Model =
     , datePicker : DatePicker.DatePicker
     , countyData : CountyData
     , consumers : List Consumer
+    , pager : Pager
     }
 
 
@@ -86,9 +89,10 @@ init url =
     , datePicker = datePicker
     , countyData = ( [], [] )
     , consumers = []
+    , pager = Data.Pager.new
     } ! [ Cmd.map DatePicker datePickerFx
     , Request.County.list url |> Http.send FetchedCounties
-    , Request.Consumer.list url |> Http.send FetchedConsumers
+    , 0 |> Request.Consumer.page url |> Http.send FetchedConsumers
     ]
 
 
@@ -102,10 +106,11 @@ type Msg
     | Delete Consumer
     | Deleted ( Result Http.Error Int )
     | Edit Consumer
-    | FetchedCities ( Result Http.Error CityWithPager )
-    | FetchedConsumers ( Result Http.Error ( List Consumer ) )
+    | FetchedCities ( Result Http.Error ( List City ) )
+    | FetchedConsumers ( Result Http.Error ConsumerWithPager )
     | FetchedCounties ( Result Http.Error ( List County ) )
     | ModalMsg Modal.Msg
+    | PagerMsg Views.Pager.Msg
     | Post
     | Posted ( Result Http.Error Consumer )
     | Put
@@ -196,7 +201,7 @@ update url msg model =
 
         FetchedCities ( Ok cities ) ->
             { model |
-                countyData = ( model.countyData |> Tuple.first, cities.cities )
+                countyData = ( model.countyData |> Tuple.first, cities )
                 , tableState = Table.initialSort "ID"
             } ! []
 
@@ -208,7 +213,8 @@ update url msg model =
 
         FetchedConsumers ( Ok consumers ) ->
             { model |
-                consumers = consumers
+                consumers = consumers.consumers
+                , pager = consumers.pager
                 , tableState = Table.initialSort "ID"
             } ! []
 
@@ -246,6 +252,14 @@ update url msg model =
             { model |
                 showModal = ( False, Nothing )
             } ! [ cmd ]
+
+        PagerMsg subMsg ->
+            model !
+            [ subMsg
+                |>Views.Pager.update ( model.pager.currentPage, model.pager.totalPages )
+                |> Request.Consumer.page url
+                |> Http.send FetchedConsumers
+            ]
 
         Post ->
             let
@@ -413,6 +427,10 @@ drawView (
     , consumers
     } as model ) =
     let
+        pager : Pager
+        pager =
+            model.pager
+
         editable : Consumer
         editable = case editing of
             Nothing ->
@@ -427,11 +445,20 @@ drawView (
                     div [] []
                 _ ->
                     Table.view config tableState consumers
+
+        showPager : Html Msg
+        showPager =
+            if 1 |> (>) pager.totalPages then
+                pager.currentPage |> Views.Pager.view pager.totalPages |> Html.map PagerMsg
+            else
+                div [] []
     in
     case action of
         None ->
             [ button [ onClick Add ] [ text "Add Consumer" ]
+            , showPager
             , showList
+            , showPager
             , model.showModal
                 |> Modal.view
                 |> Html.map ModalMsg

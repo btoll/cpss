@@ -1,5 +1,6 @@
-module Data.BillSheet exposing (BillSheet, decoder, encoder, manyDecoder, new, succeed)
+module Data.BillSheet exposing (BillSheet, BillSheetWithPager, decoder, encoder, manyDecoder, new, pagingDecoder, succeed)
 
+import Data.Pager
 import Json.Decode as Decode exposing (Decoder, bool, float, int, list, string)
 import Json.Decode.Pipeline exposing (decode, optional, required)
 import Json.Encode as Encode
@@ -20,6 +21,11 @@ type alias BillSheet =
     , recordNumber : String
     }
 
+
+type alias BillSheetWithPager =
+    { billsheets : List BillSheet
+    , pager : Data.Pager.Pager
+    }
 
 
 new : BillSheet
@@ -57,6 +63,13 @@ decoder =
 manyDecoder : Decoder ( List BillSheet )
 manyDecoder =
     list decoder
+
+
+pagingDecoder : Decoder BillSheetWithPager
+pagingDecoder =
+    decode BillSheetWithPager
+        |> required "billsheets" manyDecoder
+        |> required "pager" Data.Pager.decoder
 
 
 encoder : BillSheet -> Encode.Value

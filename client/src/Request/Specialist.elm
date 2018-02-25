@@ -1,7 +1,7 @@
-module Request.Specialist exposing (delete, list, post, put)
+module Request.Specialist exposing (delete, list, page, post, put)
 
 import Http
-import Data.User exposing (User, decoder, encoder, manyDecoder, succeed)
+import Data.User exposing (User, UserWithPager, decoder, encoder, manyDecoder, pagingDecoder, succeed)
 
 
 
@@ -18,10 +18,20 @@ delete url specialist =
         }
 
 
+get : String -> String -> Http.Request UserWithPager
+get url method =
+    pagingDecoder
+        |> Http.get ( url ++ "/specialist/" ++ method )
+
+
 list : String -> Http.Request ( List User )
 list url =
-    manyDecoder
-        |> Http.get ( (++) url "/specialist/list" )
+    manyDecoder |> Http.get ( (++) url "/specialist/list" )
+
+
+page : String -> Int -> Http.Request UserWithPager
+page url page =
+    pagingDecoder |> Http.get ( url ++ "/specialist/list/" ++ ( page |> toString ) )
 
 
 post : String -> User -> Http.Request User

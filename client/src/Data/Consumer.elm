@@ -1,5 +1,6 @@
-module Data.Consumer exposing (Consumer, decoder, encoder, manyDecoder, new, succeed)
+module Data.Consumer exposing (Consumer, ConsumerWithPager, decoder, encoder, manyDecoder, new, pagingDecoder, succeed)
 
+import Data.Pager
 import Json.Decode as Decode exposing (Decoder, bool, float, int, list, string)
 import Json.Decode.Pipeline exposing (decode, optional, required)
 import Json.Encode as Encode
@@ -21,6 +22,12 @@ type alias Consumer =
     , copay : Float
     , dischargeDate : String
     , other : String
+    }
+
+
+type alias ConsumerWithPager =
+    { consumers : List Consumer
+    , pager : Data.Pager.Pager
     }
 
 
@@ -65,6 +72,13 @@ decoder =
 manyDecoder : Decoder ( List Consumer )
 manyDecoder =
     list decoder
+
+
+pagingDecoder : Decoder ConsumerWithPager
+pagingDecoder =
+    decode ConsumerWithPager
+        |> required "consumers" manyDecoder
+        |> required "pager" Data.Pager.decoder
 
 
 encoder : Consumer -> Encode.Value

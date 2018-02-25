@@ -1,7 +1,7 @@
-module Request.Consumer exposing (delete, list, post, put)
+module Request.Consumer exposing (delete, list, page, post, put)
 
 import Http
-import Data.Consumer exposing (Consumer, decoder, encoder, manyDecoder, succeed)
+import Data.Consumer exposing (Consumer, ConsumerWithPager, decoder, encoder, manyDecoder, pagingDecoder, succeed)
 
 
 
@@ -20,8 +20,12 @@ delete url consumer =
 
 list : String -> Http.Request ( List Consumer )
 list url =
-    manyDecoder
-        |> Http.get ( (++) url "/consumer/list" )
+    manyDecoder |> Http.get ( (++) url "/consumer/list" )
+
+
+page : String -> Int -> Http.Request ConsumerWithPager
+page url page =
+    pagingDecoder |> Http.get ( url ++ "/consumer/list/" ++ ( page |> toString ) )
 
 
 post : String -> Consumer -> Http.Request Consumer

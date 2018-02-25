@@ -56,6 +56,19 @@ func (c *SpecialistController) List(ctx *app.ListSpecialistContext) error {
 	// SpecialistController_List: end_implement
 }
 
+// Page runs the page action.
+func (c *SpecialistController) Page(ctx *app.PageSpecialistContext) error {
+	// SpecialistController_Page: start_implement
+
+	collection, err := sql.Page(sql.NewSpecialist(ctx.Page))
+	if err != nil {
+		return err
+	}
+	return ctx.OKPaging(collection.(*app.SpecialistMediaPaging))
+
+	// SpecialistController_Page: end_implement
+}
+
 // Show runs the show action.
 func (c *SpecialistController) Show(ctx *app.ShowSpecialistContext) error {
 	// SpecialistController_Show: start_implement

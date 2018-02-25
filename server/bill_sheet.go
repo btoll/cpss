@@ -55,6 +55,19 @@ func (c *BillSheetController) List(ctx *app.ListBillSheetContext) error {
 	// BillSheetController_List: end_implement
 }
 
+// Page runs the page action.
+func (c *BillSheetController) Page(ctx *app.PageBillSheetContext) error {
+	// BillSheetController_Page: start_implement
+
+	collection, err := sql.Page(sql.NewBillSheet(ctx.Page))
+	if err != nil {
+		return err
+	}
+	return ctx.OKPaging(collection.(*app.BillSheetMediaPaging))
+
+	// BillSheetController_Page: end_implement
+}
+
 // Update runs the update action.
 func (c *BillSheetController) Update(ctx *app.UpdateBillSheetContext) error {
 	// BillSheetController_Update: start_implement

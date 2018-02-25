@@ -1,7 +1,7 @@
-module Request.BillSheet exposing (delete, list, post, put)
+module Request.BillSheet exposing (delete, list, page, post, put)
 
 import Http
-import Data.BillSheet exposing (BillSheet, decoder, encoder, manyDecoder, succeed)
+import Data.BillSheet exposing (BillSheet, BillSheetWithPager, decoder, encoder, manyDecoder, pagingDecoder, succeed)
 
 
 
@@ -18,10 +18,20 @@ delete url billsheet =
         }
 
 
+--get : String -> String -> Http.Request BillSheetWithPager
+--get url method =
+--    pagingDecoder
+--        |> Http.get ( url ++ "/billsheet/" ++ method )
+
+
 list : String -> Http.Request ( List BillSheet )
 list url =
-    manyDecoder
-        |> Http.get ( (++) url "/billsheet/list" )
+    manyDecoder |> Http.get ( (++) url "/billsheet/list" )
+
+
+page : String -> Int -> Http.Request BillSheetWithPager
+page url page =
+    pagingDecoder |> Http.get ( url ++ "/billsheet/list/" ++ ( page |> toString ) )
 
 
 post : String -> BillSheet -> Http.Request BillSheet

@@ -1,6 +1,7 @@
 module Page.Specialist exposing (Model, Msg, init, update, view)
 
-import Data.User as User exposing (User, new)
+import Data.Pager exposing (Pager)
+import Data.User as User exposing (User, UserWithPager, new)
 import Html exposing (Html, Attribute, button, div, form, h1, input, label, section, text)
 import Html.Attributes exposing (action, autofocus, checked, for, id, step, style, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
@@ -13,6 +14,7 @@ import Validate.Specialist
 import Views.Errors as Errors
 import Views.Form as Form
 import Views.Modal as Modal
+import Views.Pager
 
 
 
@@ -28,6 +30,7 @@ type alias Model =
     , changingPassword : String         -- Use for both storing current password and new password when changing password!
     , showModal : ( Bool, Maybe Modal.Modal )
     , specialists : List User
+    , pager : Pager
     }
 
 
@@ -49,7 +52,8 @@ init url =
     , changingPassword = ""         -- Use for both storing current password and new password when changing password!
     , showModal = ( False, Nothing )
     , specialists = []
-    } ! [ Request.Specialist.list url |> Http.send FetchedSpecialists ]
+    , pager = Data.Pager.new
+    } ! [ 0 |> Request.Specialist.page url |> Http.send FetchedSpecialists ]
 
 
 
@@ -64,9 +68,10 @@ type Msg
     | Delete User
     | Deleted ( Result Http.Error User )
     | Edit User
-    | FetchedSpecialists ( Result Http.Error ( List User ) )
+    | FetchedSpecialists ( Result Http.Error UserWithPager )
     | Hashed ( Result Http.Error User )
     | ModalMsg Modal.Msg
+    | PagerMsg Views.Pager.Msg
     | Post
     | Posted ( Result Http.Error User )
     | Put Action
@@ -139,7 +144,8 @@ update url msg model =
 
         FetchedSpecialists ( Ok specialists ) ->
             { model |
-                specialists = specialists
+                specialists = specialists.users
+                , pager = specialists.pager
                 , tableState = Table.initialSort "ID"
             } ! []
 
@@ -194,6 +200,14 @@ update url msg model =
             { model |
                 showModal = ( False, Nothing )
             } ! [ cmd ]
+
+        PagerMsg subMsg ->
+            model !
+            [ subMsg
+                |>Views.Pager.update ( model.pager.currentPage, model.pager.totalPages )
+                |> Request.Specialist.page url
+                |> Http.send FetchedSpecialists
+            ]
 
         Post ->
             let
@@ -385,6 +399,10 @@ drawView (
     , specialists
     } as model ) =
     let
+        pager : Pager
+        pager =
+            model.pager
+
         editable : User
         editable = case editing of
             Nothing ->
@@ -399,11 +417,20 @@ drawView (
                     div [] []
                 _ ->
                     Table.view config tableState specialists
+
+        showPager : Html Msg
+        showPager =
+            if 1 |> (>) pager.totalPages then
+                pager.currentPage |> Views.Pager.view pager.totalPages |> Html.map PagerMsg
+            else
+                div [] []
     in
     case action of
         None ->
             [ button [ onClick Add ] [ text "Add Specialist" ]
+            , showPager
             , showList
+            , showPager
             , model.showModal
                 |> Modal.view
                 |> Html.map ModalMsg

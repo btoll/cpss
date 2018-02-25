@@ -54,6 +54,18 @@ var _ = Resource("Specialist", func() {
 		Description("Get all specialists")
 		Response(OK, CollectionOf(SpecialistMedia))
 	})
+
+	Action("page", func() {
+		Routing(GET("/list/:page"))
+		Params(func() {
+			Param("page", Integer, "Given a page number, returns an object consisting of the slice of specialists and a pager object")
+		})
+		Description("Get a page of specialists")
+		Response(OK, func() {
+			Status(200)
+			Media(SpecialistMedia, "paging")
+		})
+	})
 })
 
 var SpecialistPayload = Type("SpecialistPayload", func() {
@@ -95,6 +107,22 @@ var SpecialistPayload = Type("SpecialistPayload", func() {
 	Required("username", "password", "firstname", "lastname", "email", "payrate", "authLevel")
 })
 
+var SpecialistItem = Type("specialistItem", func() {
+	Reference(SpecialistPayload)
+
+	Attribute("id")
+	Attribute("username")
+	Attribute("password")
+	Attribute("firstname")
+	Attribute("lastname")
+	Attribute("email")
+	Attribute("payrate")
+	Attribute("authLevel")
+
+	Required("id", "username", "password", "firstname", "lastname", "email", "payrate", "authLevel")
+
+})
+
 var SpecialistMedia = MediaType("application/specialistapi.specialistentity", func() {
 	Description("Specialist response")
 	TypeName("SpecialistMedia")
@@ -110,8 +138,10 @@ var SpecialistMedia = MediaType("application/specialistapi.specialistentity", fu
 		Attribute("email")
 		Attribute("payrate")
 		Attribute("authLevel")
+		Attribute("users", ArrayOf("specialistItem"))
+		Attribute("pager", Pager)
 
-		Required("id", "username", "password", "firstname", "lastname", "email", "payrate", "authLevel")
+		Required("id", "username", "password", "firstname", "lastname", "email", "payrate", "authLevel", "users", "pager")
 	})
 
 	View("default", func() {
@@ -123,6 +153,11 @@ var SpecialistMedia = MediaType("application/specialistapi.specialistentity", fu
 		Attribute("email")
 		Attribute("payrate")
 		Attribute("authLevel")
+	})
+
+	View("paging", func() {
+		Attribute("users")
+		Attribute("pager")
 	})
 
 	View("tiny", func() {

@@ -18,9 +18,9 @@ delete url city =
         }
 
 
-get : String -> String -> Http.Request CityWithPager
+get : String -> String -> Http.Request ( List City )
 get url method =
-    pagingDecoder
+    manyDecoder
         |> Http.get ( url ++ "/city/" ++ method )
 
 

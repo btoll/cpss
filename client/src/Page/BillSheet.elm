@@ -1,8 +1,9 @@
 module Page.BillSheet exposing (Model, Msg, init, update, view)
 
-import Data.BillSheet exposing (BillSheet, new)
+import Data.BillSheet exposing (BillSheet, BillSheetWithPager, new)
 import Data.Consumer exposing (Consumer)
 import Data.County exposing (County)
+import Data.Pager exposing (Pager)
 import Data.User exposing (User)
 import Data.Status exposing (Status)
 import Date exposing (Date, Day(..), day, dayOfWeek, month, year)
@@ -23,7 +24,7 @@ import Validate.BillSheet
 import Views.Errors as Errors
 import Views.Form as Form
 import Views.Modal as Modal
-
+import Views.Pager
 
 
 -- MODEL
@@ -46,6 +47,7 @@ type alias Model =
     , date : Maybe Date
     , datePicker : DatePicker.DatePicker
     , pageLists : PageLists
+    , pager : Pager
     }
 
 
@@ -99,12 +101,13 @@ init url =
         , specialists = []
         , status = []
         }
+    , pager = Data.Pager.new
     } ! [ Cmd.map DatePicker datePickerFx
         , Request.Consumer.list url |> Http.send FetchedConsumers
         , Request.County.list url |> Http.send FetchedCounties
         , Request.Specialist.list url |> Http.send FetchedSpecialists
         , Request.Status.list url |> Http.send FetchedStatus
-        , Request.BillSheet.list url |> Http.send FetchedBillSheets
+        , 0 |> Request.BillSheet.page url |> Http.send FetchedBillSheets
         ]
 
 
@@ -119,12 +122,13 @@ type Msg
     | Delete BillSheet
     | Deleted ( Result Http.Error Int )
     | Edit BillSheet
-    | FetchedBillSheets ( Result Http.Error ( List BillSheet ) )
+    | FetchedBillSheets ( Result Http.Error BillSheetWithPager )
     | FetchedConsumers ( Result Http.Error ( List Consumer ) )
     | FetchedCounties ( Result Http.Error ( List County ) )
     | FetchedSpecialists ( Result Http.Error ( List User ) )
     | FetchedStatus ( Result Http.Error ( List Status ) )
     | ModalMsg Modal.Msg
+    | PagerMsg Views.Pager.Msg
     | Post
     | Posted ( Result Http.Error BillSheet )
     | Put
@@ -222,7 +226,8 @@ update url msg model =
 
         FetchedBillSheets ( Ok billsheets ) ->
             { model |
-                pageLists = { oldPageLists | billsheets = billsheets }
+                pageLists = { oldPageLists | billsheets = billsheets.billsheets }
+                , pager = billsheets.pager
                 , tableState = Table.initialSort "ID"
             } ! []
 
@@ -296,6 +301,14 @@ update url msg model =
             { model |
                 showModal = ( False, Nothing )
             } ! [ cmd ]
+
+        PagerMsg subMsg ->
+            model !
+            [ subMsg
+                |>Views.Pager.update ( model.pager.currentPage, model.pager.totalPages )
+                |> Request.BillSheet.page url
+                |> Http.send FetchedBillSheets
+            ]
 
         Post ->
             let

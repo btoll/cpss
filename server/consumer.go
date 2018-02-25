@@ -55,6 +55,19 @@ func (c *ConsumerController) List(ctx *app.ListConsumerContext) error {
 	// ConsumerController_List: end_implement
 }
 
+// Page runs the page action.
+func (c *ConsumerController) Page(ctx *app.PageConsumerContext) error {
+	// ConsumerController_Page: start_implement
+
+	collection, err := sql.Page(sql.NewConsumer(ctx.Page))
+	if err != nil {
+		return err
+	}
+	return ctx.OKPaging(collection.(*app.ConsumerMediaPaging))
+
+	// ConsumerController_Page: end_implement
+}
+
 // Update runs the update action.
 func (c *ConsumerController) Update(ctx *app.UpdateConsumerContext) error {
 	// ConsumerController_Update: start_implement

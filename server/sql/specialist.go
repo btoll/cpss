@@ -3,6 +3,7 @@ package sql
 import (
 	mysql "database/sql"
 	"fmt"
+	"math"
 
 	"github.com/btoll/cpss/server/app"
 )
@@ -18,7 +19,7 @@ func NewSpecialist(payload interface{}) *Specialist {
 		Stmt: map[string]string{
 			"DELETE": "DELETE FROM specialist WHERE id=?",
 			"INSERT": "INSERT specialist SET username=?,password=?,firstname=?,lastname=?,email=?,payrate=?,authLevel=?",
-			"SELECT": "SELECT %s FROM specialist ORDER BY lastname,firstname",
+			"SELECT": "SELECT %s FROM specialist ORDER BY lastname,firstname %s",
 			"UPDATE": "UPDATE specialist SET username=?,password=?,firstname=?,lastname=?,email=?,payrate=?,authLevel=? WHERE id=?",
 		},
 	}
@@ -84,7 +85,7 @@ func (s *Specialist) Delete(db *mysql.DB) error {
 }
 
 func (s *Specialist) List(db *mysql.DB) (interface{}, error) {
-	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)"))
+	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)", ""))
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +96,7 @@ func (s *Specialist) List(db *mysql.DB) (interface{}, error) {
 			return nil, err
 		}
 	}
-	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*"))
+	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*", ""))
 	if err != nil {
 		return nil, err
 	}
@@ -127,4 +128,67 @@ func (s *Specialist) List(db *mysql.DB) (interface{}, error) {
 		i++
 	}
 	return coll, nil
+}
+
+func (s *Specialist) Page(db *mysql.DB) (interface{}, error) {
+	// page * recordsPerPage = limit
+	recordsPerPage := 50
+	limit := s.Data.(int) * recordsPerPage
+	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)", ""))
+	if err != nil {
+		return nil, err
+	}
+	var totalCount int
+	for rows.Next() {
+		err = rows.Scan(&totalCount)
+		if err != nil {
+			return nil, err
+		}
+	}
+	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*", fmt.Sprintf("LIMIT %d,%d", limit, recordsPerPage)))
+	if err != nil {
+		return nil, err
+	}
+	// Only the amount of rows equal to recordsPerPage unless the last page has been requested
+	// (determined by `totalCount - limit`).
+	capacity := totalCount - limit
+	if capacity >= recordsPerPage {
+		capacity = recordsPerPage
+	}
+	paging := &app.SpecialistMediaPaging{
+		Pager: &app.Pager{
+			CurrentPage:    limit / recordsPerPage,
+			RecordsPerPage: recordsPerPage,
+			TotalCount:     totalCount,
+			TotalPages:     int(math.Ceil(float64(totalCount) / float64(recordsPerPage))),
+		},
+		Users: make([]*app.SpecialistItem, capacity),
+	}
+	i := 0
+	for rows.Next() {
+		var id int
+		var username string
+		var password string
+		var firstname string
+		var lastname string
+		var email string
+		var payrate float64
+		var authLevel int
+		err = rows.Scan(&id, &username, &password, &firstname, &lastname, &email, &payrate, &authLevel)
+		if err != nil {
+			return nil, err
+		}
+		paging.Users[i] = &app.SpecialistItem{
+			ID:        id,
+			Username:  username,
+			Password:  password,
+			Firstname: firstname,
+			Lastname:  lastname,
+			Email:     email,
+			Payrate:   payrate,
+			AuthLevel: authLevel,
+		}
+		i++
+	}
+	return paging, nil
 }

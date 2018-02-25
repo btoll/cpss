@@ -55,7 +55,7 @@ var _ = Resource("City", func() {
 
 	Action("list", func() {
 		Routing(GET("/list"))
-		Description("Get a list of all the PA cities")
+		Description("Get all cities")
 		Response(OK, CollectionOf(CityMedia))
 	})
 
@@ -64,7 +64,7 @@ var _ = Resource("City", func() {
 		Params(func() {
 			Param("page", Integer, "Given a page number, returns an object consisting of the slice of cities and a pager object")
 		})
-		Description("Get a page of PA cities")
+		Description("Get a page of cities")
 		Response(OK, func() {
 			Status(200)
 			Media(CityMedia, "paging")
@@ -99,12 +99,14 @@ var CityPayload = Type("CityPayload", func() {
 	Required("name", "zip", "countyID", "state")
 })
 
-var Item = Type("item", func() {
-	Attribute("id", Integer)
-	Attribute("name", String)
-	Attribute("zip", String)
-	Attribute("countyID", Integer)
-	Attribute("state", String)
+var CityItem = Type("cityItem", func() {
+	Reference(CityPayload)
+
+	Attribute("id")
+	Attribute("name")
+	Attribute("zip")
+	Attribute("countyID")
+	Attribute("state")
 
 	Required("id", "name", "zip", "countyID", "state")
 })
@@ -122,8 +124,7 @@ var CityMedia = MediaType("application/cityapi.cityentity", func() {
 		Attribute("zip")
 		Attribute("countyID")
 		Attribute("state")
-		Attribute("city", "item")
-		Attribute("cities", ArrayOf("item"))
+		Attribute("cities", ArrayOf("cityItem"))
 		Attribute("pager", Pager)
 
 		Required("id", "name", "zip", "countyID", "state", "cities", "pager")

@@ -48,6 +48,18 @@ var _ = Resource("BillSheet", func() {
 		Description("Get all billsheets")
 		Response(OK, CollectionOf(BillSheetMedia))
 	})
+
+	Action("page", func() {
+		Routing(GET("/list/:page"))
+		Params(func() {
+			Param("page", Integer, "Given a page number, returns an object consisting of the slice of bill_sheets and a pager object")
+		})
+		Description("Get a page of bill_sheets")
+		Response(OK, func() {
+			Status(200)
+			Media(BillSheetMedia, "paging")
+		})
+	})
 })
 
 var BillSheetPayload = Type("BillSheetPayload", func() {
@@ -101,6 +113,24 @@ var BillSheetPayload = Type("BillSheetPayload", func() {
 	Required("recipientID", "serviceDate", "billedAmount", "consumer", "status", "confirmation", "service", "county", "specialist", "recordNumber")
 })
 
+var BillSheetItem = Type("billSheetItem", func() {
+	Reference(BillSheetPayload)
+
+	Attribute("id")
+	Attribute("recipientID")
+	Attribute("serviceDate")
+	Attribute("billedAmount")
+	Attribute("consumer")
+	Attribute("status")
+	Attribute("confirmation")
+	Attribute("service")
+	Attribute("county")
+	Attribute("specialist")
+	Attribute("recordNumber")
+
+	Required("id", "recipientID", "serviceDate", "billedAmount", "consumer", "status", "confirmation", "service", "county", "specialist", "recordNumber")
+})
+
 var BillSheetMedia = MediaType("application/billsheetapi.billsheetentity", func() {
 	Description("BillSheet response")
 	TypeName("BillSheetMedia")
@@ -119,8 +149,10 @@ var BillSheetMedia = MediaType("application/billsheetapi.billsheetentity", func(
 		Attribute("county")
 		Attribute("specialist")
 		Attribute("recordNumber")
+		Attribute("billsheets", ArrayOf("billSheetItem"))
+		Attribute("pager", Pager)
 
-		Required("id", "recipientID", "serviceDate", "billedAmount", "consumer", "status", "confirmation", "service", "county", "specialist", "recordNumber")
+		Required("id", "recipientID", "serviceDate", "billedAmount", "consumer", "status", "confirmation", "service", "county", "specialist", "recordNumber", "billsheets", "pager")
 	})
 
 	View("default", func() {
@@ -135,6 +167,11 @@ var BillSheetMedia = MediaType("application/billsheetapi.billsheetentity", func(
 		Attribute("county")
 		Attribute("specialist")
 		Attribute("recordNumber")
+	})
+
+	View("paging", func() {
+		Attribute("billsheets")
+		Attribute("pager")
 	})
 
 	View("tiny", func() {
