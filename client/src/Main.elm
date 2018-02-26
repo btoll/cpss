@@ -5,6 +5,7 @@ import Data.Consumer exposing (Consumer)
 import Data.County exposing (County)
 import Data.Session exposing (Session)
 import Data.Status exposing (Status)
+import Data.TimeEntry exposing (TimeEntry)
 import Data.User exposing (User)
 import Html exposing (Html, text)
 import Http
@@ -16,6 +17,7 @@ import Page.Login as Login
 import Page.NotFound as NotFound
 import Page.Specialist as Specialist
 import Page.Status as Status
+import Page.TimeEntry as TimeEntry
 import Ports exposing (fileContentRead, fileSelected)
 import Route exposing (Route)
 import Task
@@ -46,6 +48,7 @@ type Page
     | Login Login.Model
     | Specialist Specialist.Model
     | Status Status.Model
+    | TimeEntry TimeEntry.Model
 
 
 
@@ -94,6 +97,7 @@ type Msg
     | SpecialistMsg Specialist.Msg
     | StatusLoaded ( Result Http.Error Status.Model )
     | StatusMsg Status.Msg
+    | TimeEntryMsg TimeEntry.Msg
 
 
 setRoute : Maybe Route -> Model -> ( Model, Cmd Msg )
@@ -242,6 +246,28 @@ setRoute maybeRoute model =
                         _ ->
                             { model | page = Errored "You are not authorized to view this page" } ! []
 
+        Just Route.TimeEntry ->
+            case model.session.user of
+                Nothing ->
+                    { model |
+                        page = Login Login.init
+                        , onLogin = maybeRoute
+                    } ! []
+
+                Just timeEntry ->
+                    case timeEntry.authLevel of
+                        2 ->
+                            let
+                                ( subModel, subMsg ) =
+                                    TimeEntry.init model.build.url model.session
+                            in
+                                { model |
+                                    page = TimeEntry subModel
+                                } ! [ Cmd.map TimeEntryMsg subMsg ]
+
+                        _ ->
+                            { model | page = Errored "You are not authorized to view this page" } ! []
+
         Nothing ->
             case model.session.user of
                 Nothing ->
@@ -304,6 +330,9 @@ update msg model =
             ( StatusMsg subMsg, Status subModel ) ->
                 toPage Status StatusMsg Status.update subMsg subModel
 
+            ( TimeEntryMsg subMsg, TimeEntry subModel ) ->
+                toPage TimeEntry TimeEntryMsg TimeEntry.update subMsg subModel
+
             _ ->
                 model ! []
 
@@ -316,56 +345,58 @@ view model =
         frame =
 --            Page.frame isLoading session.user
             Page.frame
+
+        session = model.session
     in
     case model.page of
         Blank ->
             -- This is for the very initial page load, while we are loading
             -- data via HTTP. We could also render a spinner here.
             text ""
-                |> frame model.session.user Page.Home
+                |> frame session.user Page.Home
 
         BillSheet subModel ->
             BillSheet.view subModel
-                |> frame model.session.user Page.BillSheet
+                |> frame session.user Page.BillSheet
                 |> Html.map BillSheetMsg
 
         Consumer subModel ->
             Consumer.view subModel
-                |> frame model.session.user Page.Consumer
+                |> frame session.user Page.Consumer
                 |> Html.map ConsumerMsg
 
         County subModel ->
             County.view subModel
-                |> frame model.session.user Page.County
+                |> frame session.user Page.County
                 |> Html.map CountyMsg
 
         Errored err ->
             text err
-                |> frame model.session.user Page.Other
+                |> frame session.user Page.Other
 
         Login subModel ->
             Login.view subModel
-                |> frame model.session.user Page.Login
+                |> frame session.user Page.Login
                 |> Html.map LoginMsg
 
         NotFound ->
             NotFound.view
-                |> frame model.session.user Page.Other
+                |> frame session.user Page.Other
 
         Specialist subModel ->
             Specialist.view subModel
-                |> frame model.session.user Page.Specialist
+                |> frame session.user Page.Specialist
                 |> Html.map SpecialistMsg
 
         Status subModel ->
             Status.view subModel
-                |> frame model.session.user Page.Status
+                |> frame session.user Page.Status
                 |> Html.map StatusMsg
 
---        Home subModel ->
---            Home.view session subModel
---                |> frame Page.Home
---                |> Html.map HomeMsg
+        TimeEntry subModel ->
+            TimeEntry.view subModel
+                |> frame model.session.user Page.TimeEntry
+                |> Html.map TimeEntryMsg
 
 
 

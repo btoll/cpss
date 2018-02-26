@@ -1,58 +1,57 @@
-module Page.BillSheet exposing (Model, Msg, init, update, view)
+module Page.TimeEntry exposing (Model, Msg, init, update, view)
 
-import Data.BillSheet exposing (BillSheet, BillSheetWithPager, new)
 import Data.Consumer exposing (Consumer)
-import Data.County exposing (County)
 import Data.Pager exposing (Pager)
+import Data.Session exposing (Session)
+import Data.TimeEntry as TimeEntry exposing (TimeEntry, TimeEntryWithPager, new)
 import Data.User exposing (User)
-import Data.Status exposing (Status)
 import Date exposing (Date, Day(..), day, dayOfWeek, month, year)
 import DatePicker exposing (defaultSettings, DateEvent(..))
 import Html exposing (Html, Attribute, button, div, form, h1, input, label, section, text)
-import Html.Attributes exposing (action, autofocus, checked, disabled, for, id, style, type_, value)
+import Html.Attributes exposing (action, autofocus, checked, disabled, for, id, step, style, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Http
-import Request.BillSheet
 import Request.Consumer
-import Request.County
-import Request.Specialist
-import Request.Status
+import Request.TimeEntry
 import Table exposing (defaultCustomizations)
 import Task exposing (Task)
 import Util.Date
-import Validate.BillSheet
+import Validate.TimeEntry
 import Views.Errors as Errors
 import Views.Form as Form
 import Views.Modal as Modal
 import Views.Pager
 
 
+
 -- MODEL
 
+
 type alias PageLists =
-    { billsheets : List BillSheet
+    { timeEntryWithPager : TimeEntryWithPager
     , consumers : List Consumer
-    , counties : List County
-    , specialists : List User
-    , status : List Status
     }
 
 
 type alias Model =
-    { errors : List ( Validate.BillSheet.Field, String )
+    { errors : List ( Validate.TimeEntry.Field, String )
     , tableState : Table.State
     , action : Action
-    , editing : Maybe BillSheet
+    , editing : Maybe TimeEntry
     , disabled : Bool
+    , changingPassword : String         -- Use for both storing current password and new password when changing password!
     , showModal : ( Bool, Maybe Modal.Modal )
     , date : Maybe Date
     , datePicker : DatePicker.DatePicker
     , pageLists : PageLists
-    , pager : Pager
+    , user : User
     }
 
 
-type Action = None | Adding | Editing
+type Action
+    = None
+    | Adding
+    | Editing
 
 
 commonSettings : DatePicker.Settings
@@ -81,9 +80,18 @@ settings date =
 
 
 
-init : String -> ( Model, Cmd Msg )
-init url =
+init : String -> Session -> ( Model, Cmd Msg )
+init url session =
     let
+        user : User
+        user =
+            case session.user of
+                Nothing ->
+                    Data.User.new
+
+                Just user ->
+                    user
+
         ( datePicker, datePickerFx ) =
             DatePicker.init
     in
@@ -92,23 +100,21 @@ init url =
     , action = None
     , editing = Nothing
     , disabled = True
+    , changingPassword = ""         -- Use for both storing current password and new password when changing password!
     , showModal = ( False, Nothing )
     , date = Nothing
     , datePicker = datePicker
     , pageLists =
-        { billsheets = []
+        { timeEntryWithPager =
+            { timeEntries = [ new ]
+            , pager = Data.Pager.new
+            }
         , consumers = []
-        , counties = []
-        , specialists = []
-        , status = []
         }
-    , pager = Data.Pager.new
+    , user = user
     } ! [ Cmd.map DatePicker datePickerFx
         , Request.Consumer.list url |> Http.send FetchedConsumers
-        , Request.County.list url |> Http.send FetchedCounties
-        , Request.Specialist.list url |> Http.send FetchedSpecialists
-        , Request.Status.list url |> Http.send FetchedStatus
-        , 0 |> Request.BillSheet.page url |> Http.send FetchedBillSheets
+        , 0 |> Request.TimeEntry.page url |> Http.send FetchedTimeEntries
         ]
 
 
@@ -120,25 +126,19 @@ type Msg
     = Add
     | Cancel
     | DatePicker DatePicker.Msg
-    | Delete BillSheet
+    | Delete TimeEntry
     | Deleted ( Result Http.Error Int )
-    | Edit BillSheet
-    | FetchedBillSheets ( Result Http.Error BillSheetWithPager )
+    | Edit TimeEntry
     | FetchedConsumers ( Result Http.Error ( List Consumer ) )
-    | FetchedCounties ( Result Http.Error ( List County ) )
-    | FetchedSpecialists ( Result Http.Error ( List User ) )
-    | FetchedStatus ( Result Http.Error ( List Status ) )
+    | FetchedTimeEntries ( Result Http.Error TimeEntryWithPager )
     | ModalMsg Modal.Msg
     | PagerMsg Views.Pager.Msg
     | Post
-    | Posted ( Result Http.Error BillSheet )
+    | Posted ( Result Http.Error TimeEntry )
     | Put
-    | Putted ( Result Http.Error BillSheet )
-    | SelectConsumer BillSheet String
-    | SelectCounty BillSheet String
-    | SelectSpecialist BillSheet String
-    | SelectStatus BillSheet String
-    | SetFormValue ( String -> BillSheet ) String
+    | Putted ( Result Http.Error TimeEntry )
+    | SelectConsumer TimeEntry String
+    | SetFormValue ( String -> TimeEntry ) String
     | SetTableState Table.State
     | Submit
 
@@ -158,6 +158,7 @@ update url msg model =
         Cancel ->
             { model |
                 action = None
+                , disabled = True
                 , editing = Nothing
                 , errors = []
             } ! []
@@ -167,9 +168,9 @@ update url msg model =
                 ( newDatePicker, datePickerFx, dateEvent ) =
                     DatePicker.update ( settings model.date ) subMsg model.datePicker
 
-                ( newDate, newBillSheet ) =
+                ( newDate, newTimeEntry ) =
                     let
-                        billsheet = Maybe.withDefault new model.editing
+                        timeEntry = Maybe.withDefault new model.editing
                     in
                     case dateEvent of
                         Changed newDate ->
@@ -185,31 +186,39 @@ update url msg model =
                                                     d |> Util.Date.simple
 
                                         _ ->
-                                            billsheet.serviceDate
+                                            timeEntry.serviceDate
                             in
-                            ( newDate , { billsheet | serviceDate = dateString } )
+                            ( newDate , { timeEntry | serviceDate = dateString } )
 
                         _ ->
-                            ( model.date, { billsheet | serviceDate = billsheet.serviceDate } )
+                            ( model.date, { timeEntry | serviceDate = timeEntry.serviceDate } )
             in
             { model
                 | date = newDate
                 , datePicker = newDatePicker
-                , editing = Just newBillSheet
+                , editing = Just newTimeEntry
             } ! [ Cmd.map DatePicker datePickerFx ]
 
-        Delete billsheet ->
+        Delete timeEntry ->
             { model |
-                editing = Just billsheet
+                editing = Just timeEntry
                 , showModal = ( True , Modal.Delete |> Just )
             } ! []
 
-        Deleted ( Ok id ) ->
+        Deleted ( Ok timeEntryID ) ->
+            let
+                oldPageLists = model.pageLists
+                oldTimeEntryWithPager = oldPageLists.timeEntryWithPager
+            in
             { model |
                 pageLists =
                     { oldPageLists |
-                        billsheets =
-                            oldPageLists.billsheets |> List.filter ( \m -> id /= m.id )
+                        timeEntryWithPager =
+                            { oldTimeEntryWithPager |
+                                timeEntries =
+                                    oldTimeEntryWithPager.timeEntries
+                                        |> List.filter ( \m -> timeEntryID /= m.id )
+                            }
                     }
             } ! []
 
@@ -219,23 +228,10 @@ update url msg model =
 --                , errors = (::) "There was a problem, the record could not be deleted!" model.errors
             } ! []
 
-        Edit billsheet ->
+        Edit timeEntry ->
             { model |
                 action = Editing
-                , editing = Just billsheet
-            } ! []
-
-        FetchedBillSheets ( Ok billsheets ) ->
-            { model |
-                pageLists = { oldPageLists | billsheets = billsheets.billsheets }
-                , pager = billsheets.pager
-                , tableState = Table.initialSort "ID"
-            } ! []
-
-        FetchedBillSheets ( Err err ) ->
-            { model |
-                pageLists = { oldPageLists | billsheets = [] }
-                , tableState = Table.initialSort "ID"
+                , editing = Just timeEntry
             } ! []
 
         FetchedConsumers ( Ok consumers ) ->
@@ -250,39 +246,30 @@ update url msg model =
                 , tableState = Table.initialSort "ID"
             } ! []
 
-        FetchedCounties ( Ok counties ) ->
+        FetchedTimeEntries ( Ok timeEntries ) ->
+            let
+                oldTimeEntryWithPager = oldPageLists.timeEntryWithPager
+                newTimeEntries = { oldTimeEntryWithPager | timeEntries = timeEntries.timeEntries }
+            in
             { model |
-                pageLists = { oldPageLists | counties = counties }
+                pageLists = { oldPageLists | timeEntryWithPager = newTimeEntries }
+--                , pager = timeEntries.pager
                 , tableState = Table.initialSort "ID"
             } ! []
 
-        FetchedCounties ( Err err ) ->
+        FetchedTimeEntries ( Err err ) ->
+            let
+                oldTimeEntryWithPager = oldPageLists.timeEntryWithPager
+            in
             { model |
-                pageLists = { oldPageLists | counties = [] }
-                , tableState = Table.initialSort "ID"
-            } ! []
-
-        FetchedSpecialists ( Ok specialists ) ->
-            { model |
-                pageLists = { oldPageLists | specialists = specialists }
-                , tableState = Table.initialSort "ID"
-            } ! []
-
-        FetchedSpecialists ( Err err ) ->
-            { model |
-                pageLists = { oldPageLists | specialists = [] }
-                , tableState = Table.initialSort "ID"
-            } ! []
-
-        FetchedStatus ( Ok status ) ->
-            { model |
-                pageLists = { oldPageLists | status = status }
-                , tableState = Table.initialSort "ID"
-            } ! []
-
-        FetchedStatus ( Err err ) ->
-            { model |
-                pageLists = { oldPageLists | status = [] }
+                pageLists =
+                    { oldPageLists |
+                        timeEntryWithPager =
+                            { oldTimeEntryWithPager |
+                                timeEntries = []
+                            }
+                    }
+--                , errors = (::) "There was a problem, the record(s) could not be retrieved!" model.errors
                 , tableState = Table.initialSort "ID"
             } ! []
 
@@ -295,7 +282,7 @@ update url msg model =
 
                         True ->
                             Maybe.withDefault new model.editing
-                                |> Request.BillSheet.delete url
+                                |> Request.TimeEntry.delete url
                                 |> Http.toTask
                                 |> Task.attempt Deleted
             in
@@ -306,9 +293,9 @@ update url msg model =
         PagerMsg subMsg ->
             model !
             [ subMsg
-                |>Views.Pager.update ( model.pager.currentPage, model.pager.totalPages )
-                |> Request.BillSheet.page url
-                |> Http.send FetchedBillSheets
+                |>Views.Pager.update ( model.pageLists.timeEntryWithPager.pager.currentPage, model.pageLists.timeEntryWithPager.pager.totalPages )
+                |> Request.TimeEntry.page url
+                |> Http.send FetchedTimeEntries
             ]
 
         Post ->
@@ -318,17 +305,18 @@ update url msg model =
                         Nothing ->
                             []
 
-                        Just billsheet ->
-                            Validate.BillSheet.errors billsheet
+                        Just timeEntry ->
+                            Validate.TimeEntry.errors timeEntry
 
                 ( action, subCmd ) = if errors |> List.isEmpty then
                     case model.editing of
                         Nothing ->
                             ( None, Cmd.none )
 
-                        Just billsheet ->
+                        Just timeEntry ->
                             ( None
-                            , Request.BillSheet.post url billsheet
+                            , { timeEntry | specialist = model.user.id }
+                                |> Request.TimeEntry.post url
                                 |> Http.toTask
                                 |> Task.attempt Posted
                             )
@@ -340,19 +328,32 @@ update url msg model =
                     , errors = errors
                 } ! [ subCmd ]
 
-        Posted ( Ok billsheet ) ->
+        Posted ( Ok timeEntry ) ->
             let
-                billsheets =
+                timeEntryWithPager = oldPageLists.timeEntryWithPager
+
+                entries =
                     case model.editing of
                         Nothing ->
-                            oldPageLists.billsheets
+                            timeEntryWithPager.timeEntries
 
-                        Just newBillSheet ->
-                            oldPageLists.billsheets
-                                |> (::) { newBillSheet | id = billsheet.id }
+                        Just newTimeEntry ->
+                            timeEntryWithPager.timeEntries
+                                |> (::)
+                                    { newTimeEntry |
+                                        id = timeEntry.id
+                                        , specialist = model.user.id
+                                    }
             in
             { model |
-                pageLists = { oldPageLists | billsheets = billsheets }
+                editing = Nothing
+                , pageLists =
+                    { oldPageLists |
+                        timeEntryWithPager =
+                            { timeEntryWithPager |
+                                timeEntries = entries
+                            }
+                    }
             } ! []
 
         Posted ( Err err ) ->
@@ -368,45 +369,53 @@ update url msg model =
                         Nothing ->
                             []
 
-                        Just billsheet ->
-                            Validate.BillSheet.errors billsheet
+                        Just timeEntry ->
+                            Validate.TimeEntry.errors timeEntry
 
                 ( action, subCmd ) = if errors |> List.isEmpty then
                     case model.editing of
                         Nothing ->
                             ( None, Cmd.none )
 
-                        Just billsheet ->
+                        Just timeEntry ->
                             ( None
-                            , Request.BillSheet.put url billsheet
+                            , Request.TimeEntry.put url timeEntry
                                 |> Http.toTask
                                 |> Task.attempt Putted
                             )
                     else
                         ( Editing, Cmd.none )
             in
-                { model |
-                    action = action
-                    , errors = errors
-                } ! [ subCmd ]
+            { model |
+                action = action
+                , errors = errors
+            } ! [ subCmd ]
 
-        Putted ( Ok billsheet ) ->
+        Putted ( Ok timeEntry ) ->
             let
-                billsheets =
+                timeEntryWithPager = oldPageLists.timeEntryWithPager
+
+                timeEntries =
                     case model.editing of
                         Nothing ->
-                            oldPageLists.billsheets
+                            timeEntryWithPager.timeEntries
 
-                        Just newBillSheet ->
-                            oldPageLists.billsheets
-                                |> List.filter ( \m -> billsheet.id /= m.id )
+                        Just newTimeEntry ->
+                            timeEntryWithPager.timeEntries
+                                |> List.filter ( \m -> timeEntry.id /= m.id )
                                 |> (::)
-                                    { newBillSheet | id = billsheet.id }
+                                    { newTimeEntry | id = timeEntry.id }
             in
-                { model |
-                    pageLists = { oldPageLists | billsheets = billsheets }
-                    , editing = Nothing
-                } ! []
+            { model |
+                editing = Nothing
+                , pageLists =
+                    { oldPageLists |
+                        timeEntryWithPager =
+                            { timeEntryWithPager |
+                                timeEntries = timeEntries
+                            }
+                    }
+            } ! []
 
         Putted ( Err err ) ->
             { model |
@@ -414,24 +423,19 @@ update url msg model =
 --                , errors = (::) "There was a problem, the record could not be updated!" model.errors
             } ! []
 
-        SelectConsumer billsheet consumer ->
+        SelectConsumer timeEntry consumerID ->
+            let
+                selectedConsumer =
+                    model.pageLists.consumers
+                    |> List.filter ( \m -> consumerID |> Form.toInt |> (==) m.id )
+                    |> List.head
+                    |> Maybe.withDefault Data.Consumer.new
+            in
             { model |
-                editing = { billsheet | consumer = consumer |> Form.toInt } |> Just
-            } ! []
-
-        SelectCounty billsheet countyID ->
-            { model |
-                editing = { billsheet | county = countyID |> Form.toInt } |> Just
-            } ! []
-
-        SelectSpecialist billsheet specialistID ->
-            { model |
-                editing = { billsheet | specialist = specialistID |> Form.toInt } |> Just
-            } ! []
-
-        SelectStatus billsheet statusID ->
-            { model |
-                editing = { billsheet | status = statusID |> Form.toInt } |> Just
+                editing = { timeEntry |
+                    consumer = consumerID |> Form.toInt
+                    , county = selectedConsumer.county
+                } |> Just
             } ! []
 
         SetFormValue setFormValue s ->
@@ -459,7 +463,7 @@ view : Model -> Html Msg
 view model =
     section []
         ( (++)
-            [ h1 [] [ text "Bill Sheet" ]
+            [ h1 [] [ text "Time Entry" ]
             , Errors.view model.errors
             ]
             ( drawView model )
@@ -479,22 +483,22 @@ drawView (
     let
         pager : Pager
         pager =
-            model.pager
+            model.pageLists.timeEntryWithPager.pager
 
-        editable : BillSheet
+        editable : TimeEntry
         editable = case editing of
             Nothing ->
                 new
 
-            Just billsheet ->
-                billsheet
+            Just timeEntry ->
+                timeEntry
 
         showList =
-            case pageLists.billsheets |> List.length of
+            case pageLists.timeEntryWithPager.timeEntries |> List.length of
                 0 ->
                     div [] []
                 _ ->
-                    Table.view config tableState pageLists.billsheets
+                    Table.view config tableState pageLists.timeEntryWithPager.timeEntries
 
         showPager : Html Msg
         showPager =
@@ -505,7 +509,7 @@ drawView (
     in
     case action of
         None ->
-            [ button [ onClick Add ] [ text "Add Bill Sheet" ]
+            [ button [ onClick Add ] [ text "Add Time Entry" ]
             , showPager
             , showList
             , showPager
@@ -531,95 +535,91 @@ drawView (
             ]
 
 
-formRows : ( BillSheet, Maybe Date, DatePicker.DatePicker, PageLists ) -> List ( Html Msg )
+
+formRows : ( TimeEntry, Maybe Date, DatePicker.DatePicker, PageLists ) -> List ( Html Msg )
 formRows ( editable, date, datePicker, pageLists ) =
-    [ Form.text "Recipient ID"
-        [ value editable.recipientID
-        , onInput ( SetFormValue ( \v -> { editable | recipientID = v } ) )
-        , autofocus True
-        ]
-        []
-    , div []
-        [ label [] [ text "Service Date" ]
-        , DatePicker.view date ( settings date ) datePicker
-            |> Html.map DatePicker
-        ]
-    , Form.float "Billed Amount"
-        [ editable.billedAmount |> toString |> value
-        , onInput ( SetFormValue (\v -> { editable | billedAmount = Form.toFloat v } ) )
-        ]
-        []
-    , Form.select "Consumer"
+    let
+        focusedDate : Maybe Date
+        focusedDate =
+            case (/=) editable.serviceDate "" of
+                True ->
+                    editable.serviceDate |> Util.Date.unsafeFromString |> Just
+                False ->
+                    date
+    in
+    [ Form.select "Consumer"
         [ id "consumerSelection"
         , editable |> SelectConsumer |> onInput
+        , autofocus True
         ] (
             pageLists.consumers
-                |> List.map ( \m -> ( m.id |> toString, m.lastname ++ ", " ++ m.firstname ) )
+                |> List.map ( \m -> ( m.id |> toString, ( m.lastname ++ ", " ++ m.firstname ) ) )
                 |> (::) ( "-1", "-- Select a consumer --" )
                 |> List.map ( editable.consumer |> toString |> Form.option )
         )
-    , Form.select "Status"
-        [ id "statusSelection"
-        , editable |> SelectStatus |> onInput
-        ] (
-            pageLists.status
-                |> List.map ( \m -> ( m.id |> toString, m.name ) )
-                |> (::) ( "-1", "-- Select a status --" )
-                |> List.map ( editable.status |> toString |> Form.option )
-        )
-    , Form.text "Confirmation"
-        [ value editable.confirmation
-        , onInput ( SetFormValue (\v -> { editable | confirmation = v } ) )
+    , div []
+        [ label [] [ text "Service Date" ]
+        , DatePicker.view focusedDate ( date |> settings ) datePicker
+            |> Html.map DatePicker
+        ]
+    , Form.text "Service Code"
+        [ value editable.serviceCode
+        , onInput ( SetFormValue ( \v -> { editable | serviceCode = v } ) )
         ]
         []
-    , Form.text "Service"
-        [ editable.service |> toString |> value
-        , onInput ( SetFormValue (\v -> { editable | service = Form.toInt v } ) )
+    , Form.float "Hours"
+        [ editable.hours |> toString |> value
+        , onInput ( SetFormValue (\v -> { editable | hours = Form.toFloat v } ) )
+        , step "0.25"
         ]
         []
-    , Form.select "County"
-        [ id "countySelection"
-        , editable |> SelectCounty |> onInput
-        ] (
-            pageLists.counties
-                |> List.map ( \m -> ( m.id |> toString, m.name ) )
-                |> (::) ( "-1", "-- Select a county --" )
-                |> List.map ( editable.county |> toString |> Form.option )
-        )
-    , Form.select "Specialist"
-        [ id "specialistSelection"
-        , editable |> SelectSpecialist |> onInput
-        ] (
-            pageLists.specialists
-                |> List.map ( \m -> ( m.id |> toString, m.lastname ++ ", " ++ m.firstname ) )
-                |> (::) ( "-1", "-- Select a specialist --" )
-                |> List.map ( editable.specialist |> toString |> Form.option )
-        )
-    , Form.text "Record Number"
-        [ value editable.recordNumber
-        , onInput ( SetFormValue (\v -> { editable | recordNumber = v } ) )
+    , Form.text "Description"
+        [ value editable.description
+        , onInput ( SetFormValue ( \v -> { editable | description = v } ) )
+        ]
+        []
+    , Form.text "County"
+        [ editable.county |> toString |> value
+        , disabled True
+        ]
+        []
+    , Form.text "County Code"
+        [ value editable.countyCode
+        , disabled True
+        ]
+        []
+    , Form.text "Contract Type"
+        [ value editable.contractType
+        , disabled True
+        ]
+        []
+    , Form.text "Billing Code"
+        [ value editable.billingCode
+        , onInput ( SetFormValue ( \v -> { editable | billingCode = v } ) )
         ]
         []
     ]
+
+
+
 -- TABLE CONFIGURATION
 
 
-config : Table.Config BillSheet Msg
+config : Table.Config TimeEntry Msg
 config =
     Table.customConfig
     { toId = .id >> toString
     , toMsg = SetTableState
     , columns =
-        [ Table.stringColumn "Recipient ID" .recipientID
+        [ Table.intColumn "Consumer" .consumer
         , Table.stringColumn "Service Date" .serviceDate
-        , Table.floatColumn "Billed Amount" .billedAmount
-        , Table.intColumn "Consumer" .consumer
-        , Table.intColumn "Status" .status
-        , Table.stringColumn "Confirmation" .confirmation
-        , Table.intColumn "Service" .service
+        , Table.stringColumn "Service Code" .serviceCode
+        , Table.floatColumn "Hours" .hours
+        , Table.stringColumn "Description" .description
         , Table.intColumn "County" .county
-        , Table.intColumn "Specialist" .specialist
-        , Table.stringColumn "Record Number" .recordNumber
+        , Table.stringColumn "County Code" .countyCode
+        , Table.stringColumn "Contract Type" .contractType
+        , Table.stringColumn "Billing Code" .billingCode
         , customColumn ( viewButton Edit "Edit" )
         , customColumn ( viewButton Delete "Delete" )
         ]
@@ -627,7 +627,7 @@ config =
     }
 
 
-customColumn : ( BillSheet -> Table.HtmlDetails Msg ) -> Table.Column BillSheet Msg
+customColumn : ( TimeEntry -> Table.HtmlDetails Msg ) -> Table.Column TimeEntry Msg
 customColumn viewElement =
     Table.veryCustomColumn
         { name = ""
@@ -636,10 +636,10 @@ customColumn viewElement =
         }
 
 
-viewButton : ( BillSheet -> msg ) -> String -> BillSheet -> Table.HtmlDetails msg
-viewButton msg name billsheet =
+viewButton : ( TimeEntry -> msg ) -> String -> TimeEntry -> Table.HtmlDetails msg
+viewButton msg name timeEntry =
     Table.HtmlDetails []
-        [ button [ onClick <| msg <| billsheet ] [ text name ]
+        [ button [ onClick <| msg <| timeEntry ] [ text name ]
         ]
 
 

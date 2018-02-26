@@ -490,7 +490,7 @@ formRows editable =
         ]
         []
     , Form.float "Pay Rate"
-        [ value ( toString editable.payrate )
+        [ editable.payrate |> toString |> value
         , onInput ( SetFormValue (\v -> { editable | payrate = Form.toFloat v } ) )
         , step "0.01"
         ]

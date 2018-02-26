@@ -16,6 +16,7 @@ type ActivePage
     | Logout
     | Specialist
     | Status
+    | TimeEntry
 
 
 type alias SiteLink msg =
@@ -44,6 +45,7 @@ siteLinks user page =
                     ]
                 _ ->
                     [ SiteLink Home Route.Home [ text "Home" ]
+                    , SiteLink TimeEntry Route.TimeEntry [ text "Time Entry" ]
                     , SiteLink Logout Route.Logout [ text "Logout" ]
                     ]
 

@@ -20,6 +20,7 @@ type Route
     | Specialist
     | Status
     | County
+    | TimeEntry
 
 
 route : Parser (Route -> a) a
@@ -33,6 +34,7 @@ route =
         , Url.map Specialist (s "specialist")
         , Url.map Status (s "status")
         , Url.map County (s "counties")
+        , Url.map TimeEntry (s "timeEntry")
         ]
 
 
@@ -68,6 +70,9 @@ routeToString page =
 
                 County ->
                     [ "counties" ]
+
+                TimeEntry ->
+                    [ "timeEntry" ]
     in
         "#/" ++ String.join "/" pieces
 

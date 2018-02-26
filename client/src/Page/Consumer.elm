@@ -554,7 +554,7 @@ formRows ( editable, date, datePicker, countyData ) =
         ]
         []
     , Form.float "Copay"
-        [ value ( toString editable.copay )
+        [ editable.copay |> toString |> value
         , onInput ( SetFormValue ( \v -> { editable | copay = Form.toFloat v } ) )
         ]
         []
