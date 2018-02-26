@@ -240,22 +240,8 @@ update url msg model =
                 } ! [ subCmd ]
 
         Posted ( Ok specialist ) ->
-            let
-                specialists =
-                    case model.editing of
-                        Nothing ->
-                            model.specialists
-
-                        Just newSpecialist ->
-                            model.specialists
-                                |> (::)
-                                    { newSpecialist |
-                                        id = specialist.id
-                                        , password = specialist.password
-                                    }
-            in
             { model |
-                specialists = specialists
+                specialists = model.specialists |> (::) specialist
                 , editing = Nothing
             } ! []
 
