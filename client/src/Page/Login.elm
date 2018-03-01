@@ -58,9 +58,6 @@ update url msg model =
             ( { model | username = "" , password = "" } ! [], SetUser user )
 
         Authenticated ( Err err ) ->
-            let
-                e = (Debug.log "err" err)
-            in
             ( { model | username = "", password = "" } ! [], NoOp )
 
         Cancel ->

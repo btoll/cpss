@@ -8,7 +8,10 @@ import Data.User as User exposing (User)
 
 
 type alias Session =
-    { user : Maybe User }
+    { user : Maybe User
+    , sessionName : String
+    , expiry : String
+    }
 
 
 --attempt : String -> (AuthToken -> Cmd msg) -> Session -> ( List String, Cmd msg )

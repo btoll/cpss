@@ -18,10 +18,12 @@ import Page.NotFound as NotFound
 import Page.Specialist as Specialist
 import Page.Status as Status
 import Page.TimeEntry as TimeEntry
-import Ports exposing (fileContentRead, fileSelected)
+import Ports exposing (SessionCredentials, getSessionCredentials, setSessionCredentials)
+import Request.Specialist
 import Route exposing (Route)
 import Task
 import Views.Page as Page exposing (ActivePage)
+
 
 
 type alias Build =
@@ -71,12 +73,16 @@ init flags location =
             then "http://96.31.87.245/cpss"
             else "http://localhost:8080/cpss"
     in
-        setRoute ( Route.fromLocation location )
-            { session = { user = Nothing }
-            , build = { url = url }
-            , page = initialPage
-            , onLogin = Nothing
+    setRoute ( Route.fromLocation location )
+        { session =
+            { user = Nothing
+            , sessionName = ""
+            , expiry = ""
             }
+        , build = { url = url }
+        , page = initialPage
+        , onLogin = Nothing
+        }
 
 
 initialPage : Page
@@ -95,9 +101,11 @@ type Msg
     | CountyMsg County.Msg
     | LoginMsg Login.Msg
     | SpecialistMsg Specialist.Msg
-    | StatusLoaded ( Result Http.Error Status.Model )
     | StatusMsg Status.Msg
     | TimeEntryMsg TimeEntry.Msg
+    | ReadSessionCredentials SessionCredentials
+    | FetchedUserSession ( Result Http.Error User )
+
 
 
 setRoute : Maybe Route -> Model -> ( Model, Cmd Msg )
@@ -118,9 +126,9 @@ setRoute maybeRoute model =
                                 ( subModel, subMsg ) =
                                     BillSheet.init model.build.url
                             in
-                                { model |
-                                    page = BillSheet subModel
-                                } ! [ Cmd.map BillSheetMsg subMsg ]
+                            { model |
+                                page = BillSheet subModel
+                            } ! [ Cmd.map BillSheetMsg subMsg ]
 
                         _ ->
                             { model | page = Errored "You are not authorized to view this page" } ! []
@@ -140,9 +148,9 @@ setRoute maybeRoute model =
                                 ( subModel, subMsg ) =
                                     Consumer.init model.build.url
                             in
-                                { model |
-                                    page = Consumer subModel
-                                } ! [ Cmd.map ConsumerMsg subMsg ]
+                            { model |
+                                page = Consumer subModel
+                            } ! [ Cmd.map ConsumerMsg subMsg ]
 
                         _ ->
                             { model | page = Errored "You are not authorized to view this page" } ! []
@@ -162,9 +170,9 @@ setRoute maybeRoute model =
                                 ( subModel, subMsg ) =
                                     County.init model.build.url
                             in
-                                { model |
-                                    page = County subModel
-                                } ! [ Cmd.map CountyMsg subMsg ]
+                            { model |
+                                page = County subModel
+                            } ! [ Cmd.map CountyMsg subMsg ]
 
                         _ ->
                             { model | page = Errored "You are not authorized to view this page" } ! []
@@ -197,10 +205,20 @@ setRoute maybeRoute model =
                 session = model.session
             in
                 { model |
-                    session = { session | user = Nothing }
+                    session = { session |
+                        user = Nothing
+                        , sessionName = ""
+                        , expiry = ""
+                        }
                     , page = Login Login.init
                     , onLogin = Just Route.Home
-                } ! [ Route.Login |> Route.modifyUrl ]
+                } ! [ Route.Login |> Route.modifyUrl
+                    , setSessionCredentials             -- Send session credentials to JavaScript to be put into local storage to complete logout.
+                        { userID = ""
+                        , sessionName = ""
+                        , expiry = ""
+                        }
+                    ]
 
         Just Route.Specialist ->
             case model.session.user of
@@ -210,16 +228,16 @@ setRoute maybeRoute model =
                         , onLogin = maybeRoute
                     } ! []
 
-                Just specialist ->
-                    case specialist.authLevel of
+                Just user ->
+                    case user.authLevel of
                         1 ->
                             let
                                 ( subModel, subMsg ) =
                                     Specialist.init model.build.url
                             in
-                                { model |
-                                    page = Specialist subModel
-                                } ! [ Cmd.map SpecialistMsg subMsg ]
+                            { model |
+                                page = Specialist subModel
+                            } ! [ Cmd.map SpecialistMsg subMsg ]
 
                         _ ->
                             { model | page = Errored "You are not authorized to view this page" } ! []
@@ -232,16 +250,16 @@ setRoute maybeRoute model =
                         , onLogin = maybeRoute
                     } ! []
 
-                Just status ->
-                    case status.authLevel of
+                Just user ->
+                    case user.authLevel of
                         1 ->
                             let
                                 ( subModel, subMsg ) =
                                     Status.init model.build.url
                             in
-                                { model |
-                                    page = Status subModel
-                                } ! [ Cmd.map StatusMsg subMsg ]
+                            { model |
+                                page = Status subModel
+                            } ! [ Cmd.map StatusMsg subMsg ]
 
                         _ ->
                             { model | page = Errored "You are not authorized to view this page" } ! []
@@ -254,16 +272,16 @@ setRoute maybeRoute model =
                         , onLogin = maybeRoute
                     } ! []
 
-                Just timeEntry ->
-                    case timeEntry.authLevel of
+                Just user ->
+                    case user.authLevel of
                         2 ->
                             let
                                 ( subModel, subMsg ) =
                                     TimeEntry.init model.build.url model.session
                             in
-                                { model |
-                                    page = TimeEntry subModel
-                                } ! [ Cmd.map TimeEntryMsg subMsg ]
+                            { model |
+                                page = TimeEntry subModel
+                            } ! [ Cmd.map TimeEntryMsg subMsg ]
 
                         _ ->
                             { model | page = Errored "You are not authorized to view this page" } ! []
@@ -288,53 +306,99 @@ update msg model =
                 -- Mapping the newCmd to SpecialistMsg causes the Elm runtime to call `update` again with the subsequent newCmd!
                 { model | page = toModel newModel } ! [ Cmd.map toMsg newCmd ]
     in
-        case ( msg, model.page ) of
-            ( SetRoute route, _ ) ->
-                setRoute route model
+    case ( msg, model.page ) of
+        ( SetRoute route, _ ) ->
+            setRoute route model
 
-            ( BillSheetMsg subMsg, BillSheet subModel ) ->
-                toPage BillSheet BillSheetMsg BillSheet.update subMsg subModel
+        ( BillSheetMsg subMsg, BillSheet subModel ) ->
+            toPage BillSheet BillSheetMsg BillSheet.update subMsg subModel
 
-            ( ConsumerMsg subMsg, Consumer subModel ) ->
-                toPage Consumer ConsumerMsg Consumer.update subMsg subModel
+        ( ConsumerMsg subMsg, Consumer subModel ) ->
+            toPage Consumer ConsumerMsg Consumer.update subMsg subModel
 
-            ( CountyMsg subMsg, County subModel ) ->
-                toPage County CountyMsg County.update subMsg subModel
+        ( CountyMsg subMsg, County subModel ) ->
+            toPage County CountyMsg County.update subMsg subModel
 
-            ( LoginMsg subMsg, Login subModel ) ->
-                let
-                    ( ( pageModel, cmd ), msgFromPage ) =
-                        Login.update model.build.url subMsg subModel
+        ( FetchedUserSession ( Ok user ), _ ) ->
+            let
+                oldSession = model.session
+            in
+            { model |
+                session =
+                    { oldSession |
+                        user = user |> Just
+                    }
+            } |> setRoute model.onLogin
 
-                    ( newModel, newCmd ) =
-                        case msgFromPage of
-                            Login.NoOp ->
-                                ( { model | page = Login pageModel }, Cmd.map LoginMsg cmd )
+        ( FetchedUserSession ( Err err ), _ ) ->
+            model ! []
 
-                            Login.SetUser user ->
-                                let
-                                    session =
-                                        model.session
-                                in
+        ( LoginMsg subMsg, Login subModel ) ->
+            let
+                ( ( pageModel, cmd ), msgFromPage ) =
+                    Login.update model.build.url subMsg subModel
+
+                ( newModel, newCmd ) =
+                    case msgFromPage of
+                        Login.NoOp ->
+                            ( { model | page = Login pageModel }, Cmd.map LoginMsg cmd )
+
+                        Login.SetUser user ->
+                            let
+                                session =
+                                    model.session
+
+                                ( m, routeCmd ) =
                                     { model |
-                                        session = { user = Just user }
+                                        session =
+                                            { user = Just user
+                                            , sessionName = ""
+                                            , expiry = ""
+                                            }
                                         , page = Blank
                                         , onLogin = Nothing
                                     } |> setRoute model.onLogin     -- Redirect after logging in.
-                in
-                    ( newModel, newCmd )
+                            in
+                            m ! [ routeCmd
+                                , setSessionCredentials             -- Send session credentials to JavaScript to be put into local storage.
+                                    { userID = user.id |> toString
+                                    , sessionName = "derp"  -- TODO
+                                    , expiry = "?"          -- TODO
+                                    }
+                                ]
+            in
+            ( newModel, newCmd )
 
-            ( SpecialistMsg subMsg, Specialist subModel ) ->
-                toPage Specialist SpecialistMsg Specialist.update subMsg subModel
+        ( ReadSessionCredentials session, _ ) ->
+            let
+                oldSession = model.session
 
-            ( StatusMsg subMsg, Status subModel ) ->
-                toPage Status StatusMsg Status.update subMsg subModel
+                cmd =
+                    if (/=) session.userID "" then
+                        session.userID
+                            |> Request.Specialist.get model.build.url
+                            |> Http.send FetchedUserSession
+                    else Cmd.none
+            in
+            { model |
+                session =
+                    { oldSession |
+                        sessionName = session.sessionName
+                        , expiry = session.expiry
+                    }
+            } ! [ cmd ]
 
-            ( TimeEntryMsg subMsg, TimeEntry subModel ) ->
-                toPage TimeEntry TimeEntryMsg TimeEntry.update subMsg subModel
+        ( SpecialistMsg subMsg, Specialist subModel ) ->
+            toPage Specialist SpecialistMsg Specialist.update subMsg subModel
 
-            _ ->
-                model ! []
+        ( StatusMsg subMsg, Status subModel ) ->
+            toPage Status StatusMsg Status.update subMsg subModel
+
+        ( TimeEntryMsg subMsg, TimeEntry subModel ) ->
+            toPage TimeEntry TimeEntryMsg TimeEntry.update subMsg subModel
+
+        _ ->
+            model ! []
 
 -- VIEW
 
@@ -409,7 +473,7 @@ main =
         { init = init
         , update = update
         , view = view
-        , subscriptions = always Sub.none
+        , subscriptions = ( \m -> ReadSessionCredentials |> getSessionCredentials )
         }
 
 

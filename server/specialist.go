@@ -73,12 +73,11 @@ func (c *SpecialistController) Page(ctx *app.PageSpecialistContext) error {
 func (c *SpecialistController) Show(ctx *app.ShowSpecialistContext) error {
 	// SpecialistController_Show: start_implement
 
-	//	rec, err := sql.Read(sql.NewSpecialist(ctx.Payload))
-	//	if err != nil {
-	//		return err
-	//	}
-	//	return ctx.OK(collection.(app.SpecialistMediaCollection))
-	return nil
+	rec, err := sql.Read(sql.NewSpecialist(ctx.ID))
+	if err != nil {
+		return err
+	}
+	return ctx.OK(rec.(*app.SpecialistMedia))
 
 	// SpecialistController_Show: end_implement
 }
