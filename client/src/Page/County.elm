@@ -270,7 +270,7 @@ update url msg model =
 
         SelectCounty city countyID ->
             { model |
-                editing = { city | countyID = countyID |> Form.toInt } |> Just
+                editing = { city | county = countyID |> Form.toInt } |> Just
                 , disabled = False
             } ! []
 
@@ -334,7 +334,7 @@ drawView (
                     div [] []
                 _ ->
                     cities
-                    |> Table.view config tableState
+                    |> Table.view ( model |> config ) tableState
 
         showPager : Html Msg
         showPager =
@@ -395,15 +395,15 @@ formRows ( editable, counties ) =
             counties
                 |> List.map ( \m -> ( m.id |> toString, m.name ) )
                 |> (::) ( "-1", "-- Select a county --" )
-                |> List.map ( editable.countyID |> toString |> Form.option )
+                |> List.map ( editable.county |> toString |> Form.option )
         )
     ]
 
 -- TABLE CONFIGURATION
 
 
-config : Table.Config City Msg
-config =
+config : Model -> Table.Config City Msg
+config model =
     Table.customConfig
     { toId = .id >> toString
     , toMsg = SetTableState
@@ -411,7 +411,15 @@ config =
         [ Table.stringColumn "City" .name
         , Table.stringColumn "State" .state
         , Table.stringColumn "Zip Code" .zip
-        , Table.intColumn "County" .countyID
+        , Table.stringColumn "County" (
+            .county
+                >> ( \id ->
+                    model.counties |> List.filter ( \m -> m.id |> (==) id )
+                    )
+                >> List.head
+                >> Maybe.withDefault Data.County.new
+                >> .name
+        )
         , customColumn ( viewButton Edit "Edit" ) ""
         , customColumn ( viewButton Delete "Delete" ) ""
         ]

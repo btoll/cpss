@@ -87,16 +87,16 @@ var CityPayload = Type("CityPayload", func() {
 		Metadata("struct:tag:datastore", "zip,noindex")
 		Metadata("struct:tag:json", "zip")
 	})
-	Attribute("countyID", Integer, "countyID", func() {
-		Metadata("struct:tag:datastore", "countyID")
-		Metadata("struct:tag:json", "countyID")
+	Attribute("county", Integer, "county", func() {
+		Metadata("struct:tag:datastore", "county")
+		Metadata("struct:tag:json", "county")
 	})
 	Attribute("state", String, "state", func() {
 		Metadata("struct:tag:datastore", "state,noindex")
 		Metadata("struct:tag:json", "state")
 	})
 
-	Required("name", "zip", "countyID", "state")
+	Required("name", "zip", "county", "state")
 })
 
 var CityItem = Type("cityItem", func() {
@@ -105,10 +105,10 @@ var CityItem = Type("cityItem", func() {
 	Attribute("id")
 	Attribute("name")
 	Attribute("zip")
-	Attribute("countyID")
+	Attribute("county")
 	Attribute("state")
 
-	Required("id", "name", "zip", "countyID", "state")
+	Required("id", "name", "zip", "county", "state")
 })
 
 var CityMedia = MediaType("application/cityapi.cityentity", func() {
@@ -122,19 +122,19 @@ var CityMedia = MediaType("application/cityapi.cityentity", func() {
 		Attribute("id")
 		Attribute("name")
 		Attribute("zip")
-		Attribute("countyID")
+		Attribute("county")
 		Attribute("state")
 		Attribute("cities", ArrayOf("cityItem"))
 		Attribute("pager", Pager)
 
-		Required("id", "name", "zip", "countyID", "state", "cities", "pager")
+		Required("id", "name", "zip", "county", "state", "cities", "pager")
 	})
 
 	View("default", func() {
 		Attribute("id", Integer)
 		Attribute("name", String)
 		Attribute("zip", String)
-		Attribute("countyID", Integer)
+		Attribute("county", Integer)
 		Attribute("state", String)
 	})
 

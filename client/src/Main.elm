@@ -41,9 +41,7 @@ type alias Flags =
 type Page
     = Blank
     | NotFound
---    | Home Home.Model
     | Errored String
---    | Home Home.Model
     | BillSheet BillSheet.Model
     | Consumer Consumer.Model
     | County County.Model

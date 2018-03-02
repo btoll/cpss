@@ -32,7 +32,7 @@ func (c *City) Create(db *mysql.DB) (interface{}, error) {
 	if err != nil {
 		return -1, err
 	}
-	res, err := stmt.Exec(payload.Name, payload.Zip, payload.CountyID, payload.State)
+	res, err := stmt.Exec(payload.Name, payload.Zip, payload.County, payload.State)
 	if err != nil {
 		return -1, err
 	}
@@ -66,18 +66,18 @@ func (c *City) Read(db *mysql.DB) (interface{}, error) {
 		var id int
 		var name string
 		var zip string
-		var countyID int
+		var county int
 		var state string
-		err := rows.Scan(&id, &name, &zip, &countyID, &state)
+		err := rows.Scan(&id, &name, &zip, &county, &state)
 		if err != nil {
 			return nil, err
 		}
 		coll[i] = &app.CityMedia{
-			ID:       id,
-			Name:     name,
-			Zip:      zip,
-			CountyID: countyID,
-			State:    state,
+			ID:     id,
+			Name:   name,
+			Zip:    zip,
+			County: county,
+			State:  state,
 		}
 		i++
 	}
@@ -90,16 +90,16 @@ func (c *City) Update(db *mysql.DB) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, err = stmt.Exec(payload.Name, payload.Zip, payload.CountyID, payload.State, payload.ID)
+	_, err = stmt.Exec(payload.Name, payload.Zip, payload.County, payload.State, payload.ID)
 	if err != nil {
 		return nil, err
 	}
 	return &app.CityMedia{
-		ID:       *payload.ID,
-		Name:     payload.Name,
-		Zip:      payload.Zip,
-		CountyID: payload.CountyID,
-		State:    payload.State,
+		ID:     *payload.ID,
+		Name:   payload.Name,
+		Zip:    payload.Zip,
+		County: payload.County,
+		State:  payload.State,
 	}, nil
 }
 
@@ -135,18 +135,18 @@ func (c *City) List(db *mysql.DB) (interface{}, error) {
 		var id int
 		var name string
 		var zip string
-		var countyID int
+		var county int
 		var state string
-		err := rows.Scan(&id, &name, &zip, &countyID, &state)
+		err := rows.Scan(&id, &name, &zip, &county, &state)
 		if err != nil {
 			return nil, err
 		}
 		coll[i] = &app.CityMedia{
-			ID:       id,
-			Name:     name,
-			Zip:      zip,
-			CountyID: countyID,
-			State:    state,
+			ID:     id,
+			Name:   name,
+			Zip:    zip,
+			County: county,
+			State:  state,
 		}
 		i++
 	}
@@ -192,18 +192,18 @@ func (c *City) Page(db *mysql.DB) (interface{}, error) {
 		var id int
 		var name string
 		var zip string
-		var countyID int
+		var county int
 		var state string
-		err := rows.Scan(&id, &name, &zip, &countyID, &state)
+		err := rows.Scan(&id, &name, &zip, &county, &state)
 		if err != nil {
 			return nil, err
 		}
 		paging.Cities[i] = &app.CityItem{
-			ID:       id,
-			Name:     name,
-			Zip:      zip,
-			CountyID: countyID,
-			State:    state,
+			ID:     id,
+			Name:   name,
+			Zip:    zip,
+			County: county,
+			State:  state,
 		}
 		i++
 	}

@@ -494,7 +494,8 @@ drawView (
                 0 ->
                     div [] []
                 _ ->
-                    Table.view config tableState pageLists.billsheets
+                    pageLists.billsheets
+                        |> Table.view ( model |> config ) tableState
 
         showPager : Html Msg
         showPager =
@@ -604,8 +605,8 @@ formRows ( editable, date, datePicker, pageLists ) =
 -- TABLE CONFIGURATION
 
 
-config : Table.Config BillSheet Msg
-config =
+config : Model -> Table.Config BillSheet Msg
+config model =
     Table.customConfig
     { toId = .id >> toString
     , toMsg = SetTableState
@@ -613,12 +614,44 @@ config =
         [ Table.stringColumn "Recipient ID" .recipientID
         , Table.stringColumn "Service Date" .serviceDate
         , Table.floatColumn "Billed Amount" .billedAmount
-        , Table.intColumn "Consumer" .consumer
-        , Table.intColumn "Status" .status
+        , Table.stringColumn "Consumer" (
+            .consumer
+                >> ( \id ->
+                    model.pageLists.consumers |> List.filter ( \m -> m.id |> (==) id )
+                    )
+                >> List.head
+                >> Maybe.withDefault Data.Consumer.new
+                >> ( \m -> m.firstname ++ " " ++  m.lastname )
+        )
+        , Table.stringColumn "Status" (
+            .status
+                >> ( \id ->
+                    model.pageLists.status |> List.filter ( \m -> m.id |> (==) id )
+                    )
+                >> List.head
+                >> Maybe.withDefault Data.Status.new
+                >> .name
+        )
         , Table.stringColumn "Confirmation" .confirmation
         , Table.intColumn "Service" .service
-        , Table.intColumn "County" .county
-        , Table.intColumn "Specialist" .specialist
+        , Table.stringColumn "County" (
+            .county
+                >> ( \id ->
+                    model.pageLists.counties |> List.filter ( \m -> m.id |> (==) id )
+                    )
+                >> List.head
+                >> Maybe.withDefault { id = -1, name = "" }
+                >> .name
+        )
+        , Table.stringColumn "Specialist" (
+            .specialist
+                >> ( \id ->
+                    model.pageLists.specialists |> List.filter ( \m -> m.id |> (==) id )
+                    )
+                >> List.head
+                >> Maybe.withDefault Data.User.new
+                >> ( \m -> m.firstname ++ " " ++  m.lastname )
+        )
         , Table.stringColumn "Record Number" .recordNumber
         , customColumn ( viewButton Edit "Edit" )
         , customColumn ( viewButton Delete "Delete" )

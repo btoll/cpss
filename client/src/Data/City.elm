@@ -11,7 +11,7 @@ type alias City =
     { id : Int
     , name : String
     , zip : String
-    , countyID : Int
+    , county : Int
     , state : String
     }
 
@@ -27,7 +27,7 @@ new =
     { id = -1
     , name = ""
     , zip = ""
-    , countyID = -1
+    , county = -1
     , state = ""
     }
 
@@ -39,7 +39,7 @@ decoder =
         |> required "id" int
         |> required "name" string
         |> required "zip" string
-        |> required "countyID" int
+        |> required "county" int
         |> required "state" string
 
 
@@ -49,7 +49,7 @@ encoder city =
         [ ( "id", Encode.int city.id )
         , ( "name", Encode.string city.name )
         , ( "zip", Encode.string city.zip )
-        , ( "countyID", Encode.int city.countyID )
+        , ( "county", Encode.int city.county )
         , ( "state", Encode.string city.state )
         ]
 

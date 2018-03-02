@@ -521,7 +521,7 @@ config =
         , Table.stringColumn "Last Name" .lastname
         , Table.stringColumn "Email" .email
         , Table.floatColumn "Pay Rate" .payrate
-        , Table.intColumn "Auth Level" .authLevel
+        , Table.stringColumn "Auth Level" ( .authLevel >> toString >> ( \s -> if s |> (==) "1" then "Admin" else "User" ) )
         , customColumn ( viewButton Edit "Edit" )
         , customColumn ( viewButton Delete "Delete" )
         , customColumn ( viewButton ChangePassword "Change Password" )

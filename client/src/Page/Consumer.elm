@@ -444,7 +444,8 @@ drawView (
                 0 ->
                     div [] []
                 _ ->
-                    Table.view config tableState consumers
+                    consumers
+                        |> Table.view ( model |> config ) tableState
 
         showPager : Html Msg
         showPager =
@@ -573,8 +574,8 @@ formRows ( editable, date, datePicker, countyData ) =
 -- TABLE CONFIGURATION
 
 
-config : Table.Config Consumer Msg
-config =
+config : Model -> Table.Config Consumer Msg
+config model =
     Table.customConfig
     { toId = .id >> toString
     , toMsg = SetTableState
@@ -582,7 +583,15 @@ config =
         [ Table.stringColumn "First Name" .firstname
         , Table.stringColumn "Last Name" .lastname
         , customColumn viewCheckbox "Active"
-        , Table.intColumn "County" .county
+        , Table.stringColumn "County" (
+            .county
+                >> ( \id ->
+                    Tuple.first model.countyData |> List.filter ( \m -> m.id |> (==) id )
+                    )
+                >> List.head
+                >> Maybe.withDefault { id = -1, name = "" }
+                >> .name
+        )
         , Table.stringColumn "County Code" .countyCode
         , Table.stringColumn "Funding Source" .fundingSource
         , Table.stringColumn "Zip Code" .zip
