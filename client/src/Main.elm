@@ -4,6 +4,7 @@ import Data.BillSheet exposing (BillSheet)
 import Data.Consumer exposing (Consumer)
 import Data.County exposing (County)
 import Data.Session exposing (Session)
+import Data.ServiceCode exposing (ServiceCode)
 import Data.Status exposing (Status)
 import Data.TimeEntry exposing (TimeEntry)
 import Data.User exposing (User)
@@ -15,6 +16,7 @@ import Page.Consumer as Consumer
 import Page.County as County
 import Page.Login as Login
 import Page.NotFound as NotFound
+import Page.ServiceCode as ServiceCode
 import Page.Specialist as Specialist
 import Page.Status as Status
 import Page.TimeEntry as TimeEntry
@@ -46,6 +48,7 @@ type Page
     | Consumer Consumer.Model
     | County County.Model
     | Login Login.Model
+    | ServiceCode ServiceCode.Model
     | Specialist Specialist.Model
     | Status Status.Model
     | TimeEntry TimeEntry.Model
@@ -98,6 +101,7 @@ type Msg
     | ConsumerMsg Consumer.Msg
     | CountyMsg County.Msg
     | LoginMsg Login.Msg
+    | ServiceCodeMsg ServiceCode.Msg
     | SpecialistMsg Specialist.Msg
     | StatusMsg Status.Msg
     | TimeEntryMsg TimeEntry.Msg
@@ -217,6 +221,28 @@ setRoute maybeRoute model =
                         , expiry = ""
                         }
                     ]
+
+        Just Route.ServiceCode ->
+            case model.session.user of
+                Nothing ->
+                    { model |
+                        page = Login Login.init
+                        , onLogin = maybeRoute
+                    } ! []
+
+                Just user ->
+                    case user.authLevel of
+                        1 ->
+                            let
+                                ( subModel, subMsg ) =
+                                    ServiceCode.init model.build.url
+                            in
+                            { model |
+                                page = ServiceCode subModel
+                            } ! [ Cmd.map ServiceCodeMsg subMsg ]
+
+                        _ ->
+                            { model | page = Errored "You are not authorized to view this page" } ! []
 
         Just Route.Specialist ->
             case model.session.user of
@@ -386,6 +412,9 @@ update msg model =
                     }
             } ! [ cmd ]
 
+        ( ServiceCodeMsg subMsg, ServiceCode subModel ) ->
+            toPage ServiceCode ServiceCodeMsg ServiceCode.update subMsg subModel
+
         ( SpecialistMsg subMsg, Specialist subModel ) ->
             toPage Specialist SpecialistMsg Specialist.update subMsg subModel
 
@@ -444,6 +473,11 @@ view model =
         NotFound ->
             NotFound.view
                 |> frame session.user Page.Other
+
+        ServiceCode subModel ->
+            ServiceCode.view subModel
+                |> frame session.user Page.ServiceCode
+                |> Html.map ServiceCodeMsg
 
         Specialist subModel ->
             Specialist.view subModel

@@ -18,9 +18,9 @@ func NewTimeEntry(payload interface{}) *TimeEntry {
 		Data: payload,
 		Stmt: map[string]string{
 			"DELETE": "DELETE FROM time_entry WHERE id=?",
-			"INSERT": "INSERT time_entry SET specialist=?,consumer=?,serviceDate=?,serviceCode=?,hours=?,description=?,county=?,countyCode=?,contractType=?,billingCode=?",
+			"INSERT": "INSERT time_entry SET specialist=?,consumer=?,serviceDate=?,serviceCode=?,hours=?,description=?,county=?,contractType=?,billingCode=?",
 			"SELECT": "SELECT %s FROM time_entry %s",
-			"UPDATE": "UPDATE time_entry SET specialist=?,consumer=?,serviceDate=?,serviceCode=?,hours=?,description=?,county=?,countyCode=?,contractType=?,billingCode=? WHERE id=?",
+			"UPDATE": "UPDATE time_entry SET specialist=?,consumer=?,serviceDate=?,serviceCode=?,hours=?,description=?,county=?,contractType=?,billingCode=? WHERE id=?",
 		},
 	}
 }
@@ -31,7 +31,7 @@ func (s *TimeEntry) Create(db *mysql.DB) (interface{}, error) {
 	if err != nil {
 		return -1, err
 	}
-	res, err := stmt.Exec(payload.Specialist, payload.Consumer, payload.ServiceDate, payload.ServiceCode, payload.Hours, payload.Description, payload.County, payload.CountyCode, payload.ContractType, payload.BillingCode)
+	res, err := stmt.Exec(payload.Specialist, payload.Consumer, payload.ServiceDate, payload.ServiceCode, payload.Hours, payload.Description, payload.County, payload.ContractType, payload.BillingCode)
 	if err != nil {
 		return -1, err
 	}
@@ -48,7 +48,7 @@ func (s *TimeEntry) Update(db *mysql.DB) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, err = stmt.Exec(payload.Specialist, payload.Consumer, payload.ServiceDate, payload.ServiceCode, payload.Hours, payload.Description, payload.County, payload.CountyCode, payload.ContractType, payload.BillingCode, payload.ID)
+	_, err = stmt.Exec(payload.Specialist, payload.Consumer, payload.ServiceDate, payload.ServiceCode, payload.Hours, payload.Description, payload.County, payload.ContractType, payload.BillingCode, payload.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +61,6 @@ func (s *TimeEntry) Update(db *mysql.DB) (interface{}, error) {
 		Hours:        payload.Hours,
 		Description:  payload.Description,
 		County:       payload.County,
-		CountyCode:   payload.CountyCode,
 		ContractType: payload.ContractType,
 		BillingCode:  payload.BillingCode,
 	}, nil
@@ -100,14 +99,13 @@ func (s *TimeEntry) List(db *mysql.DB) (interface{}, error) {
 		var specialist int
 		var consumer int
 		var serviceDate string
-		var serviceCode string
+		var serviceCode int
 		var hours float64
 		var description string
 		var county int
-		var countyCode string
 		var contractType string
 		var billingCode string
-		err = rows.Scan(&id, &specialist, &consumer, &serviceDate, &serviceCode, &hours, &description, &county, &countyCode, &contractType, &billingCode)
+		err = rows.Scan(&id, &specialist, &consumer, &serviceDate, &serviceCode, &hours, &description, &county, &contractType, &billingCode)
 		if err != nil {
 			return nil, err
 		}
@@ -120,7 +118,6 @@ func (s *TimeEntry) List(db *mysql.DB) (interface{}, error) {
 			Hours:       hours,
 			Description: description,
 			County:      county,
-			CountyCode:  countyCode,
 			BillingCode: billingCode,
 		}
 		i++
@@ -168,14 +165,13 @@ func (s *TimeEntry) Page(db *mysql.DB) (interface{}, error) {
 		var specialist int
 		var consumer int
 		var serviceDate string
-		var serviceCode string
+		var serviceCode int
 		var hours float64
 		var description string
 		var county int
-		var countyCode string
 		var contractType string
 		var billingCode string
-		err = rows.Scan(&id, &specialist, &consumer, &serviceDate, &serviceCode, &hours, &description, &county, &countyCode, &contractType, &billingCode)
+		err = rows.Scan(&id, &specialist, &consumer, &serviceDate, &serviceCode, &hours, &description, &county, &contractType, &billingCode)
 		if err != nil {
 			return nil, err
 		}
@@ -188,7 +184,6 @@ func (s *TimeEntry) Page(db *mysql.DB) (interface{}, error) {
 			Hours:       hours,
 			Description: description,
 			County:      county,
-			CountyCode:  countyCode,
 			BillingCode: billingCode,
 		}
 		i++

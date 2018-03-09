@@ -4,6 +4,7 @@ import Data.City exposing (City)
 import Data.Consumer exposing (Consumer, ConsumerWithPager, new)
 import Data.County exposing (County)
 import Data.Pager exposing (Pager)
+import Data.ServiceCode exposing (ServiceCode)
 import Date exposing (Date, Day(..), day, dayOfWeek, month, year)
 import DatePicker exposing (defaultSettings, DateEvent(..))
 import Html exposing (Html, Attribute, button, div, form, h1, input, label, node, section, text)
@@ -13,6 +14,7 @@ import Http
 import Request.City
 import Request.Consumer
 import Request.County
+import Request.ServiceCode
 import Table exposing (defaultCustomizations)
 import Task exposing (Task)
 import Util.Date
@@ -36,6 +38,7 @@ type alias Model =
     , date : Maybe Date
     , datePicker : DatePicker.DatePicker
     , countyData : CountyData
+    , serviceCodes : List ServiceCode
     , consumers : List Consumer
     , pager : Pager
     }
@@ -88,9 +91,11 @@ init url =
     , date = Nothing
     , datePicker = datePicker
     , countyData = ( [], [] )
+    , serviceCodes = []
     , consumers = []
     , pager = Data.Pager.new
     } ! [ Cmd.map DatePicker datePickerFx
+    , Request.ServiceCode.list url |> Http.send FetchedServiceCodes
     , Request.County.list url |> Http.send FetchedCounties
     , 0 |> Request.Consumer.page url |> Http.send FetchedConsumers
     ]
@@ -109,6 +114,7 @@ type Msg
     | FetchedCities ( Result Http.Error ( List City ) )
     | FetchedConsumers ( Result Http.Error ConsumerWithPager )
     | FetchedCounties ( Result Http.Error ( List County ) )
+    | FetchedServiceCodes ( Result Http.Error ( List ServiceCode ) )
     | ModalMsg Modal.Msg
     | PagerMsg Views.Pager.Msg
     | Post
@@ -116,6 +122,7 @@ type Msg
     | Put
     | Putted ( Result Http.Error Consumer )
     | SelectCounty Consumer String
+    | SelectServiceCode Consumer String
     | SelectZip Consumer String
     | SetCheckboxValue ( Bool -> Consumer ) Bool
     | SetFormValue ( String -> Consumer ) String
@@ -233,6 +240,18 @@ update url msg model =
         FetchedCounties ( Err err ) ->
             { model |
                 countyData = ( [], model.countyData |> Tuple.second )
+                , tableState = Table.initialSort "ID"
+            } ! []
+
+        FetchedServiceCodes ( Ok serviceCodes ) ->
+            { model |
+                serviceCodes = serviceCodes
+                , tableState = Table.initialSort "ID"
+            } ! []
+
+        FetchedServiceCodes ( Err err ) ->
+            { model |
+                serviceCodes = []
                 , tableState = Table.initialSort "ID"
             } ! []
 
@@ -371,6 +390,12 @@ update url msg model =
             -- Fetch the county's zip codes to set the zip code drop-down to the correct value.
             } ! [ countyID |> Request.City.get url |> Http.send FetchedCities ]
 
+        SelectServiceCode consumer serviceCode ->
+            { model |
+                editing = { consumer | serviceCode = Form.toInt serviceCode } |> Just
+                , disabled = False
+            } ! []
+
         SelectZip consumer zip ->
             { model |
                 editing = { consumer | zip = zip } |> Just
@@ -424,6 +449,7 @@ drawView (
     , disabled
     , editing
     , tableState
+    , serviceCodes
     , consumers
     } as model ) =
     let
@@ -468,7 +494,7 @@ drawView (
         Adding ->
             [ form [ onSubmit Post ]
                 ( (++)
-                    ( ( editable, date, datePicker, countyData ) |> formRows )
+                    ( ( editable, date, datePicker, serviceCodes, countyData ) |> formRows )
                     [ Form.submit disabled Cancel ]
                 )
             ]
@@ -476,15 +502,17 @@ drawView (
         Editing ->
             [ form [ onSubmit Put ]
                 ( (++)
-                    ( ( editable, date, datePicker, countyData ) |> formRows )
+                    ( ( editable, date, datePicker, serviceCodes, countyData ) |> formRows )
                     [ Form.submit disabled Cancel ]
                 )
             ]
 
 
-formRows : ( Consumer, Maybe Date, DatePicker.DatePicker, CountyData ) -> List ( Html Msg )
-formRows ( editable, date, datePicker, countyData ) =
+formRows : ( Consumer, Maybe Date, DatePicker.DatePicker, List ServiceCode, CountyData ) -> List ( Html Msg )
+formRows ( editable, date, datePicker, serviceCodes, countyData ) =
     let
+        sc = (Debug.log "serviceCodes" serviceCodes)
+
         focusedDate : Maybe Date
         focusedDate =
             case (/=) editable.dischargeDate "" of
@@ -519,11 +547,15 @@ formRows ( editable, date, datePicker, countyData ) =
                 |> (::) ( "-1", "-- Select a county --" )
                 |> List.map ( editable.county |> toString |> Form.option )
         )
-    , Form.text "County Code"
-        [ value editable.countyCode
-        , onInput ( SetFormValue ( \v -> { editable | countyCode = v } ) )
-        ]
-        []
+    , Form.select "Service Code"
+        [ id "serviceCodeSelection"
+        , editable |> SelectServiceCode |> onInput
+        ] (
+            serviceCodes
+                |> List.map ( \m -> ( m.id |> toString, m.name ) )
+                |> (::) ( "-1", "-- Select a service code --" )
+                |> List.map ( editable.serviceCode |> toString |> Form.option )
+        )
     , Form.text "Funding Source"
         [ value editable.fundingSource
         , onInput ( SetFormValue ( \v -> { editable | fundingSource = v } ) )
@@ -592,7 +624,7 @@ config model =
                 >> Maybe.withDefault { id = -1, name = "" }
                 >> .name
         )
-        , Table.stringColumn "County Code" .countyCode
+        , Table.intColumn "Service Code" .serviceCode
         , Table.stringColumn "Funding Source" .fundingSource
         , Table.stringColumn "Zip Code" .zip
         , Table.stringColumn "BSU" .bsu

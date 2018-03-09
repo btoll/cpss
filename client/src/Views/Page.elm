@@ -14,6 +14,7 @@ type ActivePage
     | County
     | Login
     | Logout
+    | ServiceCode
     | Specialist
     | Status
     | TimeEntry
@@ -41,6 +42,7 @@ siteLinks user page =
                     , SiteLink Specialist Route.Specialist [ text "Specialist" ]
                     , SiteLink Status Route.Status [ text "Status" ]
                     , SiteLink County Route.County [ text "Cities / Counties" ]
+                    , SiteLink ServiceCode Route.ServiceCode [ text "Service Code" ]
                     , SiteLink Logout Route.Logout [ text "Logout" ]
                     ]
                 _ ->

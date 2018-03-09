@@ -3,6 +3,7 @@ module Page.TimeEntry exposing (Model, Msg, init, update, view)
 import Data.Consumer exposing (Consumer)
 import Data.Pager exposing (Pager)
 import Data.Session exposing (Session)
+import Data.ServiceCode exposing (ServiceCode)
 import Data.TimeEntry as TimeEntry exposing (TimeEntry, TimeEntryWithPager, new)
 import Data.User exposing (User)
 import Date exposing (Date, Day(..), day, dayOfWeek, month, year)
@@ -12,6 +13,7 @@ import Html.Attributes exposing (action, autofocus, checked, disabled, for, id, 
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Http
 import Request.Consumer
+import Request.ServiceCode
 import Request.TimeEntry
 import Table exposing (defaultCustomizations)
 import Task exposing (Task)
@@ -29,6 +31,7 @@ import Views.Pager
 
 type alias PageLists =
     { timeEntryWithPager : TimeEntryWithPager
+    , serviceCodes : List ServiceCode
     , consumers : List Consumer
     }
 
@@ -109,11 +112,13 @@ init url session =
             { timeEntries = [ new ]
             , pager = Data.Pager.new
             }
+        , serviceCodes = []
         , consumers = []
         }
     , user = user
     } ! [ Cmd.map DatePicker datePickerFx
         , Request.Consumer.list url |> Http.send FetchedConsumers
+        , Request.ServiceCode.list url |> Http.send FetchedServiceCodes
         , 0 |> Request.TimeEntry.page url |> Http.send FetchedTimeEntries
         ]
 
@@ -130,6 +135,7 @@ type Msg
     | Deleted ( Result Http.Error Int )
     | Edit TimeEntry
     | FetchedConsumers ( Result Http.Error ( List Consumer ) )
+    | FetchedServiceCodes ( Result Http.Error ( List ServiceCode ) )
     | FetchedTimeEntries ( Result Http.Error TimeEntryWithPager )
     | ModalMsg Modal.Msg
     | PagerMsg Views.Pager.Msg
@@ -138,6 +144,7 @@ type Msg
     | Put
     | Putted ( Result Http.Error TimeEntry )
     | SelectConsumer TimeEntry String
+    | SelectServiceCode TimeEntry String
     | SetFormValue ( String -> TimeEntry ) String
     | SetTableState Table.State
     | Submit
@@ -243,6 +250,18 @@ update url msg model =
         FetchedConsumers ( Err err ) ->
             { model |
                 pageLists = { oldPageLists | consumers = [] }
+                , tableState = Table.initialSort "ID"
+            } ! []
+
+        FetchedServiceCodes ( Ok serviceCodes ) ->
+            { model |
+                pageLists = { oldPageLists | serviceCodes = serviceCodes }
+                , tableState = Table.initialSort "ID"
+            } ! []
+
+        FetchedServiceCodes ( Err err ) ->
+            { model |
+                pageLists = { oldPageLists | serviceCodes = [] }
                 , tableState = Table.initialSort "ID"
             } ! []
 
@@ -438,6 +457,20 @@ update url msg model =
                 } |> Just
             } ! []
 
+        SelectServiceCode timeEntry serviceCode ->
+            let
+                selectedServiceCode =
+                    model.pageLists.serviceCodes
+                    |> List.filter ( \m -> serviceCode |> Form.toInt |> (==) m.id )
+                    |> List.head
+                    |> Maybe.withDefault Data.ServiceCode.new
+            in
+            { model |
+                editing = { timeEntry |
+                    serviceCode = serviceCode |> Form.toInt
+                } |> Just
+            } ! []
+
         SetFormValue setFormValue s ->
             { model |
                 editing = Just ( setFormValue s )
@@ -562,11 +595,15 @@ formRows ( editable, date, datePicker, pageLists ) =
         , DatePicker.view focusedDate ( date |> settings ) datePicker
             |> Html.map DatePicker
         ]
-    , Form.text "Service Code"
-        [ value editable.serviceCode
-        , onInput ( SetFormValue ( \v -> { editable | serviceCode = v } ) )
-        ]
-        []
+    , Form.select "Service Code"
+        [ id "serviceCodeSelection"
+        , editable |> SelectServiceCode |> onInput
+        ] (
+            pageLists.serviceCodes
+                |> List.map ( \m -> ( m.id |> toString, m.name ) )
+                |> (::) ( "-1", "-- Select a service code --" )
+                |> List.map ( editable.serviceCode |> toString |> Form.option )
+        )
     , Form.float "Hours"
         [ editable.hours |> toString |> value
         , onInput ( SetFormValue (\v -> { editable | hours = Form.toFloat v } ) )
@@ -580,11 +617,6 @@ formRows ( editable, date, datePicker, pageLists ) =
         []
     , Form.text "County"
         [ editable.county |> toString |> value
-        , disabled True
-        ]
-        []
-    , Form.text "County Code"
-        [ value editable.countyCode
         , disabled True
         ]
         []
@@ -613,11 +645,10 @@ config =
     , columns =
         [ Table.intColumn "Consumer" .consumer
         , Table.stringColumn "Service Date" .serviceDate
-        , Table.stringColumn "Service Code" .serviceCode
+        , Table.intColumn "Service Code" .serviceCode
         , Table.floatColumn "Hours" .hours
         , Table.stringColumn "Description" .description
         , Table.intColumn "County" .county
-        , Table.stringColumn "County Code" .countyCode
         , Table.stringColumn "Contract Type" .contractType
         , Table.stringColumn "Billing Code" .billingCode
         , customColumn ( viewButton Edit "Edit" )

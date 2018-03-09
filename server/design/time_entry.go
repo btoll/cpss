@@ -81,7 +81,7 @@ var TimeEntryPayload = Type("TimeEntryPayload", func() {
 		Metadata("struct:tag:datastore", "serviceDate,noindex")
 		Metadata("struct:tag:json", "serviceDate")
 	})
-	Attribute("serviceCode", String, "TimeEntry serviceCode", func() {
+	Attribute("serviceCode", Integer, "TimeEntry serviceCode", func() {
 		Metadata("struct:tag:datastore", "serviceCode,noindex")
 		Metadata("struct:tag:json", "serviceCode")
 	})
@@ -97,10 +97,6 @@ var TimeEntryPayload = Type("TimeEntryPayload", func() {
 		Metadata("struct:tag:datastore", "county,noindex")
 		Metadata("struct:tag:json", "county")
 	})
-	Attribute("countyCode", String, "TimeEntry countyCode", func() {
-		Metadata("struct:tag:datastore", "countyCode,noindex")
-		Metadata("struct:tag:json", "countyCode")
-	})
 	Attribute("contractType", String, "TimeEntry contractType", func() {
 		Metadata("struct:tag:datastore", "contractType,noindex")
 		Metadata("struct:tag:json", "contractType")
@@ -110,7 +106,7 @@ var TimeEntryPayload = Type("TimeEntryPayload", func() {
 		Metadata("struct:tag:json", "billingCode")
 	})
 
-	Required("specialist", "consumer", "serviceDate", "serviceCode", "hours", "description", "county", "countyCode", "contractType", "billingCode")
+	Required("specialist", "consumer", "serviceDate", "serviceCode", "hours", "description", "county", "contractType", "billingCode")
 })
 
 var TimeEntryItem = Type("timeEntryItem", func() {
@@ -124,11 +120,10 @@ var TimeEntryItem = Type("timeEntryItem", func() {
 	Attribute("hours")
 	Attribute("description")
 	Attribute("county")
-	Attribute("countyCode")
 	Attribute("contractType")
 	Attribute("billingCode")
 
-	Required("id", "specialist", "consumer", "serviceDate", "serviceCode", "hours", "description", "county", "countyCode", "contractType", "billingCode")
+	Required("id", "specialist", "consumer", "serviceDate", "serviceCode", "hours", "description", "county", "contractType", "billingCode")
 })
 
 var TimeEntryMedia = MediaType("application/timeentryapi.timeentryentity", func() {
@@ -146,13 +141,12 @@ var TimeEntryMedia = MediaType("application/timeentryapi.timeentryentity", func(
 		Attribute("hours")
 		Attribute("description")
 		Attribute("county")
-		Attribute("countyCode")
 		Attribute("contractType")
 		Attribute("billingCode")
 		Attribute("timeEntries", ArrayOf("timeEntryItem"))
 		Attribute("pager", Pager)
 
-		Required("id", "specialist", "consumer", "serviceDate", "serviceCode", "hours", "description", "county", "countyCode", "contractType", "billingCode")
+		Required("id", "specialist", "consumer", "serviceDate", "serviceCode", "hours", "description", "county", "contractType", "billingCode")
 	})
 
 	View("default", func() {
@@ -164,7 +158,6 @@ var TimeEntryMedia = MediaType("application/timeentryapi.timeentryentity", func(
 		Attribute("hours")
 		Attribute("description")
 		Attribute("county")
-		Attribute("countyCode")
 		Attribute("contractType")
 		Attribute("billingCode")
 	})

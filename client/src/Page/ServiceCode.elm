@@ -1,15 +1,15 @@
-module Page.Status exposing (Model, Msg, init, update, view)
+module Page.ServiceCode exposing (Model, Msg, init, update, view)
 
-import Data.Status as Status exposing (Status, new)
+import Data.ServiceCode as ServiceCode exposing (ServiceCode, new)
 import Html exposing (Html, Attribute, button, div, form, h1, input, label, section, text)
 import Html.Attributes exposing (action, autofocus, checked, disabled, for, id, style, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Html.Lazy exposing (lazy)
 import Http
-import Request.Status
+import Request.ServiceCode
 import Table exposing (defaultCustomizations)
 import Task exposing (Task)
-import Validate.Status
+import Validate.ServiceCode
 import Views.Errors as Errors
 import Views.Form as Form
 import Views.Modal as Modal
@@ -20,13 +20,13 @@ import Views.Modal as Modal
 
 
 type alias Model =
-    { errors : List ( Validate.Status.Field, String )
+    { errors : List ( Validate.ServiceCode.Field, String )
     , tableState : Table.State
     , action : Action
-    , editing : Maybe Status
+    , editing : Maybe ServiceCode
     , disabled : Bool
     , showModal : ( Bool, Maybe Modal.Modal )
-    , status : List Status
+    , serviceCodes : List ServiceCode
     }
 
 
@@ -44,8 +44,8 @@ init url =
     , editing = Nothing
     , disabled = True
     , showModal = ( False, Nothing )
-    , status = []
-    } ! [ Request.Status.list url |> Http.send FetchedStatus ]
+    , serviceCodes = []
+    } ! [ Request.ServiceCode.list url |> Http.send FetchedServiceCode ]
 
 
 
@@ -55,16 +55,16 @@ init url =
 type Msg
     = Add
     | Cancel
-    | Delete Status
-    | Deleted ( Result Http.Error Status )
-    | Edit Status
-    | FetchedStatus ( Result Http.Error ( List Status ) )
+    | Delete ServiceCode
+    | Deleted ( Result Http.Error ServiceCode )
+    | Edit ServiceCode
+    | FetchedServiceCode ( Result Http.Error ( List ServiceCode ) )
     | ModalMsg Modal.Msg
     | Post
-    | Posted ( Result Http.Error Status )
+    | Posted ( Result Http.Error ServiceCode )
     | Put
-    | Putted ( Result Http.Error Status )
-    | SetFormValue ( String -> Status ) String
+    | Putted ( Result Http.Error ServiceCode )
+    | SetFormValue ( String -> ServiceCode ) String
     | SetTableState Table.State
     | Submit
 
@@ -85,39 +85,39 @@ update url msg model =
                 , errors = []
             } ! []
 
-        Delete status ->
+        Delete serviceCode ->
             { model |
-                editing = Just status
+                editing = Just serviceCode
                 , showModal = ( True , Modal.Delete |> Just )
             } ! []
 
-        Deleted ( Ok status ) ->
+        Deleted ( Ok serviceCode ) ->
             { model |
-                status = model.status |> List.filter ( \m -> status.id /= m.id )
+                serviceCodes = model.serviceCodes |> List.filter ( \m -> serviceCode.id /= m.id )
             } ! []
 
         Deleted ( Err err ) ->
             model ! []
             -- TODO!
 --            { model |
---                errors = [ "There was a problem when attempting to delete the status!" ]
+--                errors = [ "There was a problem when attempting to delete the service code!" ]
 --            } ! []
 
-        Edit status ->
+        Edit serviceCode ->
             { model |
                 action = Editing
-                , editing = Just status
+                , editing = Just serviceCode
             } ! []
 
-        FetchedStatus ( Ok status ) ->
+        FetchedServiceCode ( Ok serviceCodes ) ->
             { model |
-                status = status
+                serviceCodes = serviceCodes
                 , tableState = Table.initialSort "ID"
             } ! []
 
-        FetchedStatus ( Err err ) ->
+        FetchedServiceCode ( Err err ) ->
             { model |
-                status = []
+                serviceCodes = []
                 , tableState = Table.initialSort "ID"
             } ! []
 
@@ -130,7 +130,7 @@ update url msg model =
 
                         True ->
                             Maybe.withDefault new model.editing
-                                |> Request.Status.delete url
+                                |> Request.ServiceCode.delete url
                                 |> Http.toTask
                                 |> Task.attempt Deleted
             in
@@ -145,17 +145,17 @@ update url msg model =
                         Nothing ->
                             []
 
-                        Just status ->
-                            Validate.Status.errors status
+                        Just serviceCode ->
+                            Validate.ServiceCode.errors serviceCode
 
                 ( action, subCmd ) = if errors |> List.isEmpty then
                     case model.editing of
                         Nothing ->
                             ( None, Cmd.none )
 
-                        Just status ->
+                        Just serviceCode ->
                             ( None
-                            , Request.Status.post url status
+                            , Request.ServiceCode.post url serviceCode
                                 |> Http.toTask
                                 |> Task.attempt Posted
                             )
@@ -167,19 +167,19 @@ update url msg model =
                     , errors = errors
                 } ! [ subCmd ]
 
-        Posted ( Ok status ) ->
+        Posted ( Ok serviceCode ) ->
             let
-                st =
+                sc =
                     case model.editing of
                         Nothing ->
-                            model.status
+                            model.serviceCodes
 
-                        Just newstatus ->
-                            model.status
-                                |> (::) { newstatus | id = status.id }
+                        Just newServiceCode ->
+                            model.serviceCodes
+                                |> (::) { newServiceCode | id = serviceCode.id }
             in
                 { model |
-                    status = st
+                    serviceCodes = sc
                     , editing = Nothing
                 } ! []
 
@@ -195,17 +195,17 @@ update url msg model =
                         Nothing ->
                             []
 
-                        Just status ->
-                            Validate.Status.errors status
+                        Just serviceCode ->
+                            Validate.ServiceCode.errors serviceCode
 
                 ( action, subCmd ) = if errors |> List.isEmpty then
                     case model.editing of
                         Nothing ->
                             ( None, Cmd.none )
 
-                        Just status ->
+                        Just serviceCode ->
                             ( None
-                            , Request.Status.put url status
+                            , Request.ServiceCode.put url serviceCode
                                 |> Http.toTask
                                 |> Task.attempt Putted
                             )
@@ -219,18 +219,18 @@ update url msg model =
 
         Putted ( Ok st ) ->
             let
-                status =
+                serviceCodes =
                     case model.editing of
                         Nothing ->
-                            model.status
+                            model.serviceCodes
 
-                        Just newStatus ->
-                            model.status
+                        Just newServiceCode ->
+                            model.serviceCodes
                                 |> List.filter ( \m -> st.id /= m.id )
-                                |> (::) { newStatus | id = st.id }
+                                |> (::) { newServiceCode | id = st.id }
             in
                 { model |
-                    status = status
+                    serviceCodes = serviceCodes
                     , editing = Nothing
                 } ! []
 
@@ -265,7 +265,7 @@ view : Model -> Html Msg
 view model =
     section []
         ( (++)
-            [ h1 [] [ text "Status" ]
+            [ h1 [] [ text "Service Codes" ]
             , Errors.view model.errors
             ]
             ( drawView model )
@@ -278,27 +278,27 @@ drawView (
     , disabled
     , editing
     , tableState
-    , status
+    , serviceCodes
     } as model ) =
     let
-        editable : Status
+        editable : ServiceCode
         editable = case editing of
             Nothing ->
                 new
 
-            Just status ->
-                status
+            Just serviceCode ->
+                serviceCode
 
         showList =
-            case status |> List.length of
+            case serviceCodes |> List.length of
                 0 ->
                     div [] []
                 _ ->
-                    Table.view config tableState status
+                    Table.view config tableState serviceCodes
     in
     case action of
         None ->
-            [ button [ onClick Add ] [ text "Add Status" ]
+            [ button [ onClick Add ] [ text "Add Service Code" ]
             , showList
             , model.showModal
                 |> Modal.view
@@ -322,9 +322,9 @@ drawView (
             ]
 
 
-formRows : Status -> List ( Html Msg )
+formRows : ServiceCode -> List ( Html Msg )
 formRows editable =
-    [ Form.text "Status"
+    [ Form.text "Service Code"
         [ value editable.name
         , onInput ( SetFormValue ( \v -> { editable | name = v } ) )
         , autofocus True
@@ -334,7 +334,7 @@ formRows editable =
 -- TABLE CONFIGURATION
 
 
-config : Table.Config Status Msg
+config : Table.Config ServiceCode Msg
 config =
     Table.customConfig
     -- TODO: Figure out why .id is giving me trouble!
@@ -342,7 +342,7 @@ config =
     { toId = .name
     , toMsg = SetTableState
     , columns =
-        [ Table.stringColumn "Status" .name
+        [ Table.stringColumn "Service Code" .name
         , customColumn ( viewButton Edit "Edit" )
         , customColumn ( viewButton Delete "Delete" )
         ]
@@ -350,7 +350,7 @@ config =
     }
 
 
-customColumn : ( Status -> Table.HtmlDetails Msg ) -> Table.Column Status Msg
+customColumn : ( ServiceCode -> Table.HtmlDetails Msg ) -> Table.Column ServiceCode Msg
 customColumn viewElement =
     Table.veryCustomColumn
         { name = ""
@@ -359,10 +359,10 @@ customColumn viewElement =
         }
 
 
-viewButton : ( Status -> msg ) -> String -> Status -> Table.HtmlDetails msg
-viewButton msg name status =
+viewButton : ( ServiceCode -> msg ) -> String -> ServiceCode -> Table.HtmlDetails msg
+viewButton msg name serviceCodes =
     Table.HtmlDetails []
-        [ button [ onClick <| msg <| status ] [ text name ]
+        [ button [ onClick <| msg <| serviceCodes ] [ text name ]
         ]
 
 

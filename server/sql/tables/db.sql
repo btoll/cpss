@@ -1,0 +1,3 @@
+DROP DATABASE cpss;
+CREATE DATABASE cpss;
+

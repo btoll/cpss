@@ -34,6 +34,7 @@ nav li a {
 #billsheet nav li a[href$="billsheet"],
 #consumer nav li a[href$="consumer"],
 #county nav li a[href$="counties"],
+#servicecode nav li a[href$="servicecode"],
 #specialist nav li a[href$="specialist"],
 #status nav li a[href$="status"] {
     background: #265a88;

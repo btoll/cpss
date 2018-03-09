@@ -15,11 +15,12 @@ type Route
     = Home
     | BillSheet
     | Consumer
+    | County
     | Login
     | Logout
+    | ServiceCode
     | Specialist
     | Status
-    | County
     | TimeEntry
 
 
@@ -29,11 +30,12 @@ route =
         [ Url.map Home (s "")
         , Url.map BillSheet (s "billsheet")
         , Url.map Consumer (s "consumer")
+        , Url.map County (s "counties")
         , Url.map Login (s "login")
         , Url.map Logout (s "logout")
+        , Url.map ServiceCode (s "servicecode")
         , Url.map Specialist (s "specialist")
         , Url.map Status (s "status")
-        , Url.map County (s "counties")
         , Url.map TimeEntry (s "timeEntry")
         ]
 
@@ -56,20 +58,23 @@ routeToString page =
                 Consumer ->
                     [ "consumer" ]
 
+                County ->
+                    [ "counties" ]
+
                 Login ->
                     [ "login" ]
 
                 Logout ->
                     [ "logout" ]
 
+                ServiceCode ->
+                    [ "servicecode" ]
+
                 Specialist ->
                     [ "specialist" ]
 
                 Status ->
                     [ "status" ]
-
-                County ->
-                    [ "counties" ]
 
                 TimeEntry ->
                     [ "timeEntry" ]

@@ -12,11 +12,10 @@ type alias TimeEntry =
     , specialist : Int
     , consumer : Int
     , serviceDate : String
-    , serviceCode : String
+    , serviceCode : Int
     , hours : Float
     , description : String
     , county : Int
-    , countyCode : String
     , contractType : String
     , billingCode : String
     }
@@ -34,11 +33,10 @@ new =
     , specialist = -1
     , consumer = -1
     , serviceDate = ""
-    , serviceCode = ""
+    , serviceCode = -1
     , hours = 0.0
     , description = ""
     , county = -1
-    , countyCode = ""
     , contractType = ""
     , billingCode = ""
     }
@@ -51,11 +49,10 @@ decoder =
         |> optional "specialist" int -1
         |> optional "consumer" int -1
         |> optional "serviceDate" string ""
-        |> optional "serviceCode" string ""
+        |> optional "serviceCode" int -1
         |> optional "hours" float 0.0
         |> optional "description" string ""
         |> optional "county" int -1
-        |> optional "countyCode" string ""
         |> optional "contractType" string ""
         |> optional "billingCode" string ""
 
@@ -79,11 +76,10 @@ encoder timeEntry =
         , ( "specialist", Encode.int timeEntry.specialist )
         , ( "consumer", Encode.int timeEntry.consumer )
         , ( "serviceDate", Encode.string timeEntry.serviceDate )
-        , ( "serviceCode", Encode.string timeEntry.serviceCode )
+        , ( "serviceCode", Encode.int timeEntry.serviceCode )
         , ( "hours", Encode.float timeEntry.hours )
         , ( "description", Encode.string timeEntry.description )
         , ( "county", Encode.int timeEntry.county )
-        , ( "countyCode", Encode.string timeEntry.countyCode )
         , ( "contractType", Encode.string timeEntry.contractType )
         , ( "billingCode", Encode.string timeEntry.billingCode )
         ]
