@@ -1,0 +1,22 @@
+.pager-container {
+    background: #ccc;
+    border: 1px solid #aaa;
+    margin: 2em;
+    padding: .5em 0;
+    width: 12em;
+}
+
+.pager-display {
+    display: inline-block;
+    width: 2.5em;
+}
+
+.pager-inner {
+    text-align: center;
+}
+
+.pager-nav {
+    display: inline-block;
+    margin: 0 .2em;
+}
+

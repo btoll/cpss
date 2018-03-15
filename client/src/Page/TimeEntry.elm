@@ -138,7 +138,7 @@ type Msg
     | FetchedServiceCodes ( Result Http.Error ( List ServiceCode ) )
     | FetchedTimeEntries ( Result Http.Error TimeEntryWithPager )
     | ModalMsg Modal.Msg
-    | PagerMsg Views.Pager.Msg
+    | NewPage ( Maybe Int )
     | Post
     | Posted ( Result Http.Error TimeEntry )
     | Put
@@ -309,10 +309,10 @@ update url msg model =
                 showModal = ( False, Nothing )
             } ! [ cmd ]
 
-        PagerMsg subMsg ->
+        NewPage page ->
             model !
-            [ subMsg
-                |>Views.Pager.update ( model.pageLists.timeEntryWithPager.pager.currentPage, model.pageLists.timeEntryWithPager.pager.totalPages )
+            [ page
+                |> Maybe.withDefault -1
                 |> Request.TimeEntry.page url
                 |> Http.send FetchedTimeEntries
             ]
@@ -514,10 +514,6 @@ drawView (
     , tableState
     } as model ) =
     let
-        pager : Pager
-        pager =
-            model.pageLists.timeEntryWithPager.pager
-
         editable : TimeEntry
         editable = case editing of
             Nothing ->
@@ -533,12 +529,8 @@ drawView (
                 _ ->
                     Table.view config tableState pageLists.timeEntryWithPager.timeEntries
 
-        showPager : Html Msg
         showPager =
-            if 1 |> (>) pager.totalPages then
-                pager.currentPage |> Views.Pager.view pager.totalPages |> Html.map PagerMsg
-            else
-                div [] []
+            model.pageLists.timeEntryWithPager.pager |> Views.Pager.view NewPage
     in
     case action of
         None ->

@@ -129,7 +129,7 @@ type Msg
     | FetchedSpecialists ( Result Http.Error ( List User ) )
     | FetchedStatus ( Result Http.Error ( List Status ) )
     | ModalMsg Modal.Msg
-    | PagerMsg Views.Pager.Msg
+    | NewPage ( Maybe Int )
     | Post
     | Posted ( Result Http.Error BillSheet )
     | Put
@@ -303,10 +303,10 @@ update url msg model =
                 showModal = ( False, Nothing )
             } ! [ cmd ]
 
-        PagerMsg subMsg ->
+        NewPage page ->
             model !
-            [ subMsg
-                |>Views.Pager.update ( model.pager.currentPage, model.pager.totalPages )
+            [ page
+                |> Maybe.withDefault -1
                 |> Request.BillSheet.page url
                 |> Http.send FetchedBillSheets
             ]
@@ -477,10 +477,6 @@ drawView (
     , tableState
     } as model ) =
     let
-        pager : Pager
-        pager =
-            model.pager
-
         editable : BillSheet
         editable = case editing of
             Nothing ->
@@ -496,13 +492,8 @@ drawView (
                 _ ->
                     pageLists.billsheets
                         |> Table.view ( model |> config ) tableState
-
-        showPager : Html Msg
         showPager =
-            if 1 |> (>) pager.totalPages then
-                pager.currentPage |> Views.Pager.view pager.totalPages |> Html.map PagerMsg
-            else
-                div [] []
+            model.pager |> Views.Pager.view NewPage
     in
     case action of
         None ->

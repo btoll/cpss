@@ -47,6 +47,7 @@ type alias Model =
 type alias CountyData
     = ( List County, List City )
 
+
 type Action = None | Adding | Editing
 
 
@@ -116,7 +117,7 @@ type Msg
     | FetchedCounties ( Result Http.Error ( List County ) )
     | FetchedServiceCodes ( Result Http.Error ( List ServiceCode ) )
     | ModalMsg Modal.Msg
-    | PagerMsg Views.Pager.Msg
+    | NewPage ( Maybe Int )
     | Post
     | Posted ( Result Http.Error Consumer )
     | Put
@@ -272,10 +273,10 @@ update url msg model =
                 showModal = ( False, Nothing )
             } ! [ cmd ]
 
-        PagerMsg subMsg ->
+        NewPage page ->
             model !
-            [ subMsg
-                |>Views.Pager.update ( model.pager.currentPage, model.pager.totalPages )
+            [ page
+                |> Maybe.withDefault -1
                 |> Request.Consumer.page url
                 |> Http.send FetchedConsumers
             ]
@@ -453,10 +454,6 @@ drawView (
     , consumers
     } as model ) =
     let
-        pager : Pager
-        pager =
-            model.pager
-
         editable : Consumer
         editable = case editing of
             Nothing ->
@@ -473,12 +470,8 @@ drawView (
                     consumers
                         |> Table.view ( model |> config ) tableState
 
-        showPager : Html Msg
         showPager =
-            if 1 |> (>) pager.totalPages then
-                pager.currentPage |> Views.Pager.view pager.totalPages |> Html.map PagerMsg
-            else
-                div [] []
+            model.pager |> Views.Pager.view NewPage
     in
     case action of
         None ->

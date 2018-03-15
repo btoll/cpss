@@ -66,7 +66,7 @@ type Msg
     | FetchedCities ( Result Http.Error CityWithPager )
     | FetchedCounties ( Result Http.Error ( List County ) )
     | ModalMsg Modal.Msg
-    | PagerMsg Views.Pager.Msg
+    | NewPage ( Maybe Int )
     | Post
     | Posted ( Result Http.Error City )
     | Put
@@ -157,10 +157,10 @@ update url msg model =
                 showModal = ( False, Nothing )
             } ! [ cmd ]
 
-        PagerMsg subMsg ->
+        NewPage page ->
             model !
-            [ subMsg
-                |>Views.Pager.update ( model.pager.currentPage, model.pager.totalPages )
+            [ page
+                |> Maybe.withDefault -1
                 |> Request.City.page url
                 |> Http.send FetchedCities
             ]
@@ -315,10 +315,6 @@ drawView (
     , counties
     } as model ) =
     let
-        pager : Pager
-        pager =
-            model.pager
-
         editable : City
         editable = case editing of
             Nothing ->
@@ -336,12 +332,8 @@ drawView (
                     cities
                     |> Table.view ( model |> config ) tableState
 
-        showPager : Html Msg
         showPager =
-            if 1 |> (>) pager.totalPages then
-                pager.currentPage |> Views.Pager.view pager.totalPages |> Html.map PagerMsg
-            else
-                div [] []
+            model.pager |> Views.Pager.view NewPage
     in
     case action of
         None ->
