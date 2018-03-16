@@ -117,14 +117,19 @@ init url session =
         }
     , user = user
     } ! [ Cmd.map DatePicker datePickerFx
-        , Request.Consumer.list url |> Http.send FetchedConsumers
-        , Request.ServiceCode.list url |> Http.send FetchedServiceCodes
-        , 0 |> Request.TimeEntry.page url |> Http.send FetchedTimeEntries
+        , Request.Consumer.list url |> Http.send ( \result -> result |> Consumers |> Fetch )
+        , Request.ServiceCode.list url |> Http.send ( \result -> result |> ServiceCodes |> Fetch )
+        , 0 |> Request.TimeEntry.page url |> Http.send ( \result -> result |> TimeEntries |> Fetch )
         ]
 
 
 
 -- UPDATE
+
+type FetchedData
+    = Consumers ( Result Http.Error ( List Consumer ) )
+    | ServiceCodes ( Result Http.Error ( List ServiceCode ) )
+    | TimeEntries ( Result Http.Error TimeEntryWithPager )
 
 
 type Msg
@@ -134,20 +139,16 @@ type Msg
     | Delete TimeEntry
     | Deleted ( Result Http.Error Int )
     | Edit TimeEntry
-    | FetchedConsumers ( Result Http.Error ( List Consumer ) )
-    | FetchedServiceCodes ( Result Http.Error ( List ServiceCode ) )
-    | FetchedTimeEntries ( Result Http.Error TimeEntryWithPager )
+    | Fetch FetchedData
     | ModalMsg Modal.Msg
     | NewPage ( Maybe Int )
     | Post
     | Posted ( Result Http.Error TimeEntry )
     | Put
     | Putted ( Result Http.Error TimeEntry )
-    | SelectConsumer TimeEntry String
-    | SelectServiceCode TimeEntry String
+    | Select Form.Selection TimeEntry String
     | SetFormValue ( String -> TimeEntry ) String
     | SetTableState Table.State
-    | Submit
 
 
 update : String -> Msg -> Model -> ( Model, Cmd Msg )
@@ -217,17 +218,17 @@ update url msg model =
                 oldPageLists = model.pageLists
                 oldTimeEntryWithPager = oldPageLists.timeEntryWithPager
             in
-            { model |
-                pageLists =
-                    { oldPageLists |
-                        timeEntryWithPager =
-                            { oldTimeEntryWithPager |
-                                timeEntries =
-                                    oldTimeEntryWithPager.timeEntries
-                                        |> List.filter ( \m -> timeEntryID /= m.id )
-                            }
-                    }
-            } ! []
+                { model |
+                    pageLists =
+                        { oldPageLists |
+                            timeEntryWithPager =
+                                { oldTimeEntryWithPager |
+                                    timeEntries =
+                                        oldTimeEntryWithPager.timeEntries
+                                            |> List.filter ( \m -> timeEntryID /= m.id )
+                                }
+                        }
+                } ! []
 
         Deleted ( Err err ) ->
             { model |
@@ -241,56 +242,58 @@ update url msg model =
                 , editing = Just timeEntry
             } ! []
 
-        FetchedConsumers ( Ok consumers ) ->
-            { model |
-                pageLists = { oldPageLists | consumers = consumers }
-                , tableState = Table.initialSort "ID"
-            } ! []
+        Fetch result ->
+            case result of
+                Consumers ( Ok consumers ) ->
+                    { model |
+                        pageLists = { oldPageLists | consumers = consumers }
+                        , tableState = Table.initialSort "ID"
+                    } ! []
 
-        FetchedConsumers ( Err err ) ->
-            { model |
-                pageLists = { oldPageLists | consumers = [] }
-                , tableState = Table.initialSort "ID"
-            } ! []
+                Consumers ( Err err ) ->
+                    { model |
+                        pageLists = { oldPageLists | consumers = [] }
+                        , tableState = Table.initialSort "ID"
+                    } ! []
 
-        FetchedServiceCodes ( Ok serviceCodes ) ->
-            { model |
-                pageLists = { oldPageLists | serviceCodes = serviceCodes }
-                , tableState = Table.initialSort "ID"
-            } ! []
+                ServiceCodes ( Ok serviceCodes ) ->
+                    { model |
+                        pageLists = { oldPageLists | serviceCodes = serviceCodes }
+                        , tableState = Table.initialSort "ID"
+                    } ! []
 
-        FetchedServiceCodes ( Err err ) ->
-            { model |
-                pageLists = { oldPageLists | serviceCodes = [] }
-                , tableState = Table.initialSort "ID"
-            } ! []
+                ServiceCodes ( Err err ) ->
+                    { model |
+                        pageLists = { oldPageLists | serviceCodes = [] }
+                        , tableState = Table.initialSort "ID"
+                    } ! []
 
-        FetchedTimeEntries ( Ok timeEntries ) ->
-            let
-                oldTimeEntryWithPager = oldPageLists.timeEntryWithPager
-                newTimeEntries = { oldTimeEntryWithPager | timeEntries = timeEntries.timeEntries }
-            in
-            { model |
-                pageLists = { oldPageLists | timeEntryWithPager = newTimeEntries }
---                , pager = timeEntries.pager
-                , tableState = Table.initialSort "ID"
-            } ! []
+                TimeEntries ( Ok timeEntries ) ->
+                    let
+                        oldTimeEntryWithPager = oldPageLists.timeEntryWithPager
+                        newTimeEntries = { oldTimeEntryWithPager | timeEntries = timeEntries.timeEntries }
+                    in
+                    { model |
+                        pageLists = { oldPageLists | timeEntryWithPager = newTimeEntries }
+        --                , pager = timeEntries.pager
+                        , tableState = Table.initialSort "ID"
+                    } ! []
 
-        FetchedTimeEntries ( Err err ) ->
-            let
-                oldTimeEntryWithPager = oldPageLists.timeEntryWithPager
-            in
-            { model |
-                pageLists =
-                    { oldPageLists |
-                        timeEntryWithPager =
-                            { oldTimeEntryWithPager |
-                                timeEntries = []
+                TimeEntries ( Err err ) ->
+                    let
+                        oldTimeEntryWithPager = oldPageLists.timeEntryWithPager
+                    in
+                    { model |
+                        pageLists =
+                            { oldPageLists |
+                                timeEntryWithPager =
+                                    { oldTimeEntryWithPager |
+                                        timeEntries = []
+                                    }
                             }
-                    }
---                , errors = (::) "There was a problem, the record(s) could not be retrieved!" model.errors
-                , tableState = Table.initialSort "ID"
-            } ! []
+        --                , errors = (::) "There was a problem, the record(s) could not be retrieved!" model.errors
+                        , tableState = Table.initialSort "ID"
+                    } ! []
 
         ModalMsg subMsg ->
             let
@@ -314,7 +317,7 @@ update url msg model =
             [ page
                 |> Maybe.withDefault -1
                 |> Request.TimeEntry.page url
-                |> Http.send FetchedTimeEntries
+                |> Http.send ( \result -> result |> TimeEntries |> Fetch )
             ]
 
         Post ->
@@ -442,34 +445,54 @@ update url msg model =
 --                , errors = (::) "There was a problem, the record could not be updated!" model.errors
             } ! []
 
-        SelectConsumer timeEntry consumerID ->
+        Select selectType consumer selection ->
             let
-                selectedConsumer =
-                    model.pageLists.consumers
-                    |> List.filter ( \m -> consumerID |> Form.toInt |> (==) m.id )
-                    |> List.head
-                    |> Maybe.withDefault Data.Consumer.new
-            in
-            { model |
-                editing = { timeEntry |
-                    consumer = consumerID |> Form.toInt
-                    , county = selectedConsumer.county
-                } |> Just
-            } ! []
+                selectionToInt =
+                    selection |> Form.toInt
 
-        SelectServiceCode timeEntry serviceCode ->
-            let
-                selectedServiceCode =
-                    model.pageLists.serviceCodes
-                    |> List.filter ( \m -> serviceCode |> Form.toInt |> (==) m.id )
-                    |> List.head
-                    |> Maybe.withDefault Data.ServiceCode.new
+                newModel a =
+                    { model |
+                        editing = a |> Just
+                    }
             in
-            { model |
-                editing = { timeEntry |
-                    serviceCode = serviceCode |> Form.toInt
-                } |> Just
-            } ! []
+            case selectType of
+                Form.ConsumerID ->
+                    ( { consumer | consumer = selectionToInt } |> newModel ) ! []
+
+                Form.ServiceCodeID ->
+                    ( { consumer | serviceCode = selectionToInt } |> newModel ) ! []
+
+                _ ->
+                    model ! []
+
+--        SelectConsumer timeEntry consumerID ->
+--            let
+--                selectedConsumer =
+--                    model.pageLists.consumers
+--                    |> List.filter ( \m -> consumerID |> Form.toInt |> (==) m.id )
+--                    |> List.head
+--                    |> Maybe.withDefault Data.Consumer.new
+--            in
+--            { model |
+--                editing = { timeEntry |
+--                    consumer = consumerID |> Form.toInt
+--                    , county = selectedConsumer.county
+--                } |> Just
+--            } ! []
+--
+--        SelectServiceCode timeEntry serviceCode ->
+--            let
+--                selectedServiceCode =
+--                    model.pageLists.serviceCodes
+--                    |> List.filter ( \m -> serviceCode |> Form.toInt |> (==) m.id )
+--                    |> List.head
+--                    |> Maybe.withDefault Data.ServiceCode.new
+--            in
+--            { model |
+--                editing = { timeEntry |
+--                    serviceCode = serviceCode |> Form.toInt
+--                } |> Just
+--            } ! []
 
         SetFormValue setFormValue s ->
             { model |
@@ -479,12 +502,6 @@ update url msg model =
 
         SetTableState newState ->
             { model | tableState = newState
-            } ! []
-
-        Submit ->
-            { model |
-                action = None
-                , disabled = True
             } ! []
 
 
@@ -574,7 +591,7 @@ formRows ( editable, date, datePicker, pageLists ) =
     in
     [ Form.select "Consumer"
         [ id "consumerSelection"
-        , editable |> SelectConsumer |> onInput
+        , editable |> Select Form.ConsumerID |> onInput
         , autofocus True
         ] (
             pageLists.consumers
@@ -589,7 +606,7 @@ formRows ( editable, date, datePicker, pageLists ) =
         ]
     , Form.select "Service Code"
         [ id "serviceCodeSelection"
-        , editable |> SelectServiceCode |> onInput
+        , editable |> Select Form.ServiceCodeID |> onInput
         ] (
             pageLists.serviceCodes
                 |> List.map ( \m -> ( m.id |> toString, m.name ) )

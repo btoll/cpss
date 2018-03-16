@@ -79,7 +79,6 @@ type Msg
     | SetFormValue ( String -> User ) String
     | SetPasswordValue String
     | SetTableState Table.State
-    | Submit
 
 
 update : String -> Msg -> Model -> ( Model, Cmd Msg )
@@ -352,12 +351,6 @@ update url msg model =
 
         SetTableState newState ->
             { model | tableState = newState
-            } ! []
-
-        Submit ->
-            { model |
-                action = None
-                , disabled = True
             } ! []
 
 

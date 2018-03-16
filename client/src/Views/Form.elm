@@ -1,5 +1,6 @@
 module Views.Form exposing (
-    checkbox
+    Selection(..)
+    , checkbox
     , float
     , option
     , password
@@ -15,6 +16,16 @@ module Views.Form exposing (
 import Html exposing (Html, Attribute, div, input, label)
 import Html.Attributes exposing (disabled, for, id, selected, step, type_, value)
 import Html.Events exposing (onClick, onInput)
+
+
+
+type Selection
+    = ConsumerID
+    | CountyID
+    | ServiceCodeID
+    | SpecialistID
+    | StatusID
+    | ZipID
 
 
 

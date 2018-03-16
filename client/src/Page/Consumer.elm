@@ -96,13 +96,20 @@ init url =
     , consumers = []
     , pager = Data.Pager.new
     } ! [ Cmd.map DatePicker datePickerFx
-    , Request.ServiceCode.list url |> Http.send FetchedServiceCodes
-    , Request.County.list url |> Http.send FetchedCounties
-    , 0 |> Request.Consumer.page url |> Http.send FetchedConsumers
+    , Request.ServiceCode.list url |> Http.send ( \result -> result |> ServiceCodes |> Fetch )
+    , Request.County.list url |> Http.send ( \result -> result |> Counties |> Fetch )
+    , 0 |> Request.Consumer.page url |> Http.send ( \result -> result |> Consumers |> Fetch )
     ]
 
 
 -- UPDATE
+
+
+type FetchedData
+    = Cities ( Result Http.Error ( List City ) )
+    | Consumers ( Result Http.Error ConsumerWithPager )
+    | Counties ( Result Http.Error ( List County ) )
+    | ServiceCodes ( Result Http.Error ( List ServiceCode ) )
 
 
 type Msg
@@ -112,23 +119,17 @@ type Msg
     | Delete Consumer
     | Deleted ( Result Http.Error Int )
     | Edit Consumer
-    | FetchedCities ( Result Http.Error ( List City ) )
-    | FetchedConsumers ( Result Http.Error ConsumerWithPager )
-    | FetchedCounties ( Result Http.Error ( List County ) )
-    | FetchedServiceCodes ( Result Http.Error ( List ServiceCode ) )
+    | Fetch FetchedData
     | ModalMsg Modal.Msg
     | NewPage ( Maybe Int )
     | Post
     | Posted ( Result Http.Error Consumer )
     | Put
     | Putted ( Result Http.Error Consumer )
-    | SelectCounty Consumer String
-    | SelectServiceCode Consumer String
-    | SelectZip Consumer String
+    | Select Form.Selection Consumer String
     | SetCheckboxValue ( Bool -> Consumer ) Bool
     | SetFormValue ( String -> Consumer ) String
     | SetTableState Table.State
-    | Submit
 
 
 update : String -> Msg -> Model -> ( Model, Cmd Msg )
@@ -205,56 +206,58 @@ update url msg model =
                 action = Editing
                 , editing = Just consumer
             -- Fetch the county's zip codes to set the zip code drop-down to the correct value.
-            } ! [ consumer.county |> toString |> Request.City.get url |> Http.send FetchedCities ]
+            } ! [ consumer.county |> toString |> Request.City.get url |> Http.send ( \result -> result |> Cities |> Fetch ) ]
 
-        FetchedCities ( Ok cities ) ->
-            { model |
-                countyData = ( model.countyData |> Tuple.first, cities )
-                , tableState = Table.initialSort "ID"
-            } ! []
+        Fetch result ->
+            case result of
+                Cities ( Ok cities ) ->
+                    { model |
+                        countyData = ( model.countyData |> Tuple.first, cities )
+                        , tableState = Table.initialSort "ID"
+                    } ! []
 
-        FetchedCities ( Err err ) ->
-            { model |
-                countyData = ( model.countyData |> Tuple.first, [] )
-                , tableState = Table.initialSort "ID"
-            } ! []
+                Cities ( Err err ) ->
+                    { model |
+                        countyData = ( model.countyData |> Tuple.first, [] )
+                        , tableState = Table.initialSort "ID"
+                    } ! []
 
-        FetchedConsumers ( Ok consumers ) ->
-            { model |
-                consumers = consumers.consumers
-                , pager = consumers.pager
-                , tableState = Table.initialSort "ID"
-            } ! []
+                Consumers ( Ok consumers ) ->
+                    { model |
+                        consumers = consumers.consumers
+                        , pager = consumers.pager
+                        , tableState = Table.initialSort "ID"
+                    } ! []
 
-        FetchedConsumers ( Err err ) ->
-            { model |
-                consumers = []
-                , tableState = Table.initialSort "ID"
-            } ! []
+                Consumers ( Err err ) ->
+                    { model |
+                        consumers = []
+                        , tableState = Table.initialSort "ID"
+                    } ! []
 
-        FetchedCounties ( Ok counties ) ->
-            { model |
-                countyData = ( counties, model.countyData |> Tuple.second )
-                , tableState = Table.initialSort "ID"
-            } ! []
+                Counties ( Ok counties ) ->
+                    { model |
+                        countyData = ( counties, model.countyData |> Tuple.second )
+                        , tableState = Table.initialSort "ID"
+                    } ! []
 
-        FetchedCounties ( Err err ) ->
-            { model |
-                countyData = ( [], model.countyData |> Tuple.second )
-                , tableState = Table.initialSort "ID"
-            } ! []
+                Counties ( Err err ) ->
+                    { model |
+                        countyData = ( [], model.countyData |> Tuple.second )
+                        , tableState = Table.initialSort "ID"
+                    } ! []
 
-        FetchedServiceCodes ( Ok serviceCodes ) ->
-            { model |
-                serviceCodes = serviceCodes
-                , tableState = Table.initialSort "ID"
-            } ! []
+                ServiceCodes ( Ok serviceCodes ) ->
+                    { model |
+                        serviceCodes = serviceCodes
+                        , tableState = Table.initialSort "ID"
+                    } ! []
 
-        FetchedServiceCodes ( Err err ) ->
-            { model |
-                serviceCodes = []
-                , tableState = Table.initialSort "ID"
-            } ! []
+                ServiceCodes ( Err err ) ->
+                    { model |
+                        serviceCodes = []
+                        , tableState = Table.initialSort "ID"
+                    } ! []
 
         ModalMsg subMsg ->
             let
@@ -278,7 +281,7 @@ update url msg model =
             [ page
                 |> Maybe.withDefault -1
                 |> Request.Consumer.page url
-                |> Http.send FetchedConsumers
+                |> Http.send ( \result -> result |> Consumers |> Fetch )
             ]
 
         Post ->
@@ -384,24 +387,47 @@ update url msg model =
 --                , errors = (::) "There was a problem, the record could not be updated!" model.errors
             } ! []
 
-        SelectCounty consumer countyID ->
-            { model |
-                editing = { consumer | county = countyID |> Form.toInt } |> Just
-                , disabled = False
-            -- Fetch the county's zip codes to set the zip code drop-down to the correct value.
-            } ! [ countyID |> Request.City.get url |> Http.send FetchedCities ]
+        Select selectType consumer selection ->
+            let
+                selectionToInt =
+                    selection |> Form.toInt
 
-        SelectServiceCode consumer serviceCode ->
-            { model |
-                editing = { consumer | serviceCode = Form.toInt serviceCode } |> Just
-                , disabled = False
-            } ! []
+                newModel a =
+                    { model |
+                        editing = a |> Just
+                    }
+            in
+            case selectType of
+                Form.CountyID ->
+                    ( { consumer | county = selectionToInt } |> newModel ) ! []
 
-        SelectZip consumer zip ->
-            { model |
-                editing = { consumer | zip = zip } |> Just
-                , disabled = False
-            } ! []
+                Form.ServiceCodeID ->
+                    ( { consumer | serviceCode = selectionToInt } |> newModel ) ! []
+
+                Form.ZipID ->
+                    ( { consumer | zip = selection } |> newModel ) ! []
+
+                _ ->
+                    model ! []
+
+--        SelectCounty consumer countyID ->
+--            { model |
+--                editing = { consumer | county = countyID |> Form.toInt } |> Just
+--                , disabled = False
+--            -- Fetch the county's zip codes to set the zip code drop-down to the correct value.
+--            } ! [ countyID |> Request.City.get url |> Http.send ( \result -> result |> Cities |> Fetch ) ]
+--
+--        SelectServiceCode consumer serviceCode ->
+--            { model |
+--                editing = { consumer | serviceCode = Form.toInt serviceCode } |> Just
+--                , disabled = False
+--            } ! []
+--
+--        SelectZip consumer zip ->
+--            { model |
+--                editing = { consumer | zip = zip } |> Just
+--                , disabled = False
+--            } ! []
 
         SetCheckboxValue setBoolValue b ->
             { model |
@@ -417,12 +443,6 @@ update url msg model =
 
         SetTableState newState ->
             { model | tableState = newState
-            } ! []
-
-        Submit ->
-            { model |
-                action = None
-                , disabled = True
             } ! []
 
 
@@ -504,8 +524,6 @@ drawView (
 formRows : ( Consumer, Maybe Date, DatePicker.DatePicker, List ServiceCode, CountyData ) -> List ( Html Msg )
 formRows ( editable, date, datePicker, serviceCodes, countyData ) =
     let
-        sc = (Debug.log "serviceCodes" serviceCodes)
-
         focusedDate : Maybe Date
         focusedDate =
             case (/=) editable.dischargeDate "" of
@@ -532,7 +550,7 @@ formRows ( editable, date, datePicker, serviceCodes, countyData ) =
         []
     , Form.select "County"
         [ id "countySelection"
-        , editable |> SelectCounty |> onInput
+        , editable |> Select Form.CountyID |> onInput
         ] (
             countyData
                 |> Tuple.first
@@ -542,7 +560,7 @@ formRows ( editable, date, datePicker, serviceCodes, countyData ) =
         )
     , Form.select "Service Code"
         [ id "serviceCodeSelection"
-        , editable |> SelectServiceCode |> onInput
+        , editable |> Select Form.ServiceCodeID |> onInput
         ] (
             serviceCodes
                 |> List.map ( \m -> ( m.id |> toString, m.name ) )
@@ -556,7 +574,7 @@ formRows ( editable, date, datePicker, serviceCodes, countyData ) =
         []
     , Form.select "Zip Code"
         [ id "zipCodeSelection"
-        , editable |> SelectZip |> onInput
+        , editable |> Select Form.ZipID |> onInput
         ] (
             countyData
                 |> Tuple.second

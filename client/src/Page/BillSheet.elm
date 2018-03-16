@@ -1,5 +1,6 @@
 module Page.BillSheet exposing (Model, Msg, init, update, view)
 
+import Data.App exposing (App)
 import Data.BillSheet exposing (BillSheet, BillSheetWithPager, new)
 import Data.Consumer exposing (Consumer)
 import Data.County exposing (County)
@@ -24,12 +25,13 @@ import Validate.BillSheet
 import Views.Errors as Errors
 import Views.Form as Form
 import Views.Modal as Modal
+import Views.Page exposing (ViewAction(..))
 import Views.Pager
 
 
 -- MODEL
 
-type alias PageLists =
+type alias ViewLists =
     { billsheets : List BillSheet
     , consumers : List Consumer
     , counties : List County
@@ -41,18 +43,15 @@ type alias PageLists =
 type alias Model =
     { errors : List ( Validate.BillSheet.Field, String )
     , tableState : Table.State
-    , action : Action
+    , action : ViewAction
     , editing : Maybe BillSheet
     , disabled : Bool
     , showModal : ( Bool, Maybe Modal.Modal )
     , date : Maybe Date
     , datePicker : DatePicker.DatePicker
-    , pageLists : PageLists
+    , viewLists : ViewLists
     , pager : Pager
     }
-
-
-type Action = None | Adding | Editing
 
 
 commonSettings : DatePicker.Settings
@@ -95,7 +94,7 @@ init url =
     , showModal = ( False, Nothing )
     , date = Nothing
     , datePicker = datePicker
-    , pageLists =
+    , viewLists =
         { billsheets = []
         , consumers = []
         , counties = []
@@ -104,16 +103,23 @@ init url =
         }
     , pager = Data.Pager.new
     } ! [ Cmd.map DatePicker datePickerFx
-        , Request.Consumer.list url |> Http.send FetchedConsumers
-        , Request.County.list url |> Http.send FetchedCounties
-        , Request.Specialist.list url |> Http.send FetchedSpecialists
-        , Request.Status.list url |> Http.send FetchedStatus
-        , 0 |> Request.BillSheet.page url |> Http.send FetchedBillSheets
+        , Request.Consumer.list url |> Http.send ( \result -> result |> Consumers |> Fetch )
+        , Request.County.list url |> Http.send ( \result -> result |> Counties |> Fetch )
+        , Request.Specialist.list url |> Http.send ( \result -> result |> Specialists |> Fetch )
+        , Request.Status.list url |> Http.send ( \result -> result |> Statuses |> Fetch )
+        , 0 |> Request.BillSheet.page url |> Http.send ( \result -> result |> BillSheets |> Fetch )
         ]
 
 
 
 -- UPDATE
+
+type FetchedData
+    = BillSheets ( Result Http.Error BillSheetWithPager )
+    | Consumers ( Result Http.Error ( List Consumer ) )
+    | Counties ( Result Http.Error ( List County ) )
+    | Specialists ( Result Http.Error ( List User ) )
+    | Statuses ( Result Http.Error ( List Status ) )
 
 
 type Msg
@@ -123,30 +129,22 @@ type Msg
     | Delete BillSheet
     | Deleted ( Result Http.Error Int )
     | Edit BillSheet
-    | FetchedBillSheets ( Result Http.Error BillSheetWithPager )
-    | FetchedConsumers ( Result Http.Error ( List Consumer ) )
-    | FetchedCounties ( Result Http.Error ( List County ) )
-    | FetchedSpecialists ( Result Http.Error ( List User ) )
-    | FetchedStatus ( Result Http.Error ( List Status ) )
+    | Fetch FetchedData
     | ModalMsg Modal.Msg
     | NewPage ( Maybe Int )
     | Post
     | Posted ( Result Http.Error BillSheet )
     | Put
     | Putted ( Result Http.Error BillSheet )
-    | SelectConsumer BillSheet String
-    | SelectCounty BillSheet String
-    | SelectSpecialist BillSheet String
-    | SelectStatus BillSheet String
+    | Select Form.Selection BillSheet String
     | SetFormValue ( String -> BillSheet ) String
     | SetTableState Table.State
-    | Submit
 
 
 update : String -> Msg -> Model -> ( Model, Cmd Msg )
 update url msg model =
     let
-        oldPageLists = model.pageLists
+        oldViewLists = model.viewLists
     in
     case msg of
         Add ->
@@ -206,10 +204,10 @@ update url msg model =
 
         Deleted ( Ok id ) ->
             { model |
-                pageLists =
-                    { oldPageLists |
+                viewLists =
+                    { oldViewLists |
                         billsheets =
-                            oldPageLists.billsheets |> List.filter ( \m -> id /= m.id )
+                            oldViewLists.billsheets |> List.filter ( \m -> id /= m.id )
                     }
             } ! []
 
@@ -225,66 +223,68 @@ update url msg model =
                 , editing = Just billsheet
             } ! []
 
-        FetchedBillSheets ( Ok billsheets ) ->
-            { model |
-                pageLists = { oldPageLists | billsheets = billsheets.billsheets }
-                , pager = billsheets.pager
-                , tableState = Table.initialSort "ID"
-            } ! []
+        Fetch result ->
+            case result of
+                BillSheets ( Ok billsheets ) ->
+                    { model |
+                        viewLists = { oldViewLists | billsheets = billsheets.billsheets }
+                        , pager = billsheets.pager
+                        , tableState = Table.initialSort "ID"
+                    } ! []
 
-        FetchedBillSheets ( Err err ) ->
-            { model |
-                pageLists = { oldPageLists | billsheets = [] }
-                , tableState = Table.initialSort "ID"
-            } ! []
+                BillSheets ( Err err ) ->
+                    { model |
+                        viewLists = { oldViewLists | billsheets = [] }
+                        , tableState = Table.initialSort "ID"
+                    } ! []
 
-        FetchedConsumers ( Ok consumers ) ->
-            { model |
-                pageLists = { oldPageLists | consumers = consumers }
-                , tableState = Table.initialSort "ID"
-            } ! []
+                Consumers ( Ok consumers ) ->
+                    { model |
+                        viewLists = { oldViewLists | consumers = consumers }
+                        , tableState = Table.initialSort "ID"
+                    } ! []
 
-        FetchedConsumers ( Err err ) ->
-            { model |
-                pageLists = { oldPageLists | consumers = [] }
-                , tableState = Table.initialSort "ID"
-            } ! []
+                Consumers ( Err err ) ->
+                    { model |
+                        viewLists = { oldViewLists | consumers = [] }
+                        , tableState = Table.initialSort "ID"
+                    } ! []
 
-        FetchedCounties ( Ok counties ) ->
-            { model |
-                pageLists = { oldPageLists | counties = counties }
-                , tableState = Table.initialSort "ID"
-            } ! []
+                Counties ( Ok counties ) ->
+                    { model |
+                        viewLists = { oldViewLists | counties = counties }
+                        , tableState = Table.initialSort "ID"
+                    } ! []
 
-        FetchedCounties ( Err err ) ->
-            { model |
-                pageLists = { oldPageLists | counties = [] }
-                , tableState = Table.initialSort "ID"
-            } ! []
+                Counties ( Err err ) ->
+                    { model |
+                        viewLists = { oldViewLists | counties = [] }
+                        , tableState = Table.initialSort "ID"
+                    } ! []
 
-        FetchedSpecialists ( Ok specialists ) ->
-            { model |
-                pageLists = { oldPageLists | specialists = specialists }
-                , tableState = Table.initialSort "ID"
-            } ! []
+                Specialists ( Ok specialists ) ->
+                    { model |
+                        viewLists = { oldViewLists | specialists = specialists }
+                        , tableState = Table.initialSort "ID"
+                    } ! []
 
-        FetchedSpecialists ( Err err ) ->
-            { model |
-                pageLists = { oldPageLists | specialists = [] }
-                , tableState = Table.initialSort "ID"
-            } ! []
+                Specialists ( Err err ) ->
+                    { model |
+                        viewLists = { oldViewLists | specialists = [] }
+                        , tableState = Table.initialSort "ID"
+                    } ! []
 
-        FetchedStatus ( Ok status ) ->
-            { model |
-                pageLists = { oldPageLists | status = status }
-                , tableState = Table.initialSort "ID"
-            } ! []
+                Statuses ( Ok status ) ->
+                    { model |
+                        viewLists = { oldViewLists | status = status }
+                        , tableState = Table.initialSort "ID"
+                    } ! []
 
-        FetchedStatus ( Err err ) ->
-            { model |
-                pageLists = { oldPageLists | status = [] }
-                , tableState = Table.initialSort "ID"
-            } ! []
+                Statuses ( Err err ) ->
+                    { model |
+                        viewLists = { oldViewLists | status = [] }
+                        , tableState = Table.initialSort "ID"
+                    } ! []
 
         ModalMsg subMsg ->
             let
@@ -308,7 +308,7 @@ update url msg model =
             [ page
                 |> Maybe.withDefault -1
                 |> Request.BillSheet.page url
-                |> Http.send FetchedBillSheets
+                |> Http.send ( \result -> result |> BillSheets |> Fetch )
             ]
 
         Post ->
@@ -345,14 +345,14 @@ update url msg model =
                 billsheets =
                     case model.editing of
                         Nothing ->
-                            oldPageLists.billsheets
+                            oldViewLists.billsheets
 
                         Just newBillSheet ->
-                            oldPageLists.billsheets
+                            oldViewLists.billsheets
                                 |> (::) { newBillSheet | id = billsheet.id }
             in
             { model |
-                pageLists = { oldPageLists | billsheets = billsheets }
+                viewLists = { oldViewLists | billsheets = billsheets }
             } ! []
 
         Posted ( Err err ) ->
@@ -395,16 +395,16 @@ update url msg model =
                 billsheets =
                     case model.editing of
                         Nothing ->
-                            oldPageLists.billsheets
+                            oldViewLists.billsheets
 
                         Just newBillSheet ->
-                            oldPageLists.billsheets
+                            oldViewLists.billsheets
                                 |> List.filter ( \m -> billsheet.id /= m.id )
                                 |> (::)
                                     { newBillSheet | id = billsheet.id }
             in
                 { model |
-                    pageLists = { oldPageLists | billsheets = billsheets }
+                    viewLists = { oldViewLists | billsheets = billsheets }
                     , editing = Nothing
                 } ! []
 
@@ -414,25 +414,31 @@ update url msg model =
 --                , errors = (::) "There was a problem, the record could not be updated!" model.errors
             } ! []
 
-        SelectConsumer billsheet consumer ->
-            { model |
-                editing = { billsheet | consumer = consumer |> Form.toInt } |> Just
-            } ! []
+        Select selectType billsheet selection ->
+            let
+                selectionToInt =
+                    selection |> Form.toInt
 
-        SelectCounty billsheet countyID ->
-            { model |
-                editing = { billsheet | county = countyID |> Form.toInt } |> Just
-            } ! []
+                newModel a =
+                    { model |
+                        editing = a |> Just
+                    }
+            in
+            case selectType of
+                Form.ConsumerID ->
+                    ( { billsheet | consumer = selectionToInt } |> newModel ) ! []
 
-        SelectSpecialist billsheet specialistID ->
-            { model |
-                editing = { billsheet | specialist = specialistID |> Form.toInt } |> Just
-            } ! []
+                Form.CountyID ->
+                    ( { billsheet | county = selectionToInt } |> newModel ) ! []
 
-        SelectStatus billsheet statusID ->
-            { model |
-                editing = { billsheet | status = statusID |> Form.toInt } |> Just
-            } ! []
+                Form.SpecialistID ->
+                    ( { billsheet | specialist = selectionToInt } |> newModel ) ! []
+
+                Form.StatusID ->
+                    ( { billsheet | status = selectionToInt } |> newModel ) ! []
+
+                _ ->
+                    model ! []
 
         SetFormValue setFormValue s ->
             { model |
@@ -442,12 +448,6 @@ update url msg model =
 
         SetTableState newState ->
             { model | tableState = newState
-            } ! []
-
-        Submit ->
-            { model |
-                action = None
-                , disabled = True
             } ! []
 
 
@@ -473,7 +473,7 @@ drawView (
     , datePicker
     , disabled
     , editing
-    , pageLists
+    , viewLists
     , tableState
     } as model ) =
     let
@@ -486,12 +486,13 @@ drawView (
                 billsheet
 
         showList =
-            case pageLists.billsheets |> List.length of
+            case viewLists.billsheets |> List.length of
                 0 ->
                     div [] []
                 _ ->
-                    pageLists.billsheets
+                    viewLists.billsheets
                         |> Table.view ( model |> config ) tableState
+
         showPager =
             model.pager |> Views.Pager.view NewPage
     in
@@ -509,7 +510,7 @@ drawView (
         Adding ->
             [ form [ onSubmit Post ]
                 ( (++)
-                    ( ( editable, date, datePicker, pageLists ) |> formRows )
+                    ( ( editable, date, datePicker, viewLists ) |> formRows )
                     [ Form.submit disabled Cancel ]
                 )
             ]
@@ -517,14 +518,14 @@ drawView (
         Editing ->
             [ form [ onSubmit Put ]
                 ( (++)
-                    ( ( editable, date, datePicker, pageLists ) |> formRows )
+                    ( ( editable, date, datePicker, viewLists ) |> formRows )
                     [ Form.submit disabled Cancel ]
                 )
             ]
 
 
-formRows : ( BillSheet, Maybe Date, DatePicker.DatePicker, PageLists ) -> List ( Html Msg )
-formRows ( editable, date, datePicker, pageLists ) =
+formRows : ( BillSheet, Maybe Date, DatePicker.DatePicker, ViewLists ) -> List ( Html Msg )
+formRows ( editable, date, datePicker, viewLists ) =
     [ Form.text "Recipient ID"
         [ value editable.recipientID
         , onInput ( SetFormValue ( \v -> { editable | recipientID = v } ) )
@@ -543,18 +544,18 @@ formRows ( editable, date, datePicker, pageLists ) =
         []
     , Form.select "Consumer"
         [ id "consumerSelection"
-        , editable |> SelectConsumer |> onInput
+        , editable |> Select Form.ConsumerID |> onInput
         ] (
-            pageLists.consumers
+            viewLists.consumers
                 |> List.map ( \m -> ( m.id |> toString, m.lastname ++ ", " ++ m.firstname ) )
                 |> (::) ( "-1", "-- Select a consumer --" )
                 |> List.map ( editable.consumer |> toString |> Form.option )
         )
     , Form.select "Status"
         [ id "statusSelection"
-        , editable |> SelectStatus |> onInput
+        , editable |> Select Form.StatusID |> onInput
         ] (
-            pageLists.status
+            viewLists.status
                 |> List.map ( \m -> ( m.id |> toString, m.name ) )
                 |> (::) ( "-1", "-- Select a status --" )
                 |> List.map ( editable.status |> toString |> Form.option )
@@ -571,18 +572,18 @@ formRows ( editable, date, datePicker, pageLists ) =
         []
     , Form.select "County"
         [ id "countySelection"
-        , editable |> SelectCounty |> onInput
+        , editable |> Select Form.CountyID |> onInput
         ] (
-            pageLists.counties
+            viewLists.counties
                 |> List.map ( \m -> ( m.id |> toString, m.name ) )
                 |> (::) ( "-1", "-- Select a county --" )
                 |> List.map ( editable.county |> toString |> Form.option )
         )
     , Form.select "Specialist"
         [ id "specialistSelection"
-        , editable |> SelectSpecialist |> onInput
+        , editable |> Select Form.SpecialistID |> onInput
         ] (
-            pageLists.specialists
+            viewLists.specialists
                 |> List.map ( \m -> ( m.id |> toString, m.lastname ++ ", " ++ m.firstname ) )
                 |> (::) ( "-1", "-- Select a specialist --" )
                 |> List.map ( editable.specialist |> toString |> Form.option )
@@ -608,7 +609,7 @@ config model =
         , Table.stringColumn "Consumer" (
             .consumer
                 >> ( \id ->
-                    model.pageLists.consumers |> List.filter ( \m -> m.id |> (==) id )
+                    model.viewLists.consumers |> List.filter ( \m -> m.id |> (==) id )
                     )
                 >> List.head
                 >> Maybe.withDefault Data.Consumer.new
@@ -617,7 +618,7 @@ config model =
         , Table.stringColumn "Status" (
             .status
                 >> ( \id ->
-                    model.pageLists.status |> List.filter ( \m -> m.id |> (==) id )
+                    model.viewLists.status |> List.filter ( \m -> m.id |> (==) id )
                     )
                 >> List.head
                 >> Maybe.withDefault Data.Status.new
@@ -628,7 +629,7 @@ config model =
         , Table.stringColumn "County" (
             .county
                 >> ( \id ->
-                    model.pageLists.counties |> List.filter ( \m -> m.id |> (==) id )
+                    model.viewLists.counties |> List.filter ( \m -> m.id |> (==) id )
                     )
                 >> List.head
                 >> Maybe.withDefault { id = -1, name = "" }
@@ -637,7 +638,7 @@ config model =
         , Table.stringColumn "Specialist" (
             .specialist
                 >> ( \id ->
-                    model.pageLists.specialists |> List.filter ( \m -> m.id |> (==) id )
+                    model.viewLists.specialists |> List.filter ( \m -> m.id |> (==) id )
                     )
                 >> List.head
                 >> Maybe.withDefault Data.User.new

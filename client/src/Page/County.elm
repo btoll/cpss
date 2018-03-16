@@ -49,12 +49,17 @@ init url =
     , cities = []
     , counties = []
     , pager = Data.Pager.new
-    } ! [ Request.County.list url |> Http.send FetchedCounties
-    , 0 |> Request.City.page url |> Http.send FetchedCities
+    } ! [ Request.County.list url |> Http.send ( \result -> result |> Counties |> Fetch )
+    , 0 |> Request.City.page url |> Http.send ( \result -> result |> Cities |> Fetch )
     ]
 
 
 -- UPDATE
+
+
+type FetchedData
+    = Cities ( Result Http.Error CityWithPager )
+    | Counties ( Result Http.Error ( List County ) )
 
 
 type Msg
@@ -63,8 +68,7 @@ type Msg
     | Delete City
     | Deleted ( Result Http.Error Int )
     | Edit City
-    | FetchedCities ( Result Http.Error CityWithPager )
-    | FetchedCounties ( Result Http.Error ( List County ) )
+    | Fetch FetchedData
     | ModalMsg Modal.Msg
     | NewPage ( Maybe Int )
     | Post
@@ -74,7 +78,6 @@ type Msg
     | SelectCounty City String
     | SetFormValue ( String -> City ) String
     | SetTableState Table.State
-    | Submit
 
 
 update : String -> Msg -> Model -> ( Model, Cmd Msg )
@@ -116,29 +119,31 @@ update url msg model =
                 , editing = Just county
             } ! []
 
-        FetchedCities ( Ok cities ) ->
-            { model |
-                cities = cities.cities
-                , pager = cities.pager
-                , tableState = Table.initialSort "ID"
-            } ! []
+        Fetch result ->
+            case result of
+                Cities ( Ok cities ) ->
+                    { model |
+                        cities = cities.cities
+                        , pager = cities.pager
+                        , tableState = Table.initialSort "ID"
+                    } ! []
 
-        FetchedCities ( Err err ) ->
-            { model |
-                cities = []
-                , tableState = Table.initialSort "ID"
-            } ! []
+                Cities ( Err err ) ->
+                    { model |
+                        cities = []
+                        , tableState = Table.initialSort "ID"
+                    } ! []
 
-        FetchedCounties ( Ok counties ) ->
-            { model |
-                counties = counties
-                , tableState = Table.initialSort "ID"
-            } ! []
+                Counties ( Ok counties ) ->
+                    { model |
+                        counties = counties
+                        , tableState = Table.initialSort "ID"
+                    } ! []
 
-        FetchedCounties ( Err err ) ->
-            { model |
-                tableState = Table.initialSort "ID"
-            } ! []
+                Counties ( Err err ) ->
+                    { model |
+                        tableState = Table.initialSort "ID"
+                    } ! []
 
         ModalMsg subMsg ->
             let
@@ -162,7 +167,7 @@ update url msg model =
             [ page
                 |> Maybe.withDefault -1
                 |> Request.City.page url
-                |> Http.send FetchedCities
+                |> Http.send ( \result -> result |> Cities |> Fetch )
             ]
 
         Post ->
@@ -282,12 +287,6 @@ update url msg model =
 
         SetTableState newState ->
             { model | tableState = newState } ! []
-
-        Submit ->
-            { model |
-                action = None
-                , disabled = True
-            } ! []
 
 
 

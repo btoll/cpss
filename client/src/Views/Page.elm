@@ -1,4 +1,4 @@
-module Views.Page exposing (ActivePage(..), frame)
+module Views.Page exposing (ActivePage(..), ViewAction(..), frame)
 
 import Data.User exposing (User)
 import Html exposing (Html, a, div, footer, li, main_, nav, p, text, ul)
@@ -18,6 +18,14 @@ type ActivePage
     | Specialist
     | Status
     | TimeEntry
+
+
+
+type ViewAction
+    = None
+    | Adding
+    | Editing
+
 
 
 type alias SiteLink msg =

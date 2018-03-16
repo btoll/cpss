@@ -66,7 +66,6 @@ type Msg
     | Putted ( Result Http.Error ServiceCode )
     | SetFormValue ( String -> ServiceCode ) String
     | SetTableState Table.State
-    | Submit
 
 
 update : String -> Msg -> Model -> ( Model, Cmd Msg )
@@ -248,12 +247,6 @@ update url msg model =
             { model |
                 editing = Just ( setFormValue s )
                 , disabled = False
-            } ! []
-
-        Submit ->
-            { model |
-                action = None
-                , disabled = True
             } ! []
 
 
