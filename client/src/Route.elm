@@ -16,6 +16,7 @@ type Route
     | BillSheet
     | Consumer
     | County
+    | DIA
     | Login
     | Logout
     | ServiceCode
@@ -31,6 +32,7 @@ route =
         , Url.map BillSheet (s "billsheet")
         , Url.map Consumer (s "consumer")
         , Url.map County (s "counties")
+        , Url.map DIA (s "dia")
         , Url.map Login (s "login")
         , Url.map Logout (s "logout")
         , Url.map ServiceCode (s "servicecode")
@@ -60,6 +62,9 @@ routeToString page =
 
                 County ->
                     [ "counties" ]
+
+                DIA ->
+                    [ "dia" ]
 
                 Login ->
                     [ "login" ]

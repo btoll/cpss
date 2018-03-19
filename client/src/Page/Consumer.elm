@@ -3,6 +3,7 @@ module Page.Consumer exposing (Model, Msg, init, update, view)
 import Data.City exposing (City)
 import Data.Consumer exposing (Consumer, ConsumerWithPager, new)
 import Data.County exposing (County)
+import Data.DIA exposing (DIA)
 import Data.Pager exposing (Pager)
 import Data.ServiceCode exposing (ServiceCode)
 import Date exposing (Date, Day(..), day, dayOfWeek, month, year)
@@ -14,6 +15,7 @@ import Http
 import Request.City
 import Request.Consumer
 import Request.County
+import Request.DIA
 import Request.ServiceCode
 import Table exposing (defaultCustomizations)
 import Task exposing (Task)
@@ -40,6 +42,7 @@ type alias Model =
     , countyData : CountyData
     , serviceCodes : List ServiceCode
     , consumers : List Consumer
+    , dias : List DIA
     , pager : Pager
     }
 
@@ -94,8 +97,10 @@ init url =
     , countyData = ( [], [] )
     , serviceCodes = []
     , consumers = []
+    , dias = []
     , pager = Data.Pager.new
     } ! [ Cmd.map DatePicker datePickerFx
+    , Request.DIA.list url |> Http.send ( \result -> result |> Dias |> Fetch )
     , Request.ServiceCode.list url |> Http.send ( \result -> result |> ServiceCodes |> Fetch )
     , Request.County.list url |> Http.send ( \result -> result |> Counties |> Fetch )
     , 0 |> Request.Consumer.page url |> Http.send ( \result -> result |> Consumers |> Fetch )
@@ -109,6 +114,7 @@ type FetchedData
     = Cities ( Result Http.Error ( List City ) )
     | Consumers ( Result Http.Error ConsumerWithPager )
     | Counties ( Result Http.Error ( List County ) )
+    | Dias ( Result Http.Error ( List DIA ) )
     | ServiceCodes ( Result Http.Error ( List ServiceCode ) )
 
 
@@ -242,6 +248,18 @@ update url msg model =
                     } ! []
 
                 Counties ( Err err ) ->
+                    { model |
+                        countyData = ( [], model.countyData |> Tuple.second )
+                        , tableState = Table.initialSort "ID"
+                    } ! []
+
+                Dias ( Ok dias ) ->
+                    { model |
+                        dias = dias
+                        , tableState = Table.initialSort "ID"
+                    } ! []
+
+                Dias ( Err err ) ->
                     { model |
                         countyData = ( [], model.countyData |> Tuple.second )
                         , tableState = Table.initialSort "ID"
@@ -395,11 +413,17 @@ update url msg model =
                 newModel a =
                     { model |
                         editing = a |> Just
+                        , disabled = False
                     }
             in
             case selectType of
                 Form.CountyID ->
-                    ( { consumer | county = selectionToInt } |> newModel ) ! []
+                    ( { consumer | county = selectionToInt } |> newModel ) ! [
+                        selection |> Request.City.get url |> Http.send ( \result -> result |> Cities |> Fetch )
+                    ]
+
+                Form.DIAID ->
+                    ( { consumer | dia = selectionToInt } |> newModel ) ! []
 
                 Form.ServiceCodeID ->
                     ( { consumer | serviceCode = selectionToInt } |> newModel ) ! []
@@ -409,25 +433,6 @@ update url msg model =
 
                 _ ->
                     model ! []
-
---        SelectCounty consumer countyID ->
---            { model |
---                editing = { consumer | county = countyID |> Form.toInt } |> Just
---                , disabled = False
---            -- Fetch the county's zip codes to set the zip code drop-down to the correct value.
---            } ! [ countyID |> Request.City.get url |> Http.send ( \result -> result |> Cities |> Fetch ) ]
---
---        SelectServiceCode consumer serviceCode ->
---            { model |
---                editing = { consumer | serviceCode = Form.toInt serviceCode } |> Just
---                , disabled = False
---            } ! []
---
---        SelectZip consumer zip ->
---            { model |
---                editing = { consumer | zip = zip } |> Just
---                , disabled = False
---            } ! []
 
         SetCheckboxValue setBoolValue b ->
             { model |
@@ -472,6 +477,7 @@ drawView (
     , tableState
     , serviceCodes
     , consumers
+    , dias
     } as model ) =
     let
         editable : Consumer
@@ -507,7 +513,7 @@ drawView (
         Adding ->
             [ form [ onSubmit Post ]
                 ( (++)
-                    ( ( editable, date, datePicker, serviceCodes, countyData ) |> formRows )
+                    ( ( editable, date, datePicker, serviceCodes, dias, countyData ) |> formRows )
                     [ Form.submit disabled Cancel ]
                 )
             ]
@@ -515,14 +521,14 @@ drawView (
         Editing ->
             [ form [ onSubmit Put ]
                 ( (++)
-                    ( ( editable, date, datePicker, serviceCodes, countyData ) |> formRows )
+                    ( ( editable, date, datePicker, serviceCodes, dias, countyData ) |> formRows )
                     [ Form.submit disabled Cancel ]
                 )
             ]
 
 
-formRows : ( Consumer, Maybe Date, DatePicker.DatePicker, List ServiceCode, CountyData ) -> List ( Html Msg )
-formRows ( editable, date, datePicker, serviceCodes, countyData ) =
+formRows : ( Consumer, Maybe Date, DatePicker.DatePicker, List ServiceCode, List DIA, CountyData ) -> List ( Html Msg )
+formRows ( editable, date, datePicker, serviceCodes, dias, countyData ) =
     let
         focusedDate : Maybe Date
         focusedDate =
@@ -592,11 +598,15 @@ formRows ( editable, date, datePicker, serviceCodes, countyData ) =
         , onInput ( SetFormValue ( \v -> { editable | recipientID = v } ) )
         ]
         []
-    , Form.text "DIA Code"
-        [ value editable.diaCode
-        , onInput ( SetFormValue ( \v -> { editable | diaCode = v } ) )
-        ]
-        []
+    , Form.select "DIA"
+        [ id "diaSelection"
+        , editable |> Select Form.DIAID |> onInput
+        ] (
+            dias
+                |> List.map ( \m -> ( m.id |> toString, m.name ) )
+                |> (::) ( "-1", "-- Select a DIA --" )
+                |> List.map ( editable.dia |> toString |> Form.option )
+        )
     , Form.float "Copay"
         [ editable.copay |> toString |> value
         , onInput ( SetFormValue ( \v -> { editable | copay = Form.toFloat v } ) )
@@ -635,12 +645,28 @@ config model =
                 >> Maybe.withDefault { id = -1, name = "" }
                 >> .name
         )
-        , Table.intColumn "Service Code" .serviceCode
+        , Table.stringColumn "Service Code" (
+            .serviceCode
+                >> ( \id ->
+                    model.serviceCodes |> List.filter ( \m -> m.id |> (==) id )
+                    )
+                >> List.head
+                >> Maybe.withDefault { id = -1, name = "" }
+                >> .name
+        )
         , Table.stringColumn "Funding Source" .fundingSource
         , Table.stringColumn "Zip Code" .zip
         , Table.stringColumn "BSU" .bsu
         , Table.stringColumn "Recipient ID" .recipientID
-        , Table.stringColumn "DIA Code" .diaCode
+        , Table.stringColumn "DIA" (
+            .dia
+                >> ( \id ->
+                    model.dias |> List.filter ( \m -> m.id |> (==) id )
+                    )
+                >> List.head
+                >> Maybe.withDefault { id = -1, name = "" }
+                >> .name
+        )
         , Table.floatColumn "Copay" .copay
         , Table.stringColumn "Discharge Date" .dischargeDate
         , Table.stringColumn "Other" .other

@@ -3,6 +3,7 @@ module Main exposing (..)
 import Data.BillSheet exposing (BillSheet)
 import Data.Consumer exposing (Consumer)
 import Data.County exposing (County)
+import Data.DIA exposing (DIA)
 import Data.Session exposing (Session)
 import Data.ServiceCode exposing (ServiceCode)
 import Data.Status exposing (Status)
@@ -14,6 +15,7 @@ import Navigation
 import Page.BillSheet as BillSheet
 import Page.Consumer as Consumer
 import Page.County as County
+import Page.DIA as DIA
 import Page.Login as Login
 import Page.NotFound as NotFound
 import Page.ServiceCode as ServiceCode
@@ -47,6 +49,7 @@ type Page
     | BillSheet BillSheet.Model
     | Consumer Consumer.Model
     | County County.Model
+    | DIA DIA.Model
     | Login Login.Model
     | ServiceCode ServiceCode.Model
     | Specialist Specialist.Model
@@ -100,6 +103,7 @@ type Msg
     | BillSheetMsg BillSheet.Msg
     | ConsumerMsg Consumer.Msg
     | CountyMsg County.Msg
+    | DIAMsg DIA.Msg
     | LoginMsg Login.Msg
     | ServiceCodeMsg ServiceCode.Msg
     | SpecialistMsg Specialist.Msg
@@ -175,6 +179,28 @@ setRoute maybeRoute model =
                             { model |
                                 page = County subModel
                             } ! [ Cmd.map CountyMsg subMsg ]
+
+                        _ ->
+                            { model | page = Errored "You are not authorized to view this page" } ! []
+
+        Just Route.DIA ->
+            case model.session.user of
+                Nothing ->
+                    { model |
+                        page = Login Login.init
+                        , onLogin = maybeRoute
+                    } ! []
+
+                Just user ->
+                    case user.authLevel of
+                        1 ->
+                            let
+                                ( subModel, subMsg ) =
+                                    DIA.init model.build.url
+                            in
+                            { model |
+                                page = DIA subModel
+                            } ! [ Cmd.map DIAMsg subMsg ]
 
                         _ ->
                             { model | page = Errored "You are not authorized to view this page" } ! []
@@ -343,6 +369,9 @@ update msg model =
         ( CountyMsg subMsg, County subModel ) ->
             toPage County CountyMsg County.update subMsg subModel
 
+        ( DIAMsg subMsg, DIA subModel ) ->
+            toPage DIA DIAMsg DIA.update subMsg subModel
+
         ( FetchedUserSession ( Ok user ), _ ) ->
             let
                 oldSession = model.session
@@ -460,6 +489,11 @@ view model =
             County.view subModel
                 |> frame session.user Page.County
                 |> Html.map CountyMsg
+
+        DIA subModel ->
+            DIA.view subModel
+                |> frame session.user Page.DIA
+                |> Html.map DIAMsg
 
         Errored err ->
             text err

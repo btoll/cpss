@@ -15,3 +15,10 @@ CREATE TABLE IF NOT EXISTS `specialist` (
   KEY `ID` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 ;
 
+LOCK TABLES `specialist` WRITE;
+/*!40000 ALTER TABLE `specialist` DISABLE KEYS */;
+INSERT INTO `specialist` VALUES
+	(null,'ben','bcade5095df6aac49c938e70b94def2a4321a7b445614766ab51d5bf217bdd5e','Ben','Toll','ben@example.com',90,1);
+/*!40000 ALTER TABLE `specialist` ENABLE KEYS */;
+UNLOCK TABLES;
+

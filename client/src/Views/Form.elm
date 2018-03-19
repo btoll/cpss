@@ -22,6 +22,7 @@ import Html.Events exposing (onClick, onInput)
 type Selection
     = ConsumerID
     | CountyID
+    | DIAID
     | ServiceCodeID
     | SpecialistID
     | StatusID

@@ -18,9 +18,9 @@ func NewConsumer(payload interface{}) *Consumer {
 		Data: payload,
 		Stmt: map[string]string{
 			"DELETE": "DELETE FROM consumer WHERE id=?",
-			"INSERT": "INSERT consumer SET firstname=?,lastname=?,active=?,county=?,serviceCode=?,fundingSource=?,zip=?,bsu=?,recipientID=?,diaCode=?,copay=?,dischargeDate=?,other=?",
+			"INSERT": "INSERT consumer SET firstname=?,lastname=?,active=?,county=?,serviceCode=?,fundingSource=?,zip=?,bsu=?,recipientID=?,dia=?,copay=?,dischargeDate=?,other=?",
 			"SELECT": "SELECT %s FROM consumer ORDER BY lastname,firstname %s",
-			"UPDATE": "UPDATE consumer SET firstname=?,lastname=?,active=?,county=?,serviceCode=?,fundingSource=?,zip=?,bsu=?,recipientID=?,diaCode=?,copay=?,dischargeDate=?,other=? WHERE id=?",
+			"UPDATE": "UPDATE consumer SET firstname=?,lastname=?,active=?,county=?,serviceCode=?,fundingSource=?,zip=?,bsu=?,recipientID=?,dia=?,copay=?,dischargeDate=?,other=? WHERE id=?",
 		},
 	}
 }
@@ -31,7 +31,7 @@ func (s *Consumer) Create(db *mysql.DB) (interface{}, error) {
 	if err != nil {
 		return -1, err
 	}
-	res, err := stmt.Exec(payload.Firstname, payload.Lastname, payload.Active, payload.County, payload.ServiceCode, payload.FundingSource, payload.Zip, payload.Bsu, payload.RecipientID, payload.DiaCode, payload.Copay, payload.DischargeDate, payload.Other)
+	res, err := stmt.Exec(payload.Firstname, payload.Lastname, payload.Active, payload.County, payload.ServiceCode, payload.FundingSource, payload.Zip, payload.Bsu, payload.RecipientID, payload.Dia, payload.Copay, payload.DischargeDate, payload.Other)
 	if err != nil {
 		return -1, err
 	}
@@ -51,7 +51,7 @@ func (s *Consumer) Create(db *mysql.DB) (interface{}, error) {
 	//		Zip:           payload.Zip,
 	//		Bsu:           payload.Bsu,
 	//		RecipientID:   payload.RecipientID,
-	//		DiaCode:       payload.DiaCode,
+	//		Dia:       payload.Dia,
 	//		Copay:         payload.Copay,
 	//		DischargeDate: payload.DischargeDate,
 	//		Other:         payload.Other,
@@ -64,7 +64,7 @@ func (s *Consumer) Update(db *mysql.DB) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, err = stmt.Exec(payload.Firstname, payload.Lastname, payload.Active, payload.County, payload.ServiceCode, payload.FundingSource, payload.Zip, payload.Bsu, payload.RecipientID, payload.DiaCode, payload.Copay, payload.DischargeDate, payload.Other, payload.ID)
+	_, err = stmt.Exec(payload.Firstname, payload.Lastname, payload.Active, payload.County, payload.ServiceCode, payload.FundingSource, payload.Zip, payload.Bsu, payload.RecipientID, payload.Dia, payload.Copay, payload.DischargeDate, payload.Other, payload.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (s *Consumer) Update(db *mysql.DB) (interface{}, error) {
 		Zip:           payload.Zip,
 		Bsu:           payload.Bsu,
 		RecipientID:   payload.RecipientID,
-		DiaCode:       payload.DiaCode,
+		Dia:           payload.Dia,
 		Copay:         payload.Copay,
 		DischargeDate: payload.DischargeDate,
 		Other:         payload.Other,
@@ -125,11 +125,11 @@ func (s *Consumer) List(db *mysql.DB) (interface{}, error) {
 		var zip string
 		var bsu string
 		var recipientID string
-		var diaCode string
+		var dia int
 		var copay float64
 		var dischargeDate string
 		var other string
-		err = rows.Scan(&id, &firstname, &lastname, &active, &county, &serviceCode, &fundingSource, &zip, &bsu, &recipientID, &diaCode, &copay, &dischargeDate, &other)
+		err = rows.Scan(&id, &firstname, &lastname, &active, &county, &serviceCode, &fundingSource, &zip, &bsu, &recipientID, &dia, &copay, &dischargeDate, &other)
 		if err != nil {
 			return nil, err
 		}
@@ -144,7 +144,7 @@ func (s *Consumer) List(db *mysql.DB) (interface{}, error) {
 			Zip:           zip,
 			Bsu:           bsu,
 			RecipientID:   recipientID,
-			DiaCode:       diaCode,
+			Dia:           dia,
 			Copay:         copay,
 			DischargeDate: dischargeDate,
 			Other:         other,
@@ -200,11 +200,11 @@ func (s *Consumer) Page(db *mysql.DB) (interface{}, error) {
 		var zip string
 		var bsu string
 		var recipientID string
-		var diaCode string
+		var dia int
 		var copay float64
 		var dischargeDate string
 		var other string
-		err = rows.Scan(&id, &firstname, &lastname, &active, &county, &serviceCode, &fundingSource, &zip, &bsu, &recipientID, &diaCode, &copay, &dischargeDate, &other)
+		err = rows.Scan(&id, &firstname, &lastname, &active, &county, &serviceCode, &fundingSource, &zip, &bsu, &recipientID, &dia, &copay, &dischargeDate, &other)
 		if err != nil {
 			return nil, err
 		}
@@ -219,7 +219,7 @@ func (s *Consumer) Page(db *mysql.DB) (interface{}, error) {
 			Zip:           zip,
 			Bsu:           bsu,
 			RecipientID:   recipientID,
-			DiaCode:       diaCode,
+			Dia:           dia,
 			Copay:         copay,
 			DischargeDate: dischargeDate,
 			Other:         other,

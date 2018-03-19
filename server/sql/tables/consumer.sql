@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS `consumer` (
   `zip` varchar(30) DEFAULT NULL,
   `bsu` varchar(100) DEFAULT NULL,
   `recipientID` varchar(100) DEFAULT NULL,
-  `diaCode` varchar(100) DEFAULT NULL,
+  `dia` varchar(100) DEFAULT NULL,
   `copay` double DEFAULT 0,
   `dischargeDate` date DEFAULT NULL,
   `other` varchar(100) DEFAULT NULL,

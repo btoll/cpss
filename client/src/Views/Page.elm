@@ -12,6 +12,7 @@ type ActivePage
     | BillSheet
     | Consumer
     | County
+    | DIA
     | Login
     | Logout
     | ServiceCode
@@ -51,6 +52,7 @@ siteLinks user page =
                     , SiteLink Status Route.Status [ text "Status" ]
                     , SiteLink County Route.County [ text "Cities / Counties" ]
                     , SiteLink ServiceCode Route.ServiceCode [ text "Service Code" ]
+                    , SiteLink DIA Route.DIA [ text "DIA" ]
                     , SiteLink Logout Route.Logout [ text "Logout" ]
                     ]
                 _ ->

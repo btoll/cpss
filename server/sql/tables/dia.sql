@@ -1,0 +1,11 @@
+USE cpss;
+
+DROP TABLE IF EXISTS dia;
+
+CREATE TABLE IF NOT EXISTS dia(
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(50) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `ID` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 ;
+
