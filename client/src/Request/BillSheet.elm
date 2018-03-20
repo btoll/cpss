@@ -1,7 +1,17 @@
-module Request.BillSheet exposing (delete, list, page, post, put)
+module Request.BillSheet exposing (delete, list, page, post, put, query)
+
 
 import Http
-import Data.BillSheet exposing (BillSheet, BillSheetWithPager, decoder, encoder, manyDecoder, pagingDecoder, succeed)
+import Data.BillSheet exposing
+    (BillSheet
+    , BillSheetWithPager
+    , decoder
+    , encoder
+    , manyDecoder
+    , pagingDecoder
+    , queryEncoder
+    , succeed
+    )
 
 
 
@@ -29,9 +39,17 @@ list url =
     manyDecoder |> Http.get ( (++) url "/billsheet/list" )
 
 
-page : String -> Int -> Http.Request BillSheetWithPager
-page url page =
-    pagingDecoder |> Http.get ( url ++ "/billsheet/list/" ++ ( page |> toString ) )
+-- The where clause is "optional", pass an empty string for none.
+page : String -> String -> Int -> Http.Request BillSheetWithPager
+page url whereClause page =
+    let
+        body : Http.Body
+        body =
+            queryEncoder whereClause
+                |> Http.jsonBody
+    in
+        pagingDecoder
+            |> Http.post ( url ++ "/billsheet/list/" ++ ( page |> toString ) ) body
 
 
 post : String -> BillSheet -> Http.Request BillSheet
@@ -63,5 +81,17 @@ put url billsheet =
             , timeout = Nothing
             , withCredentials = False
             }
+
+
+query : String -> String -> Http.Request BillSheetWithPager
+query url whereClause =
+    let
+        body : Http.Body
+        body =
+            queryEncoder whereClause
+                |> Http.jsonBody
+    in
+        pagingDecoder
+            |> Http.post ( (++) url "/billsheet/query" ) body
 
 

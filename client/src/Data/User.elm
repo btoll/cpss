@@ -1,4 +1,16 @@
-module Data.User exposing (User, UserWithPager, authEncoder, decoder, encoder, hashEncoder, manyDecoder, new, pagingDecoder, succeed)
+module Data.User exposing
+    (User
+    , UserWithPager
+    , authEncoder
+    , decoder
+    , encoder
+    , hashEncoder
+    , manyDecoder
+    , new
+    , pagingDecoder
+    , queryEncoder
+    , succeed
+    )
 
 import Data.Pager
 import Json.Decode as Decode exposing (Decoder, bool, float, int, list, string)
@@ -90,6 +102,13 @@ hashEncoder user =
     Encode.object
         [ ( "id", Encode.int user.id )
         , ( "password", Encode.string user.password )
+        ]
+
+
+queryEncoder : String -> Encode.Value
+queryEncoder whereClause =
+    Encode.object
+        [ ( "whereClause", Encode.string whereClause )
         ]
 
 

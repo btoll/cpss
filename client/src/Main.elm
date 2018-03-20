@@ -31,14 +31,12 @@ import Views.Page as Page exposing (ActivePage)
 
 
 type alias Build =
-    {
-        url : String
+    { url : String
     }
 
 
 type alias Flags =
-    {
-        env : Maybe String
+    { env : Maybe String
     }
 
 

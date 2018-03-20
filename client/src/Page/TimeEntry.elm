@@ -1,5 +1,6 @@
 module Page.TimeEntry exposing (Model, Msg, init, update, view)
 
+import Data.App exposing (Query)
 import Data.Consumer exposing (Consumer)
 import Data.Pager exposing (Pager)
 import Data.Session exposing (Session)
@@ -8,6 +9,7 @@ import Data.TimeEntry as TimeEntry exposing (TimeEntry, TimeEntryWithPager, new)
 import Data.User exposing (User)
 import Date exposing (Date, Day(..), day, dayOfWeek, month, year)
 import DatePicker exposing (defaultSettings, DateEvent(..))
+import Dict exposing (Dict)
 import Html exposing (Html, Attribute, button, div, form, h1, input, label, section, text)
 import Html.Attributes exposing (action, autofocus, checked, disabled, for, id, step, style, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
@@ -47,6 +49,7 @@ type alias Model =
     , date : Maybe Date
     , datePicker : DatePicker.DatePicker
     , pageLists : PageLists
+    , query : Maybe Query
     , user : User
     }
 
@@ -115,6 +118,7 @@ init url session =
         , serviceCodes = []
         , consumers = []
         }
+    , query = Nothing
     , user = user
     } ! [ Cmd.map DatePicker datePickerFx
         , Request.Consumer.list url |> Http.send ( \result -> result |> Consumers |> Fetch )
@@ -146,6 +150,7 @@ type Msg
     | Posted ( Result Http.Error TimeEntry )
     | Put
     | Putted ( Result Http.Error TimeEntry )
+    | Search
     | Select Form.Selection TimeEntry String
     | SetFormValue ( String -> TimeEntry ) String
     | SetTableState Table.State
@@ -296,21 +301,22 @@ update url msg model =
                     } ! []
 
         ModalMsg subMsg ->
-            let
-                cmd =
-                    case ( subMsg |> Modal.update ) of
-                        False ->
-                            Cmd.none
-
-                        True ->
-                            Maybe.withDefault new model.editing
-                                |> Request.TimeEntry.delete url
-                                |> Http.toTask
-                                |> Task.attempt Deleted
-            in
-            { model |
-                showModal = ( False, Nothing )
-            } ! [ cmd ]
+            model ! []
+--            let
+--                cmd =
+--                    case subMsg |> Modal.update model.query of
+--                        ( False, _ ) ->
+--                            Cmd.none
+--
+--                        ( True, _ ) ->
+--                            Maybe.withDefault new model.editing
+--                                |> Request.TimeEntry.delete url
+--                                |> Http.toTask
+--                                |> Task.attempt Deleted
+--            in
+--            { model |
+--                showModal = ( False, Nothing )
+--            } ! [ cmd ]
 
         NewPage page ->
             model !
@@ -445,6 +451,11 @@ update url msg model =
 --                , errors = (::) "There was a problem, the record could not be updated!" model.errors
             } ! []
 
+        Search ->
+            { model |
+                showModal = ( True, Nothing |> Modal.Search Data.App.TimeEntry model.query |> Just )
+            } ! []
+
         Select selectType consumer selection ->
             let
                 selectionToInt =
@@ -528,6 +539,7 @@ drawView (
     , disabled
     , editing
     , pageLists
+    , query
     , tableState
     } as model ) =
     let
@@ -556,7 +568,7 @@ drawView (
             , showList
             , showPager
             , model.showModal
-                |> Modal.view
+                |> Modal.view query
                 |> Html.map ModalMsg
             ]
 

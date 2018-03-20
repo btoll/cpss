@@ -52,6 +52,9 @@ nav div.container div p {
 section {
     margin-left: 2%;
 }
+section > button + button {     /* `Add*` and `Search` buttons */
+    margin-left: 10px;
+}
 div p.error {
     background-color: #ff9;
     border: 1px solid #000;

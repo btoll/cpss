@@ -1,4 +1,15 @@
-module Data.BillSheet exposing (BillSheet, BillSheetWithPager, decoder, encoder, manyDecoder, new, pagingDecoder, succeed)
+module Data.BillSheet exposing
+    ( BillSheet
+    , BillSheetWithPager
+    , decoder
+    , encoder
+    , manyDecoder
+    , new
+    , pagingDecoder
+    , queryEncoder
+    , succeed
+    )
+
 
 import Data.Pager
 import Json.Decode as Decode exposing (Decoder, bool, float, int, list, string)
@@ -88,6 +99,12 @@ encoder billsheet =
         , ( "recordNumber", Encode.string billsheet.recordNumber )
         ]
 
+
+queryEncoder : String -> Encode.Value
+queryEncoder whereClause =
+    Encode.object
+        [ ( "whereClause", Encode.string whereClause )
+        ]
 
 succeed : a -> Decoder a
 succeed =

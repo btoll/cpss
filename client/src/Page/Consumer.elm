@@ -1,5 +1,6 @@
 module Page.Consumer exposing (Model, Msg, init, update, view)
 
+import Data.App exposing (Query)
 import Data.City exposing (City)
 import Data.Consumer exposing (Consumer, ConsumerWithPager, new)
 import Data.County exposing (County)
@@ -8,8 +9,9 @@ import Data.Pager exposing (Pager)
 import Data.ServiceCode exposing (ServiceCode)
 import Date exposing (Date, Day(..), day, dayOfWeek, month, year)
 import DatePicker exposing (defaultSettings, DateEvent(..))
+import Dict exposing (Dict)
 import Html exposing (Html, Attribute, button, div, form, h1, input, label, node, section, text)
-import Html.Attributes exposing (action, autofocus, checked, disabled, for, id, style, type_, value)
+import Html.Attributes exposing (action, autofocus, checked, for, hidden, id, style, type_, value)
 import Html.Events exposing (onCheck, onClick, onInput, onSubmit)
 import Http
 import Request.City
@@ -43,6 +45,7 @@ type alias Model =
     , serviceCodes : List ServiceCode
     , consumers : List Consumer
     , dias : List DIA
+    , query : Maybe Query
     , pager : Pager
     }
 
@@ -98,12 +101,13 @@ init url =
     , serviceCodes = []
     , consumers = []
     , dias = []
+    , query = Nothing
     , pager = Data.Pager.new
     } ! [ Cmd.map DatePicker datePickerFx
     , Request.DIA.list url |> Http.send ( \result -> result |> Dias |> Fetch )
     , Request.ServiceCode.list url |> Http.send ( \result -> result |> ServiceCodes |> Fetch )
     , Request.County.list url |> Http.send ( \result -> result |> Counties |> Fetch )
-    , 0 |> Request.Consumer.page url |> Http.send ( \result -> result |> Consumers |> Fetch )
+    , 0 |> Request.Consumer.page url "" |> Http.send ( \result -> result |> Consumers |> Fetch )
     ]
 
 
@@ -121,6 +125,7 @@ type FetchedData
 type Msg
     = Add
     | Cancel
+    | ClearSearch
     | DatePicker DatePicker.Msg
     | Delete Consumer
     | Deleted ( Result Http.Error Int )
@@ -132,6 +137,7 @@ type Msg
     | Posted ( Result Http.Error Consumer )
     | Put
     | Putted ( Result Http.Error Consumer )
+    | Search
     | Select Form.Selection Consumer String
     | SetCheckboxValue ( Bool -> Consumer ) Bool
     | SetFormValue ( String -> Consumer ) String
@@ -153,6 +159,14 @@ update url msg model =
                 , editing = Nothing
                 , errors = []
             } ! []
+
+        ClearSearch ->
+            { model |
+                query = Nothing
+            } ! [ 0
+                    |> Request.Consumer.page url ""
+                    |> Http.send ( \result -> result |> Consumers |> Fetch )
+                ]
 
         DatePicker subMsg ->
             let
@@ -279,26 +293,69 @@ update url msg model =
 
         ModalMsg subMsg ->
             let
-                cmd =
-                    case ( subMsg |> Modal.update ) of
-                        False ->
-                            Cmd.none
+                ( showModal, whichModal, query, cmd ) =
+                    case subMsg |> Modal.update model.query of
+                        {- Delete Modal -}
+                        ( False, Nothing ) ->
+                            ( False, Nothing, Nothing, Cmd.none )
 
-                        True ->
-                            Maybe.withDefault new model.editing
+                        ( True, Nothing ) ->
+                            ( False, Nothing, Nothing
+                            , Maybe.withDefault new model.editing
                                 |> Request.Consumer.delete url
                                 |> Http.toTask
                                 |> Task.attempt Deleted
+                            )
+
+                        {- Search Modal -}
+                        ( False, Just query ) ->
+                            let
+                                fn : String -> String -> String -> String
+                                fn k v acc =
+                                    k ++ "=" ++ v ++ " AND "
+                                        |> (++) acc
+                            in
+                            ( False
+                            , Nothing
+                            , query |> Just     -- We need to save the search query for paging!
+                            , query
+                                |> Dict.foldl fn ""
+                                |> String.dropRight 5   -- Remove the trailing " AND ".
+                                |> Request.Consumer.query url
+                                |> Http.send ( \result -> result |> Consumers |> Fetch )
+                            )
+
+                        ( True, Just query ) ->
+                            ( True
+                            , Nothing
+                                |> Modal.Search Data.App.Consumer model.query
+                                |> Just
+                            , query |> Just
+                            , Cmd.none
+                            )
             in
             { model |
-                showModal = ( False, Nothing )
+                query = query
+                , showModal = ( showModal, whichModal )
             } ! [ cmd ]
 
         NewPage page ->
+            let
+                fn : String -> String -> String -> String
+                fn k v acc =
+                    k ++ "=" ++ v ++ " AND "
+                        |> (++) acc
+
+                s =
+                    model.query
+                        |> Maybe.withDefault Dict.empty
+                        |> Dict.foldl fn ""
+                        |> String.dropRight 5   -- Remove the trailing " AND ".
+            in
             model !
             [ page
                 |> Maybe.withDefault -1
-                |> Request.Consumer.page url
+                |> Request.Consumer.page url s
                 |> Http.send ( \result -> result |> Consumers |> Fetch )
             ]
 
@@ -405,6 +462,11 @@ update url msg model =
 --                , errors = (::) "There was a problem, the record could not be updated!" model.errors
             } ! []
 
+        Search ->
+            { model |
+                showModal = ( True , Nothing |> Modal.Search Data.App.Consumer model.query |> Just )
+            } ! []
+
         Select selectType consumer selection ->
             let
                 selectionToInt =
@@ -478,6 +540,7 @@ drawView (
     , serviceCodes
     , consumers
     , dias
+    , query
     } as model ) =
     let
         editable : Consumer
@@ -488,25 +551,36 @@ drawView (
             Just consumer ->
                 consumer
 
-        showList =
+        ( showList, isDisabled ) =
             case consumers |> List.length of
                 0 ->
-                    div [] []
+                    ( div [] [], True )
                 _ ->
-                    consumers
+                    ( consumers
                         |> Table.view ( model |> config ) tableState
+                    , False )
 
         showPager =
             model.pager |> Views.Pager.view NewPage
+
+        hideClearTextButton =
+            case query of
+                Nothing ->
+                    True
+
+                Just _ ->
+                    False
     in
     case action of
         None ->
-            [ button [ onClick Add ] [ text "Add Consumer" ]
+            [ button [ Add |> onClick ] [ text "Add Consumer" ]
+            , button [ isDisabled |> Html.Attributes.disabled, Search |> onClick ] [ text "Search" ]
+            , button [ hideClearTextButton |> hidden, ClearSearch |> onClick ] [ text "Clear Search" ]
             , showPager
             , showList
             , showPager
             , model.showModal
-                |> Modal.view
+                |> Modal.view query
                 |> Html.map ModalMsg
             ]
 
@@ -696,7 +770,7 @@ viewButton msg name consumer =
 viewCheckbox : Consumer -> Table.HtmlDetails Msg
 viewCheckbox { active } =
   Table.HtmlDetails []
-    [ input [ checked active, disabled True, type_ "checkbox" ] []
+    [ input [ checked active, Html.Attributes.disabled True, type_ "checkbox" ] []
     ]
 
 

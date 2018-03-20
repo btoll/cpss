@@ -1,7 +1,16 @@
-module Request.Consumer exposing (delete, list, page, post, put)
+module Request.Consumer exposing (delete, list, page, post, put, query)
 
 import Http
-import Data.Consumer exposing (Consumer, ConsumerWithPager, decoder, encoder, manyDecoder, pagingDecoder, succeed)
+import Data.Consumer exposing
+    (Consumer
+    , ConsumerWithPager
+    , decoder
+    , encoder
+    , manyDecoder
+    , pagingDecoder
+    , queryEncoder
+    , succeed
+    )
 
 
 
@@ -23,9 +32,17 @@ list url =
     manyDecoder |> Http.get ( (++) url "/consumer/list" )
 
 
-page : String -> Int -> Http.Request ConsumerWithPager
-page url page =
-    pagingDecoder |> Http.get ( url ++ "/consumer/list/" ++ ( page |> toString ) )
+-- The where clause is "optional", pass an empty string for none.
+page : String -> String -> Int -> Http.Request ConsumerWithPager
+page url whereClause page =
+    let
+        body : Http.Body
+        body =
+            queryEncoder whereClause
+                |> Http.jsonBody
+    in
+        pagingDecoder
+            |> Http.post ( url ++ "/consumer/list/" ++ ( page |> toString ) ) body
 
 
 post : String -> Consumer -> Http.Request Consumer
@@ -57,5 +74,16 @@ put url consumer =
             , timeout = Nothing
             , withCredentials = False
             }
+
+query : String -> String -> Http.Request ConsumerWithPager
+query url whereClause =
+    let
+        body : Http.Body
+        body =
+            queryEncoder whereClause
+                |> Http.jsonBody
+    in
+        pagingDecoder
+            |> Http.post ( (++) url "/consumer/query" ) body
 
 

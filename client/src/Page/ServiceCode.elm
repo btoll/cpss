@@ -1,6 +1,7 @@
 module Page.ServiceCode exposing (Model, Msg, init, update, view)
 
 import Data.ServiceCode as ServiceCode exposing (ServiceCode, new)
+import Dict exposing (Dict)
 import Html exposing (Html, Attribute, button, div, form, h1, input, label, section, text)
 import Html.Attributes exposing (action, autofocus, checked, disabled, for, id, style, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
@@ -121,21 +122,22 @@ update url msg model =
             } ! []
 
         ModalMsg subMsg ->
-            let
-                cmd =
-                    case ( subMsg |> Modal.update ) of
-                        False ->
-                            Cmd.none
-
-                        True ->
-                            Maybe.withDefault new model.editing
-                                |> Request.ServiceCode.delete url
-                                |> Http.toTask
-                                |> Task.attempt Deleted
-            in
-            { model |
-                showModal = ( False, Nothing )
-            } ! [ cmd ]
+            model ! []
+--            let
+--                cmd =
+--                    case subMsg |> Modal.update model.query of
+--                        ( False, _ ) ->
+--                            Cmd.none
+--
+--                        ( True, _ ) ->
+--                            Maybe.withDefault new model.editing
+--                                |> Request.ServiceCode.delete url
+--                                |> Http.toTask
+--                                |> Task.attempt Deleted
+--            in
+--            { model |
+--                showModal = ( False, Nothing )
+--            } ! [ cmd ]
 
         Post ->
             let
@@ -294,7 +296,7 @@ drawView (
             [ button [ onClick Add ] [ text "Add Service Code" ]
             , showList
             , model.showModal
-                |> Modal.view
+                |> Modal.view Nothing
                 |> Html.map ModalMsg
             ]
 

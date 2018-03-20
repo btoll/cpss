@@ -1,7 +1,16 @@
-module Request.Specialist exposing (delete, get, list, page, post, put)
+module Request.Specialist exposing (delete, get, list, page, post, put, query)
 
 import Http
-import Data.User exposing (User, UserWithPager, decoder, encoder, manyDecoder, pagingDecoder, succeed)
+import Data.User exposing
+    (User
+    , UserWithPager
+    , decoder
+    , encoder
+    , manyDecoder
+    , pagingDecoder
+    , queryEncoder
+    , succeed
+    )
 
 
 
@@ -29,9 +38,19 @@ list url =
     manyDecoder |> Http.get ( (++) url "/specialist/list" )
 
 
-page : String -> Int -> Http.Request UserWithPager
-page url page =
-    pagingDecoder |> Http.get ( url ++ "/specialist/list/" ++ ( page |> toString ) )
+-- The where clause is "optional", pass an empty string for none.
+page : String -> String -> Int -> Http.Request UserWithPager
+page url whereClause page =
+    let
+        body : Http.Body
+        body =
+            queryEncoder whereClause
+                |> Http.jsonBody
+    in
+        pagingDecoder
+            |> Http.post ( url ++ "/specialist/list/" ++ ( page |> toString ) ) body
+
+
 
 
 post : String -> User -> Http.Request User
@@ -63,5 +82,17 @@ put url specialist =
             , timeout = Nothing
             , withCredentials = False
             }
+
+
+query : String -> String -> Http.Request UserWithPager
+query url whereClause =
+    let
+        body : Http.Body
+        body =
+            queryEncoder whereClause
+                |> Http.jsonBody
+    in
+        pagingDecoder
+            |> Http.post ( (++) url "/specialist/query" ) body
 
 

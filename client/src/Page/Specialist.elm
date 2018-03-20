@@ -1,9 +1,11 @@
 module Page.Specialist exposing (Model, Msg, init, update, view)
 
+import Data.App exposing (App, Query)
 import Data.Pager exposing (Pager)
 import Data.User as User exposing (User, UserWithPager, new)
+import Dict exposing (Dict)
 import Html exposing (Html, Attribute, button, div, form, h1, input, label, section, text)
-import Html.Attributes exposing (action, autofocus, checked, for, id, step, style, type_, value)
+import Html.Attributes exposing (action, autofocus, checked, for, hidden, id, step, style, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Http
 import Request.Session
@@ -30,6 +32,7 @@ type alias Model =
     , changingPassword : String         -- Use for both storing current password and new password when changing password!
     , showModal : ( Bool, Maybe Modal.Modal )
     , specialists : List User
+    , query : Maybe Query
     , pager : Pager
     }
 
@@ -52,8 +55,12 @@ init url =
     , changingPassword = ""         -- Use for both storing current password and new password when changing password!
     , showModal = ( False, Nothing )
     , specialists = []
+    , query = Nothing
     , pager = Data.Pager.new
-    } ! [ 0 |> Request.Specialist.page url |> Http.send FetchedSpecialists ]
+    } ! [ 0
+            |> Request.Specialist.page url ""
+            |> Http.send FetchedSpecialists
+        ]
 
 
 
@@ -65,6 +72,7 @@ type Msg
     | Authenticated User ( Result Http.Error User )
     | Cancel
     | ChangePassword User
+    | ClearSearch
     | Delete User
     | Deleted ( Result Http.Error User )
     | Edit User
@@ -76,6 +84,7 @@ type Msg
     | Posted ( Result Http.Error User )
     | Put Action
     | Putted ( Result Http.Error User )
+    | Search
     | SetFormValue ( String -> User ) String
     | SetPasswordValue String
     | SetTableState Table.State
@@ -117,6 +126,14 @@ update url msg model =
                 action = ChangingPassword specialist
                 , editing = Just specialist
             } ! []
+
+        ClearSearch ->
+            { model |
+                query = Nothing
+            } ! [ 0
+                    |> Request.Specialist.page url ""
+                    |> Http.send FetchedSpecialists
+                ]
 
         Delete specialist ->
             { model |
@@ -185,26 +202,69 @@ update url msg model =
 
         ModalMsg subMsg ->
             let
-                cmd =
-                    case ( subMsg |> Modal.update ) of
-                        False ->
-                            Cmd.none
+                ( showModal, whichModal, query, cmd ) =
+                    case subMsg |> Modal.update model.query of
+                        {- Delete Modal -}
+                        ( False, Nothing ) ->
+                            ( False, Nothing, Nothing, Cmd.none )
 
-                        True ->
-                            Maybe.withDefault new model.editing
+                        ( True, Nothing ) ->
+                            ( False, Nothing, Nothing
+                            , Maybe.withDefault new model.editing
                                 |> Request.Specialist.delete url
                                 |> Http.toTask
                                 |> Task.attempt Deleted
+                            )
+
+                        {- Search Modal -}
+                        ( False, Just query ) ->
+                            let
+                                fn : String -> String -> String -> String
+                                fn k v acc =
+                                    k ++ "=" ++ v ++ " AND "
+                                        |> (++) acc
+                            in
+                            ( False
+                            , Nothing
+                            , query |> Just     -- We need to save the search query for paging!
+                            , query
+                                |> Dict.foldl fn ""
+                                |> String.dropRight 5   -- Remove the trailing " AND ".
+                                |> Request.Specialist.query url
+                                |> Http.send FetchedSpecialists
+                            )
+
+                        ( True, Just query ) ->
+                            ( True
+                            , Nothing
+                                |> Modal.Search Data.App.User model.query
+                                |> Just
+                            , query |> Just
+                            , Cmd.none
+                            )
             in
             { model |
-                showModal = ( False, Nothing )
+                query = query
+                , showModal = ( showModal, whichModal )
             } ! [ cmd ]
 
         NewPage page ->
+            let
+                fn : String -> String -> String -> String
+                fn k v acc =
+                    k ++ "=" ++ v ++ " AND "
+                        |> (++) acc
+
+                s =
+                    model.query
+                        |> Maybe.withDefault Dict.empty
+                        |> Dict.foldl fn ""
+                        |> String.dropRight 5   -- Remove the trailing " AND ".
+            in
             model !
             [ page
                 |> Maybe.withDefault -1
-                |> Request.Specialist.page url
+                |> Request.Specialist.page url s
                 |> Http.send FetchedSpecialists
             ]
 
@@ -337,6 +397,11 @@ update url msg model =
 --                , errors = (::) "There was a problem, the record could not be updated!" model.errors
             } ! []
 
+        Search ->
+            { model |
+                showModal = ( True, Nothing |> Modal.Search Data.App.User model.query |> Just )
+            } ! []
+
         SetFormValue setFormValue s ->
             { model |
                 editing = Just ( setFormValue s )
@@ -376,6 +441,7 @@ drawView (
     , editing
     , tableState
     , specialists
+    , query
     } as model ) =
     let
         editable : User
@@ -386,24 +452,34 @@ drawView (
             Just specialist ->
                 specialist
 
-        showList =
+        ( showList, isDisabled ) =
             case specialists |> List.length of
                 0 ->
-                    div [] []
+                    ( div [] [], True )
                 _ ->
-                    Table.view config tableState specialists
+                    ( Table.view config tableState specialists, False )
 
         showPager =
             model.pager |> Views.Pager.view NewPage
+
+        hideClearTextButton =
+            case query of
+                Nothing ->
+                    True
+
+                Just _ ->
+                    False
     in
     case action of
         None ->
             [ button [ onClick Add ] [ text "Add Specialist" ]
+            , button [ isDisabled |> Html.Attributes.disabled, Search |> onClick ] [ text "Search" ]
+            , button [ hideClearTextButton |> hidden, ClearSearch |> onClick ] [ text "Clear Search" ]
             , showPager
             , showList
             , showPager
             , model.showModal
-                |> Modal.view
+                |> Modal.view query
                 |> Html.map ModalMsg
             ]
 

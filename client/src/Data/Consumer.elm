@@ -1,4 +1,14 @@
-module Data.Consumer exposing (Consumer, ConsumerWithPager, decoder, encoder, manyDecoder, new, pagingDecoder, succeed)
+module Data.Consumer exposing
+    (Consumer
+    , ConsumerWithPager
+    , decoder
+    , encoder
+    , manyDecoder
+    , new
+    , pagingDecoder
+    , queryEncoder
+    , succeed
+    )
 
 import Data.Pager
 import Json.Decode as Decode exposing (Decoder, bool, float, int, list, string)
@@ -98,6 +108,13 @@ encoder consumer =
         , ( "copay", Encode.float consumer.copay )
         , ( "dischargeDate", Encode.string consumer.dischargeDate )
         , ( "other", Encode.string consumer.other )
+        ]
+
+
+queryEncoder : String -> Encode.Value
+queryEncoder whereClause =
+    Encode.object
+        [ ( "whereClause", Encode.string whereClause )
         ]
 
 
