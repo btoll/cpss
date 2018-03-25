@@ -46,15 +46,26 @@ var _ = Resource("Consumer", func() {
 	Action("list", func() {
 		Routing(GET("/list"))
 		Description("Get all consumers")
-		Response(OK, CollectionOf(ConsumerMedia))
+		Response(OK, ArrayOf("consumerItem"))
 	})
 
 	Action("page", func() {
-		Routing(GET("/list/:page"))
+		Routing(POST("/list/:page"))
 		Params(func() {
 			Param("page", Integer, "Given a page number, returns an object consisting of the slice of consumers and a pager object")
 		})
-		Description("Get a page of consumers")
+		Description("Get a page of consumers that may be filtered")
+		Payload(ConsumerQueryPayload)
+		Response(OK, func() {
+			Status(200)
+			Media(ConsumerMedia, "paging")
+		})
+	})
+
+	Action("query", func() {
+		Routing(POST("/query"))
+		Description("Get all consumers matching the search criteria")
+		Payload(ConsumerQueryPayload)
 		Response(OK, func() {
 			Status(200)
 			Media(ConsumerMedia, "paging")
@@ -123,6 +134,15 @@ var ConsumerPayload = Type("ConsumerPayload", func() {
 	})
 
 	Required("firstname", "lastname", "active", "county", "serviceCode", "fundingSource", "zip", "bsu", "recipientID", "dia", "copay", "dischargeDate", "other")
+})
+
+var ConsumerQueryPayload = Type("ConsumerQueryPayload", func() {
+	Description("Consumer Query Description.")
+
+	Attribute("whereClause", String, "where clause", func() {
+		Metadata("struct:tag:datastore", "whereClause,noindex")
+		Metadata("struct:tag:json", "whereClause")
+	})
 })
 
 var ConsumerItem = Type("consumerItem", func() {

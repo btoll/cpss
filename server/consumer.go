@@ -50,7 +50,7 @@ func (c *ConsumerController) List(ctx *app.ListConsumerContext) error {
 	if err != nil {
 		return err
 	}
-	return ctx.OK(collection.(app.ConsumerMediaCollection))
+	return ctx.OK(collection.([]*app.ConsumerItem))
 
 	// ConsumerController_List: end_implement
 }
@@ -66,6 +66,19 @@ func (c *ConsumerController) Page(ctx *app.PageConsumerContext) error {
 	return ctx.OKPaging(collection.(*app.ConsumerMediaPaging))
 
 	// ConsumerController_Page: end_implement
+}
+
+// Query runs the query action.
+func (c *ConsumerController) Query(ctx *app.QueryConsumerContext) error {
+	// ConsumerController_Query: start_implement
+
+	collection, err := sql.Query(sql.NewConsumer(ctx.Payload))
+	if err != nil {
+		return err
+	}
+	return ctx.OKPaging(collection.(*app.ConsumerMediaPaging))
+
+	// ConsumerController_Query: end_implement
 }
 
 // Update runs the update action.

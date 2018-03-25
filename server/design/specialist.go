@@ -52,15 +52,26 @@ var _ = Resource("Specialist", func() {
 	Action("list", func() {
 		Routing(GET("/list"))
 		Description("Get all specialists")
-		Response(OK, CollectionOf(SpecialistMedia))
+		Response(OK, ArrayOf("specialistItem"))
 	})
 
 	Action("page", func() {
-		Routing(GET("/list/:page"))
+		Routing(POST("/list/:page"))
 		Params(func() {
 			Param("page", Integer, "Given a page number, returns an object consisting of the slice of specialists and a pager object")
 		})
-		Description("Get a page of specialists")
+		Description("Get a page of specialists that may be filtered")
+		Payload(SpecialistQueryPayload)
+		Response(OK, func() {
+			Status(200)
+			Media(SpecialistMedia, "paging")
+		})
+	})
+
+	Action("query", func() {
+		Routing(POST("/query"))
+		Description("Get all specialists matching the search criteria")
+		Payload(SpecialistQueryPayload)
 		Response(OK, func() {
 			Status(200)
 			Media(SpecialistMedia, "paging")
@@ -105,6 +116,15 @@ var SpecialistPayload = Type("SpecialistPayload", func() {
 	})
 
 	Required("username", "password", "firstname", "lastname", "email", "payrate", "authLevel")
+})
+
+var SpecialistQueryPayload = Type("SpecialistQueryPayload", func() {
+	Description("Specialist Query Description.")
+
+	Attribute("whereClause", String, "where clause", func() {
+		Metadata("struct:tag:datastore", "whereClause,noindex")
+		Metadata("struct:tag:json", "whereClause")
+	})
 })
 
 var SpecialistItem = Type("specialistItem", func() {

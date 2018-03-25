@@ -25,6 +25,42 @@ func NewBillSheet(payload interface{}) *BillSheet {
 	}
 }
 
+func (s *BillSheet) CollectRows(rows *mysql.Rows, coll []*app.BillSheetItem) error {
+	i := 0
+	for rows.Next() {
+		var id int
+		var recipientID string
+		var serviceDate string
+		var billedAmount float64
+		var consumer int
+		var status int
+		var confirmation string
+		var service int
+		var county int
+		var specialist int
+		var recordNumber string
+		err := rows.Scan(&id, &recipientID, &serviceDate, &billedAmount, &consumer, &status, &confirmation, &service, &county, &specialist, &recordNumber)
+		if err != nil {
+			return err
+		}
+		coll[i] = &app.BillSheetItem{
+			ID:           id,
+			RecipientID:  recipientID,
+			ServiceDate:  serviceDate,
+			BilledAmount: billedAmount,
+			Consumer:     consumer,
+			Status:       status,
+			Confirmation: confirmation,
+			Service:      service,
+			County:       county,
+			Specialist:   specialist,
+			RecordNumber: recordNumber,
+		}
+		i++
+	}
+	return nil
+}
+
 func (s *BillSheet) Create(db *mysql.DB) (interface{}, error) {
 	payload := s.Data.(*app.BillSheetPayload)
 	stmt, err := db.Prepare(s.Stmt["INSERT"])
@@ -93,47 +129,23 @@ func (s *BillSheet) List(db *mysql.DB) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	coll := make(app.BillSheetMediaCollection, count)
-	i := 0
-	for rows.Next() {
-		var id int
-		var recipientID string
-		var serviceDate string
-		var billedAmount float64
-		var consumer int
-		var status int
-		var confirmation string
-		var service int
-		var county int
-		var specialist int
-		var recordNumber string
-		err = rows.Scan(&id, &recipientID, &serviceDate, &billedAmount, &consumer, &status, &confirmation, &service, &county, &specialist, &recordNumber)
-		if err != nil {
-			return nil, err
-		}
-		coll[i] = &app.BillSheetMedia{
-			ID:           id,
-			RecipientID:  recipientID,
-			ServiceDate:  serviceDate,
-			BilledAmount: billedAmount,
-			Consumer:     consumer,
-			Status:       status,
-			Confirmation: confirmation,
-			Service:      service,
-			County:       county,
-			Specialist:   specialist,
-			RecordNumber: recordNumber,
-		}
-		i++
+	coll := make([]*app.BillSheetItem, count)
+	err = s.CollectRows(rows, coll)
+	if err != nil {
+		return nil, err
 	}
 	return coll, nil
 }
 
 func (s *BillSheet) Page(db *mysql.DB) (interface{}, error) {
-	// page * recordsPerPage = limit
-	recordsPerPage := 50
-	limit := s.Data.(int) * recordsPerPage
-	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)", ""))
+	// page * RecordsPerPage = limit
+	query := s.Data.(*PageQuery)
+	limit := query.Page * RecordsPerPage
+	whereClause := ""
+	if query.WhereClause != "" {
+		whereClause = fmt.Sprintf("WHERE %s", query.WhereClause)
+	}
+	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)", whereClause))
 	if err != nil {
 		return nil, err
 	}
@@ -144,56 +156,65 @@ func (s *BillSheet) Page(db *mysql.DB) (interface{}, error) {
 			return nil, err
 		}
 	}
-	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*", fmt.Sprintf("LIMIT %d,%d", limit, recordsPerPage)))
+	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*", fmt.Sprintf("%s LIMIT %d,%d", whereClause, limit, RecordsPerPage)))
 	if err != nil {
 		return nil, err
 	}
-	// Only the amount of rows equal to recordsPerPage unless the last page has been requested
+	// Only get the amount of rows equal to RecordsPerPage unless the last page has been requested
 	// (determined by `totalCount - limit`).
 	capacity := totalCount - limit
-	if capacity >= recordsPerPage {
-		capacity = recordsPerPage
+	if capacity >= RecordsPerPage {
+		capacity = RecordsPerPage
 	}
 	paging := &app.BillSheetMediaPaging{
 		Pager: &app.Pager{
-			CurrentPage:    limit / recordsPerPage,
-			RecordsPerPage: recordsPerPage,
+			CurrentPage:    limit / RecordsPerPage,
+			RecordsPerPage: RecordsPerPage,
 			TotalCount:     totalCount,
-			TotalPages:     int(math.Ceil(float64(totalCount) / float64(recordsPerPage))),
+			TotalPages:     int(math.Ceil(float64(totalCount) / float64(RecordsPerPage))),
 		},
 		Billsheets: make([]*app.BillSheetItem, capacity),
 	}
-	i := 0
+	err = s.CollectRows(rows, paging.Billsheets)
+	if err != nil {
+		return nil, err
+	}
+	return paging, nil
+}
+
+func (s *BillSheet) Query(db *mysql.DB) (interface{}, error) {
+	query := s.Data.(*app.BillSheetQueryPayload)
+	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)", fmt.Sprintf("WHERE %s", *query.WhereClause)))
+	if err != nil {
+		return nil, err
+	}
+	var totalCount int
 	for rows.Next() {
-		var id int
-		var recipientID string
-		var serviceDate string
-		var billedAmount float64
-		var consumer int
-		var status int
-		var confirmation string
-		var service int
-		var county int
-		var specialist int
-		var recordNumber string
-		err = rows.Scan(&id, &recipientID, &serviceDate, &billedAmount, &consumer, &status, &confirmation, &service, &county, &specialist, &recordNumber)
+		err = rows.Scan(&totalCount)
 		if err != nil {
 			return nil, err
 		}
-		paging.Billsheets[i] = &app.BillSheetItem{
-			ID:           id,
-			RecipientID:  recipientID,
-			ServiceDate:  serviceDate,
-			BilledAmount: billedAmount,
-			Consumer:     consumer,
-			Status:       status,
-			Confirmation: confirmation,
-			Service:      service,
-			County:       county,
-			Specialist:   specialist,
-			RecordNumber: recordNumber,
-		}
-		i++
+	}
+	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*", fmt.Sprintf("WHERE %s LIMIT %d,%d", *query.WhereClause, 0, RecordsPerPage)))
+	if err != nil {
+		return nil, err
+	}
+	capacity := RecordsPerPage
+	if totalCount < RecordsPerPage {
+		capacity = totalCount
+	}
+	paging := &app.BillSheetMediaPaging{
+		Pager: &app.Pager{
+			CurrentPage:    0,
+			RecordsPerPage: RecordsPerPage,
+			TotalCount:     totalCount,
+			TotalPages:     int(math.Ceil(float64(totalCount) / float64(RecordsPerPage))),
+		},
+		Billsheets: make([]*app.BillSheetItem, capacity),
+	}
+	err = s.CollectRows(rows, paging.Billsheets)
+	if err != nil {
+		return nil, err
 	}
 	return paging, nil
 }

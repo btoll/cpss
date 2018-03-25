@@ -19,10 +19,40 @@ func NewSpecialist(payload interface{}) *Specialist {
 		Stmt: map[string]string{
 			"DELETE": "DELETE FROM specialist WHERE id=?",
 			"INSERT": "INSERT specialist SET username=?,password=?,firstname=?,lastname=?,email=?,payrate=?,authLevel=?",
-			"SELECT": "SELECT %s FROM specialist %s ORDER BY lastname,firstname %s",
+			"SELECT": "SELECT %s FROM specialist %s",
 			"UPDATE": "UPDATE specialist SET username=?,password=?,firstname=?,lastname=?,email=?,payrate=?,authLevel=? WHERE id=?",
 		},
 	}
+}
+
+func (s *Specialist) CollectRows(rows *mysql.Rows, coll []*app.SpecialistItem) error {
+	i := 0
+	for rows.Next() {
+		var id int
+		var username string
+		var password string
+		var firstname string
+		var lastname string
+		var email string
+		var payrate float64
+		var authLevel int
+		err := rows.Scan(&id, &username, &password, &firstname, &lastname, &email, &payrate, &authLevel)
+		if err != nil {
+			return err
+		}
+		coll[i] = &app.SpecialistItem{
+			ID:        id,
+			Username:  username,
+			Password:  password,
+			Firstname: firstname,
+			Lastname:  lastname,
+			Email:     email,
+			Payrate:   payrate,
+			AuthLevel: authLevel,
+		}
+		i++
+	}
+	return nil
 }
 
 func (s *Specialist) Create(db *mysql.DB) (interface{}, error) {
@@ -53,7 +83,7 @@ func (s *Specialist) Create(db *mysql.DB) (interface{}, error) {
 }
 
 func (s *Specialist) Read(db *mysql.DB) (interface{}, error) {
-	row, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*", fmt.Sprintf("WHERE id=%d", s.Data.(int)), ""))
+	row, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*", fmt.Sprintf("WHERE id=%d", s.Data.(int))))
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +148,7 @@ func (s *Specialist) Delete(db *mysql.DB) error {
 }
 
 func (s *Specialist) List(db *mysql.DB) (interface{}, error) {
-	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)", "", ""))
+	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)", ""))
 	if err != nil {
 		return nil, err
 	}
@@ -129,36 +159,14 @@ func (s *Specialist) List(db *mysql.DB) (interface{}, error) {
 			return nil, err
 		}
 	}
-	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*", "", ""))
+	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*", ""))
 	if err != nil {
 		return nil, err
 	}
-	coll := make(app.SpecialistMediaCollection, count)
-	i := 0
-	for rows.Next() {
-		var id int
-		var username string
-		var password string
-		var firstname string
-		var lastname string
-		var email string
-		var payrate float64
-		var authLevel int
-		err = rows.Scan(&id, &username, &password, &firstname, &lastname, &email, &payrate, &authLevel)
-		if err != nil {
-			return nil, err
-		}
-		coll[i] = &app.SpecialistMedia{
-			ID:        id,
-			Username:  username,
-			Password:  password,
-			Firstname: firstname,
-			Lastname:  lastname,
-			Email:     email,
-			Payrate:   payrate,
-			AuthLevel: authLevel,
-		}
-		i++
+	coll := make([]*app.SpecialistItem, count)
+	err = s.CollectRows(rows, coll)
+	if err != nil {
+		return nil, err
 	}
 	return coll, nil
 }
@@ -167,7 +175,7 @@ func (s *Specialist) Page(db *mysql.DB) (interface{}, error) {
 	// page * recordsPerPage = limit
 	recordsPerPage := 50
 	limit := s.Data.(int) * recordsPerPage
-	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)", "", ""))
+	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)", ""))
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +186,8 @@ func (s *Specialist) Page(db *mysql.DB) (interface{}, error) {
 			return nil, err
 		}
 	}
-	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*", "", fmt.Sprintf("LIMIT %d,%d", limit, recordsPerPage)))
+	//	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*", "", fmt.Sprintf("LIMIT %d,%d", limit, recordsPerPage)))
+	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*", fmt.Sprintf("LIMIT %d,%d", limit, recordsPerPage)))
 	if err != nil {
 		return nil, err
 	}
@@ -197,31 +206,51 @@ func (s *Specialist) Page(db *mysql.DB) (interface{}, error) {
 		},
 		Users: make([]*app.SpecialistItem, capacity),
 	}
-	i := 0
+	err = s.CollectRows(rows, paging.Users)
+	if err != nil {
+		return nil, err
+	}
+	return paging, nil
+}
+
+func (s *Specialist) Query(db *mysql.DB) (interface{}, error) {
+	query := s.Data.(*app.SpecialistQueryPayload)
+
+	fmt.Println()
+	fmt.Println("sql", fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)", fmt.Sprintf("WHERE %s", *query.WhereClause)))
+	fmt.Println()
+
+	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)", fmt.Sprintf("WHERE %s", *query.WhereClause)))
+	if err != nil {
+		return nil, err
+	}
+	var totalCount int
 	for rows.Next() {
-		var id int
-		var username string
-		var password string
-		var firstname string
-		var lastname string
-		var email string
-		var payrate float64
-		var authLevel int
-		err = rows.Scan(&id, &username, &password, &firstname, &lastname, &email, &payrate, &authLevel)
+		err = rows.Scan(&totalCount)
 		if err != nil {
 			return nil, err
 		}
-		paging.Users[i] = &app.SpecialistItem{
-			ID:        id,
-			Username:  username,
-			Password:  password,
-			Firstname: firstname,
-			Lastname:  lastname,
-			Email:     email,
-			Payrate:   payrate,
-			AuthLevel: authLevel,
-		}
-		i++
+	}
+	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*", fmt.Sprintf("WHERE %s LIMIT %d,%d", *query.WhereClause, 0, RecordsPerPage)))
+	if err != nil {
+		return nil, err
+	}
+	capacity := RecordsPerPage
+	if totalCount < RecordsPerPage {
+		capacity = totalCount
+	}
+	paging := &app.SpecialistMediaPaging{
+		Pager: &app.Pager{
+			CurrentPage:    0,
+			RecordsPerPage: RecordsPerPage,
+			TotalCount:     totalCount,
+			TotalPages:     int(math.Ceil(float64(totalCount) / float64(RecordsPerPage))),
+		},
+		Users: make([]*app.SpecialistItem, capacity),
+	}
+	err = s.CollectRows(rows, paging.Users)
+	if err != nil {
+		return nil, err
 	}
 	return paging, nil
 }

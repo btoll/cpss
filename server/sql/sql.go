@@ -9,14 +9,14 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-type Hasher interface {
-	Hash(clearText string) string
-}
-
 type CRUD interface {
 	Create(db *mysql.DB) (interface{}, error)
 	Update(db *mysql.DB) (interface{}, error)
 	Delete(db *mysql.DB) error
+}
+
+type Hasher interface {
+	Hash(clearText string) string
 }
 
 type Lister interface {
@@ -27,6 +27,10 @@ type Pager interface {
 	Page(db *mysql.DB) (interface{}, error)
 }
 
+type Queryer interface {
+	Query(db *mysql.DB) (interface{}, error)
+}
+
 type Reader interface {
 	Read(db *mysql.DB) (interface{}, error)
 }
@@ -34,6 +38,13 @@ type Reader interface {
 type Verifier interface {
 	Verify(clearText string) (bool, error)
 }
+
+type PageQuery struct {
+	Page        int
+	WhereClause string
+}
+
+var RecordsPerPage = 50
 
 func cleanup(db *mysql.DB) error {
 	return db.Close()
@@ -111,6 +122,19 @@ func Page(p Pager) (interface{}, error) {
 		return nil, err
 	}
 	coll, err := p.Page(db)
+	if err != nil {
+		return nil, err
+	}
+	cleanup(db)
+	return coll, nil
+}
+
+func Query(q Queryer) (interface{}, error) {
+	db, err := connect()
+	if err != nil {
+		return nil, err
+	}
+	coll, err := q.Query(db)
 	if err != nil {
 		return nil, err
 	}

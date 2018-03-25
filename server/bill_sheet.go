@@ -50,7 +50,7 @@ func (c *BillSheetController) List(ctx *app.ListBillSheetContext) error {
 	if err != nil {
 		return err
 	}
-	return ctx.OK(collection.(app.BillSheetMediaCollection))
+	return ctx.OK(collection.([]*app.BillSheetItem))
 
 	// BillSheetController_List: end_implement
 }
@@ -59,13 +59,26 @@ func (c *BillSheetController) List(ctx *app.ListBillSheetContext) error {
 func (c *BillSheetController) Page(ctx *app.PageBillSheetContext) error {
 	// BillSheetController_Page: start_implement
 
-	collection, err := sql.Page(sql.NewBillSheet(ctx.Page))
+	collection, err := sql.Page(sql.NewBillSheet(&sql.PageQuery{ctx.Page, *ctx.Payload.WhereClause}))
 	if err != nil {
 		return err
 	}
 	return ctx.OKPaging(collection.(*app.BillSheetMediaPaging))
 
 	// BillSheetController_Page: end_implement
+}
+
+// Query runs the query action.
+func (c *BillSheetController) Query(ctx *app.QueryBillSheetContext) error {
+	// BillSheetController_Query: start_implement
+
+	collection, err := sql.Query(sql.NewBillSheet(ctx.Payload))
+	if err != nil {
+		return err
+	}
+	return ctx.OKPaging(collection.(*app.BillSheetMediaPaging))
+
+	// BillSheetController_Query: end_implement
 }
 
 // Update runs the update action.

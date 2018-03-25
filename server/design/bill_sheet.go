@@ -46,15 +46,26 @@ var _ = Resource("BillSheet", func() {
 	Action("list", func() {
 		Routing(GET("/list"))
 		Description("Get all billsheets")
-		Response(OK, CollectionOf(BillSheetMedia))
+		Response(OK, ArrayOf("billSheetItem"))
 	})
 
 	Action("page", func() {
-		Routing(GET("/list/:page"))
+		Routing(POST("/list/:page"))
 		Params(func() {
 			Param("page", Integer, "Given a page number, returns an object consisting of the slice of bill_sheets and a pager object")
 		})
-		Description("Get a page of bill_sheets")
+		Description("Get a page of bill_sheets that may be filtered")
+		Payload(BillSheetQueryPayload)
+		Response(OK, func() {
+			Status(200)
+			Media(BillSheetMedia, "paging")
+		})
+	})
+
+	Action("query", func() {
+		Routing(POST("/query"))
+		Description("Get all billsheets matching the search criteria")
+		Payload(BillSheetQueryPayload)
 		Response(OK, func() {
 			Status(200)
 			Media(BillSheetMedia, "paging")
@@ -111,6 +122,15 @@ var BillSheetPayload = Type("BillSheetPayload", func() {
 	})
 
 	Required("recipientID", "serviceDate", "billedAmount", "consumer", "status", "confirmation", "service", "county", "specialist", "recordNumber")
+})
+
+var BillSheetQueryPayload = Type("BillSheetQueryPayload", func() {
+	Description("BillSheet Query Description.")
+
+	Attribute("whereClause", String, "where clause", func() {
+		Metadata("struct:tag:datastore", "whereClause,noindex")
+		Metadata("struct:tag:json", "whereClause")
+	})
 })
 
 var BillSheetItem = Type("billSheetItem", func() {
