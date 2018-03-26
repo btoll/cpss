@@ -1,6 +1,6 @@
 module Views.Modal exposing (Modal(..), Msg, update, view)
 
-import Data.App exposing (App(..), Query, ViewLists)
+import Data.Search exposing (Search(..), Query, ViewLists)
 import Dict exposing (Dict)
 import Html exposing (Html, Attribute, button, div, text)
 import Html.Attributes exposing (style)
@@ -42,7 +42,7 @@ modalStyle =
 
 type Modal
     = Delete
-    | Search App ( Maybe Query ) ( Maybe ViewLists )
+    | Search Search ( Maybe Query ) ( Maybe ViewLists )
 
 
 type Msg

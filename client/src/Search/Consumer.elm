@@ -1,78 +1,49 @@
 module Search.Consumer exposing (Msg, update, view)
 
-import Data.App exposing (App(..), Query)
-import Data.Consumer exposing (Consumer)
+import Data.Search exposing (Search(..), Query)
 import Dict exposing (Dict)
-import Html exposing (Html, button, div, form, h3, text)
-import Html.Attributes exposing (disabled)
-import Html.Events exposing (onClick, onSubmit)
+import Html exposing (Html, form, h3, text)
+import Html.Attributes exposing (autofocus)
+import Html.Events exposing (onInput, onSubmit)
 import Views.Form as Form
-
-
-
-type alias Model =
-    { editing : Consumer
-    }
 
 
 
 type Msg
     = Cancel
+    | SetFormValue ( String -> Query ) String
     | Submit
---    | Select Form.Selection Consumer String
-    | Select
 
 
 
 update : Maybe Query -> Msg -> ( Bool, Maybe Query )
 update query msg =
-    let
-        q =
-            query
-                |> Maybe.withDefault Dict.empty
-    in
     case msg of
         Cancel ->
             ( False, Nothing )
 
-        Select ->
---        Select selectType consumer selection ->
---            let
---                selectionToInt =
---                    selection |> Form.toInt
---
---                newModel a =
---                    { model |
---                        editing = a |> Just
---                        , disabled = False
---                    }
---            in
---            case selectType of
---                Form.CountyID ->
---                    ( { consumer | county = selectionToInt } |> newModel ) ! [
---                        selection |> Request.City.get url |> Http.send ( \result -> result |> Cities |> Fetch )
---                    ]
---
---                Form.DIAID ->
---                    ( { consumer | dia = selectionToInt } |> newModel ) ! []
---
---                Form.ServiceCodeID ->
---                    ( { consumer | serviceCode = selectionToInt } |> newModel ) ! []
---
---                Form.ZipID ->
---                    ( { consumer | zip = selection } |> newModel ) ! []
---
---                _ ->
---                    model ! []
-            ( True, Nothing )
+        SetFormValue setFormValue s ->
+            ( True, s |> setFormValue |> Just )
 
         Submit ->
-            ( False, Nothing )
+            ( False, query )
 
 
 
-view : Html Msg
-view =
+view : Maybe Query -> Html Msg
+view query =
+    let
+        q =
+            query
+                |> Maybe.withDefault Dict.empty
+
+        updateDict : String -> String -> Query
+        updateDict k v =
+            if (==) v "" then
+                q |> Dict.remove k
+            else
+                q |> Dict.insert k v
+    in
     form [ onSubmit Submit ]
         [ h3 [] [ "Consumer Search" |> text ]
         , Form.checkbox "Active"
@@ -82,27 +53,14 @@ view =
             []
             []
         , Form.text "Last Name"
-            []
---                            [ value editable.bsu
---                            , onInput ( SetFormValue (\v -> { editable | bsu = v } ) )
---                            ]
+            [ True |> autofocus, ( "lastname" |> updateDict ) |> SetFormValue >> onInput
+            ]
             []
         , Form.text "First Name"
+            [ ( "firstname" |> updateDict ) |> SetFormValue >> onInput
+            ]
             []
---                            [ value editable.bsu
---                            , onInput ( SetFormValue (\v -> { editable | bsu = v } ) )
---                            ]
-            []
---                        , Form.select "Service Code"
---                            [ id "serviceCodeSelection"
---                            , editable |> Select Form.ServiceCodeID |> onInput
---                            ] (
---                                serviceCodes
---                                    |> List.map ( \m -> ( m.id |> toString, m.name ) )
---                                    |> (::) ( "-1", "-- Select a service code --" )
---                                    |> List.map ( editable.serviceCode |> toString |> Form.option )
---                            )
-        , Form.submit False Cancel
+        , Form.submit ( q |> Dict.isEmpty ) Cancel
         ]
 
 

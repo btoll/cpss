@@ -1,6 +1,6 @@
 module Page.BillSheet exposing (Model, Msg, init, update, view)
 
-import Data.App exposing (App, Query, ViewLists)
+import Data.Search exposing (Search, Query, ViewLists, fmtEquality)
 import Data.BillSheet exposing (BillSheet, BillSheetWithPager, new)
 import Data.Consumer exposing (Consumer)
 import Data.County exposing (County)
@@ -310,26 +310,20 @@ update url msg model =
 
                         {- Search Modal -}
                         ( False, Just query ) ->
-                            let
-                                fn : String -> String -> String -> String
-                                fn k v acc =
-                                    k ++ "=" ++ v ++ " AND "
-                                        |> (++) acc
-                            in
                             ( False
                             , Nothing
                             , query |> Just     -- We need to save the search query for paging!
-                            , query
-                                |> Dict.foldl fn ""
-                                |> String.dropRight 5   -- Remove the trailing " AND ".
-                                |> Request.BillSheet.query url
-                                |> Http.send ( \result -> result |> BillSheets |> Fetch )
+                            , Http.send ( \result -> result |> BillSheets |> Fetch )
+                                << Request.BillSheet.query url
+                                << String.dropRight 5   -- Remove the trailing " AND ".
+                                << Dict.foldl fmtEquality ""
+                                <| query
                             )
 
                         ( True, Just query ) ->
                             ( True
                             , model.viewLists |> Just
-                                |> Modal.Search Data.App.BillSheet model.query
+                                |> Modal.Search Data.Search.BillSheet model.query
                                 |> Just
                             , query |> Just
                             , Cmd.none
@@ -468,7 +462,7 @@ update url msg model =
 
         Search viewLists ->
             { model |
-                showModal = ( True, viewLists |> Just |> Modal.Search Data.App.BillSheet model.query |> Just )
+                showModal = ( True, viewLists |> Just |> Modal.Search Data.Search.BillSheet model.query |> Just )
             } ! []
 
         Select selectType billsheet selection ->

@@ -1,6 +1,6 @@
 module Modal.Search exposing (Msg, update, view)
 
-import Data.App exposing (App(..), Query, ViewLists)
+import Data.Search exposing (Search(..), Query, ViewLists)
 import Dict exposing (Dict)
 import Html exposing (Html, div)
 import Search.BillSheet as BillSheet
@@ -21,12 +21,15 @@ update query msg =
         BillSheetMsg subMsg ->
             subMsg |> BillSheet.update query
 
-        _ ->
-            ( True, Nothing )
+        ConsumerMsg subMsg ->
+            subMsg |> Consumer.update query
+
+        SpecialistMsg subMsg ->
+            subMsg |> Specialist.update query
 
 
 
-view : App -> Maybe Query -> Maybe ViewLists -> Html Msg
+view : Search -> Maybe Query -> Maybe ViewLists -> Html Msg
 view t query viewLists =
     let
         searchView =
@@ -39,15 +42,17 @@ view t query viewLists =
                         Just lists ->
                             lists
                                 |> BillSheet.view query
-                                |> Html.map BillSheetMsg
+                                >> Html.map BillSheetMsg
 
                 Consumer ->
-                    Consumer.view
-                        |> Html.map ConsumerMsg
+                    query
+                        |> Consumer.view
+                        >> Html.map ConsumerMsg
 
                 User ->
-                    Specialist.view
-                        |> Html.map SpecialistMsg
+                    query
+                        |> Specialist.view
+                        >> Html.map SpecialistMsg
 
                 _ ->
                     div [] []

@@ -1,6 +1,6 @@
 module Page.Consumer exposing (Model, Msg, init, update, view)
 
-import Data.App exposing (Query)
+import Data.Search exposing (Query, fmtFuzzyMatch)
 import Data.City exposing (City)
 import Data.Consumer exposing (Consumer, ConsumerWithPager, new)
 import Data.County exposing (County)
@@ -309,17 +309,11 @@ update url msg model =
 
                         {- Search Modal -}
                         ( False, Just query ) ->
-                            let
-                                fn : String -> String -> String -> String
-                                fn k v acc =
-                                    k ++ "=" ++ v ++ " AND "
-                                        |> (++) acc
-                            in
                             ( False
                             , Nothing
                             , query |> Just     -- We need to save the search query for paging!
                             , query
-                                |> Dict.foldl fn ""
+                                |> Dict.foldl fmtFuzzyMatch ""
                                 |> String.dropRight 5   -- Remove the trailing " AND ".
                                 |> Request.Consumer.query url
                                 |> Http.send ( \result -> result |> Consumers |> Fetch )
@@ -328,7 +322,7 @@ update url msg model =
                         ( True, Just query ) ->
                             ( True
                             , Nothing
-                                |> Modal.Search Data.App.Consumer model.query
+                                |> Modal.Search Data.Search.Consumer model.query
                                 |> Just
                             , query |> Just
                             , Cmd.none
@@ -464,7 +458,7 @@ update url msg model =
 
         Search ->
             { model |
-                showModal = ( True , Nothing |> Modal.Search Data.App.Consumer model.query |> Just )
+                showModal = ( True , Nothing |> Modal.Search Data.Search.Consumer model.query |> Just )
             } ! []
 
         Select selectType consumer selection ->

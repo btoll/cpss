@@ -1,6 +1,6 @@
 module Search.BillSheet exposing (Msg, update, view)
 
-import Data.App exposing (App(..), Query, ViewLists)
+import Data.Search exposing (Search(..), Query, ViewLists)
 import Dict exposing (Dict)
 import Html exposing (Html, button, div, form, h3, text)
 import Html.Attributes exposing (id)
@@ -18,17 +18,16 @@ type Msg
 
 update : Maybe Query -> Msg -> ( Bool, Maybe Query )
 update query msg =
-    let
-        q =
-            query
-                |> Maybe.withDefault Dict.empty
-    in
     case msg of
         Cancel ->
             ( False, Nothing )
 
         Select selectType selection ->
             let
+                q =
+                    query
+                        |> Maybe.withDefault Dict.empty
+
                 updateDict : String -> Query
                 updateDict k =
                     if (==) selection "-1" then
@@ -55,7 +54,7 @@ update query msg =
                 )
 
         Submit ->
-            ( False, q |> Just )
+            ( False, query )
 
 
 

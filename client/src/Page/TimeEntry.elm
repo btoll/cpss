@@ -1,6 +1,6 @@
 module Page.TimeEntry exposing (Model, Msg, init, update, view)
 
-import Data.App exposing (Query)
+import Data.Search exposing (Query)
 import Data.Consumer exposing (Consumer)
 import Data.Pager exposing (Pager)
 import Data.Session exposing (Session)
@@ -453,7 +453,7 @@ update url msg model =
 
         Search ->
             { model |
-                showModal = ( True, Nothing |> Modal.Search Data.App.TimeEntry model.query |> Just )
+                showModal = ( True, Nothing |> Modal.Search Data.Search.TimeEntry model.query |> Just )
             } ! []
 
         Select selectType consumer selection ->

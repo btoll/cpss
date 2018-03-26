@@ -1,6 +1,6 @@
 module Page.Specialist exposing (Model, Msg, init, update, view)
 
-import Data.App exposing (App, Query)
+import Data.Search exposing (Search, Query, fmtFuzzyMatch)
 import Data.Pager exposing (Pager)
 import Data.User as User exposing (User, UserWithPager, new)
 import Dict exposing (Dict)
@@ -218,26 +218,20 @@ update url msg model =
 
                         {- Search Modal -}
                         ( False, Just query ) ->
-                            let
-                                fn : String -> String -> String -> String
-                                fn k v acc =
-                                    k ++ "=" ++ v ++ " AND "
-                                        |> (++) acc
-                            in
                             ( False
                             , Nothing
                             , query |> Just     -- We need to save the search query for paging!
-                            , query
-                                |> Dict.foldl fn ""
-                                |> String.dropRight 5   -- Remove the trailing " AND ".
-                                |> Request.Specialist.query url
-                                |> Http.send FetchedSpecialists
+                            , Http.send FetchedSpecialists
+                                << Request.Specialist.query url
+                                << String.dropRight 5   -- Remove the trailing " AND ".
+                                << Dict.foldl fmtFuzzyMatch ""
+                                <| query
                             )
 
                         ( True, Just query ) ->
                             ( True
                             , Nothing
-                                |> Modal.Search Data.App.User model.query
+                                |> Modal.Search Data.Search.User model.query
                                 |> Just
                             , query |> Just
                             , Cmd.none
@@ -399,7 +393,7 @@ update url msg model =
 
         Search ->
             { model |
-                showModal = ( True, Nothing |> Modal.Search Data.App.User model.query |> Just )
+                showModal = ( True, Nothing |> Modal.Search Data.Search.User model.query |> Just )
             } ! []
 
         SetFormValue setFormValue s ->

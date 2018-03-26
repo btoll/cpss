@@ -1,4 +1,4 @@
-module Data.App exposing (App(..), Query, ViewLists)
+module Data.Search exposing (Search(..), Query, ViewLists, fmtEquality, fmtFuzzyMatch)
 
 import Data.BillSheet exposing (BillSheet, BillSheetWithPager)
 import Data.City exposing (City, CityWithPager)
@@ -25,19 +25,31 @@ type alias ViewLists =
     }
 
 
-type App
+fmtEquality : String -> String -> String -> String
+fmtEquality k v acc =
+    k ++ "=" ++ v ++ " AND "
+        |> (++) acc
+
+
+fmtFuzzyMatch : String -> String -> String -> String
+fmtFuzzyMatch k v acc =
+    k ++ " LIKE '%" ++ v ++ "%'" ++ " AND "
+        |> (++) acc
+
+
+type Search
     = BillSheet
-    | BillSheetWithPager
+   -- | BillSheetWithPager
     | City
-    | CityWithPager
+  --  | CityWithPager
     | Consumer
-    | ConsumerWithPager
+ --   | ConsumerWithPager
     | County
     | ServiceCode
     | Status
     | TimeEntry
-    | TimeEntryWithPager
+--    | TimeEntryWithPager
     | User
-    | UserWithPager
+--    | UserWithPager
 
 
