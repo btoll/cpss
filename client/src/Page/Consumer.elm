@@ -104,10 +104,10 @@ init url =
     , query = Nothing
     , pager = Data.Pager.new
     } ! [ Cmd.map DatePicker datePickerFx
-    , Request.DIA.list url |> Http.send ( \result -> result |> Dias |> Fetch )
-    , Request.ServiceCode.list url |> Http.send ( \result -> result |> ServiceCodes |> Fetch )
-    , Request.County.list url |> Http.send ( \result -> result |> Counties |> Fetch )
-    , 0 |> Request.Consumer.page url "" |> Http.send ( \result -> result |> Consumers |> Fetch )
+    , Request.DIA.list url |> Http.send ( Dias >> Fetch )
+    , Request.ServiceCode.list url |> Http.send ( ServiceCodes >> Fetch )
+    , Request.County.list url |> Http.send ( Counties >> Fetch )
+    , 0 |> Request.Consumer.page url "" |> Http.send ( Consumers >> Fetch )
     ]
 
 
@@ -165,7 +165,7 @@ update url msg model =
                 query = Nothing
             } ! [ 0
                     |> Request.Consumer.page url ""
-                    |> Http.send ( \result -> result |> Consumers |> Fetch )
+                    |> Http.send ( Consumers >> Fetch )
                 ]
 
         DatePicker subMsg ->
@@ -226,7 +226,7 @@ update url msg model =
                 action = Editing
                 , editing = Just consumer
             -- Fetch the county's zip codes to set the zip code drop-down to the correct value.
-            } ! [ consumer.county |> toString |> Request.City.get url |> Http.send ( \result -> result |> Cities |> Fetch ) ]
+            } ! [ consumer.county |> toString |> Request.City.get url |> Http.send ( Cities >> Fetch ) ]
 
         Fetch result ->
             case result of
@@ -316,7 +316,7 @@ update url msg model =
                                 |> Dict.foldl fmtFuzzyMatch ""
                                 |> String.dropRight 5   -- Remove the trailing " AND ".
                                 |> Request.Consumer.query url
-                                |> Http.send ( \result -> result |> Consumers |> Fetch )
+                                |> Http.send ( Consumers >> Fetch )
                             )
 
                         ( True, Just query ) ->
@@ -350,7 +350,7 @@ update url msg model =
             [ page
                 |> Maybe.withDefault -1
                 |> Request.Consumer.page url s
-                |> Http.send ( \result -> result |> Consumers |> Fetch )
+                |> Http.send ( Consumers >> Fetch )
             ]
 
         Post ->
@@ -475,7 +475,7 @@ update url msg model =
             case selectType of
                 Form.CountyID ->
                     ( { consumer | county = selectionToInt } |> newModel ) ! [
-                        selection |> Request.City.get url |> Http.send ( \result -> result |> Cities |> Fetch )
+                        selection |> Request.City.get url |> Http.send ( Cities >> Fetch )
                     ]
 
                 Form.DIAID ->

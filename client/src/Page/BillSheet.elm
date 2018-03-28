@@ -98,11 +98,11 @@ init url =
     , query = Nothing
     , pagerState = Data.Pager.new
     } ! [ Cmd.map DatePicker datePickerFx
-        , Request.Consumer.list url |> Http.send ( \result -> result |> Consumers |> Fetch )
-        , Request.County.list url |> Http.send ( \result -> result |> Counties |> Fetch )
-        , Request.Specialist.list url |> Http.send ( \result -> result |> Specialists |> Fetch )
-        , Request.Status.list url |> Http.send ( \result -> result |> Statuses |> Fetch )
-        , 0 |> Request.BillSheet.page url "" |> Http.send ( \result -> result |> BillSheets |> Fetch )
+        , Request.Consumer.list url |> Http.send ( Consumers >> Fetch )
+        , Request.County.list url |> Http.send ( Counties >> Fetch )
+        , Request.Specialist.list url |> Http.send ( Specialists >> Fetch )
+        , Request.Status.list url |> Http.send ( Statuses >> Fetch )
+        , 0 |> Request.BillSheet.page url "" |> Http.send ( BillSheets >> Fetch )
         ]
 
 
@@ -163,7 +163,7 @@ update url msg model =
                 query = Nothing
             } ! [ 0
                     |> Request.BillSheet.page url ""
-                    |> Http.send ( \result -> result |> BillSheets |> Fetch )
+                    |> Http.send ( BillSheets >> Fetch )
                 ]
 
         DatePicker subMsg ->
@@ -313,7 +313,7 @@ update url msg model =
                             ( False
                             , Nothing
                             , query |> Just     -- We need to save the search query for paging!
-                            , Http.send ( \result -> result |> BillSheets |> Fetch )
+                            , Http.send ( BillSheets >> Fetch )
                                 << Request.BillSheet.query url
                                 << String.dropRight 5   -- Remove the trailing " AND ".
                                 << Dict.foldl fmtEquality ""
@@ -351,7 +351,7 @@ update url msg model =
             [ page
                 |> Maybe.withDefault -1
                 |> Request.BillSheet.page url s
-                |> Http.send ( \result -> result |> BillSheets |> Fetch )
+                |> Http.send ( BillSheets >> Fetch )
             ]
 
         Post ->

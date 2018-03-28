@@ -121,9 +121,9 @@ init url session =
     , query = Nothing
     , user = user
     } ! [ Cmd.map DatePicker datePickerFx
-        , Request.Consumer.list url |> Http.send ( \result -> result |> Consumers |> Fetch )
-        , Request.ServiceCode.list url |> Http.send ( \result -> result |> ServiceCodes |> Fetch )
-        , 0 |> Request.TimeEntry.page url |> Http.send ( \result -> result |> TimeEntries |> Fetch )
+        , Request.Consumer.list url |> Http.send ( Consumers >> Fetch )
+        , Request.ServiceCode.list url |> Http.send ( ServiceCodes >> Fetch )
+        , 0 |> Request.TimeEntry.page url |> Http.send ( TimeEntries >> Fetch )
         ]
 
 
@@ -323,7 +323,7 @@ update url msg model =
             [ page
                 |> Maybe.withDefault -1
                 |> Request.TimeEntry.page url
-                |> Http.send ( \result -> result |> TimeEntries |> Fetch )
+                |> Http.send ( TimeEntries >> Fetch )
             ]
 
         Post ->

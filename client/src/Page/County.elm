@@ -50,8 +50,8 @@ init url =
     , cities = []
     , counties = []
     , pager = Data.Pager.new
-    } ! [ Request.County.list url |> Http.send ( \result -> result |> Counties |> Fetch )
-    , 0 |> Request.City.page url |> Http.send ( \result -> result |> Cities |> Fetch )
+    } ! [ Request.County.list url |> Http.send ( Counties >> Fetch )
+    , 0 |> Request.City.page url |> Http.send ( Cities >> Fetch )
     ]
 
 
@@ -169,7 +169,7 @@ update url msg model =
             [ page
                 |> Maybe.withDefault -1
                 |> Request.City.page url
-                |> Http.send ( \result -> result |> Cities |> Fetch )
+                |> Http.send ( Cities >> Fetch )
             ]
 
         Post ->
