@@ -20,16 +20,21 @@ import Json.Encode as Encode
 
 type alias BillSheet =
     { id : Int
-    , recipientID : String
-    , serviceDate : String
-    , billedAmount : Float
-    , consumer : Int
-    , status : Int
-    , confirmation : String
-    , service : Int
-    , county : Int
     , specialist : Int
+    , consumer : Int
+    , hours : Float
+    , units : Float
+    , serviceDate : String
+    , serviceCode : Int
+    , contractType : String
+    , recipientID : String
     , recordNumber : String
+    , status : Int
+    , billedCode : String
+    , billedAmount : Float
+    , county : Int
+    , confirmation : String
+    , description : String
     }
 
 
@@ -42,16 +47,21 @@ type alias BillSheetWithPager =
 new : BillSheet
 new =
     { id = -1
-    , recipientID = ""
-    , serviceDate = ""
-    , billedAmount = 0.0
-    , consumer = -1
-    , status = -1
-    , confirmation = ""
-    , service = -1
-    , county = -1
     , specialist = -1
+    , consumer = -1
+    , hours = 0.0
+    , units = 0.0
+    , serviceDate = ""
+    , serviceCode = -1
+    , contractType = ""
+    , recipientID = ""
     , recordNumber = ""
+    , status = -1
+    , billedCode = ""
+    , billedAmount = 0.0
+    , county = -1
+    , confirmation = ""
+    , description = ""
     }
 
 
@@ -59,16 +69,21 @@ decoder : Decoder BillSheet
 decoder =
     decode BillSheet
         |> required "id" int
-        |> optional "recipientID" string ""
-        |> optional "serviceDate" string ""
-        |> optional "billedAmount" float 0.0
-        |> optional "consumer" int -1
-        |> optional "status" int -1
-        |> optional "confirmation" string ""
-        |> optional "service" int -1
-        |> optional "county" int -1
         |> optional "specialist" int -1
+        |> optional "consumer" int -1
+        |> optional "hours" float 0.0
+        |> optional "units" float 0.0
+        |> optional "serviceDate" string ""
+        |> optional "serviceCode" int -1
+        |> optional "contractType" string ""
+        |> optional "recipientID" string ""
         |> optional "recordNumber" string ""
+        |> optional "status" int -1
+        |> optional "billedCode" string ""
+        |> optional "billedAmount" float 0.0
+        |> optional "county" int -1
+        |> optional "confirmation" string ""
+        |> optional "description" string ""
 
 
 manyDecoder : Decoder ( List BillSheet )
@@ -87,16 +102,21 @@ encoder : BillSheet -> Encode.Value
 encoder billsheet =
     Encode.object
         [ ( "id", Encode.int billsheet.id )
-        , ( "recipientID", Encode.string billsheet.recipientID )
-        , ( "serviceDate", Encode.string billsheet.serviceDate )
-        , ( "billedAmount", Encode.float billsheet.billedAmount )
-        , ( "consumer", Encode.int billsheet.consumer )
-        , ( "status", Encode.int billsheet.status )
-        , ( "confirmation", Encode.string billsheet.confirmation )
-        , ( "service", Encode.int billsheet.service )
-        , ( "county", Encode.int billsheet.county )
         , ( "specialist", Encode.int billsheet.specialist )
+        , ( "consumer", Encode.int billsheet.consumer )
+        , ( "hours", Encode.float billsheet.hours )
+        , ( "units", Encode.float billsheet.units )
+        , ( "serviceDate", Encode.string billsheet.serviceDate )
+        , ( "serviceCode", Encode.int billsheet.serviceCode )
+        , ( "contractType", Encode.string billsheet.contractType )
+        , ( "recipientID", Encode.string billsheet.recipientID )
         , ( "recordNumber", Encode.string billsheet.recordNumber )
+        , ( "status", Encode.int billsheet.status )
+        , ( "billedCode", Encode.string billsheet.billedCode )
+        , ( "billedAmount", Encode.float billsheet.billedAmount )
+        , ( "county", Encode.int billsheet.county )
+        , ( "confirmation", Encode.string billsheet.confirmation )
+        , ( "description", Encode.string billsheet.description )
         ]
 
 

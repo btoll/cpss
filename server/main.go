@@ -33,12 +33,10 @@ func main() {
 	app.MountCountyController(service, h)
 	i := NewCityController(service)
 	app.MountCityController(service, i)
-	j := NewTimeEntryController(service)
-	app.MountTimeEntryController(service, j)
-	k := NewServiceCodeController(service)
-	app.MountServiceCodeController(service, k)
-	l := NewDIAController(service)
-	app.MountDIAController(service, l)
+	j := NewServiceCodeController(service)
+	app.MountServiceCodeController(service, j)
+	k := NewDIAController(service)
+	app.MountDIAController(service, k)
 
 	// Start service
 	if err := service.ListenAndServe(":8080"); err != nil {

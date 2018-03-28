@@ -31,6 +31,7 @@ type alias Consumer =
     , dia : Int
     , copay : Float
     , dischargeDate : String
+    , units : Float
     , other : String
     }
 
@@ -56,6 +57,7 @@ new =
     , dia = -1
     , copay = 0.00
     , dischargeDate = ""
+    , units = 0.00
     , other = ""
     }
 
@@ -76,6 +78,7 @@ decoder =
         |> optional "dia" int -1
         |> optional "copay" float 0.0
         |> optional "dischargeDate" string ""
+        |> optional "units" float 0.0
         |> optional "other" string ""
 
 
@@ -107,6 +110,7 @@ encoder consumer =
         , ( "dia", Encode.int consumer.dia )
         , ( "copay", Encode.float consumer.copay )
         , ( "dischargeDate", Encode.string consumer.dischargeDate )
+        , ( "units", Encode.float consumer.units )
         , ( "other", Encode.string consumer.other )
         ]
 

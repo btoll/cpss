@@ -80,48 +80,68 @@ var BillSheetPayload = Type("BillSheetPayload", func() {
 		Metadata("struct:tag:datastore", "id,noindex")
 		Metadata("struct:tag:json", "id")
 	})
-	Attribute("recipientID", String, "recipientID", func() {
-		Metadata("struct:tag:datastore", "recipientID,noindex")
-		Metadata("struct:tag:json", "recipientID")
-	})
-	Attribute("serviceDate", String, "BillSheet serviceDate", func() {
-		Metadata("struct:tag:datastore", "serviceDate,noindex")
-		Metadata("struct:tag:json", "serviceDate")
-	})
-	Attribute("billedAmount", Number, "BillSheet billedAmount", func() {
-		Metadata("struct:tag:datastore", "billedAmount,noindex")
-		Metadata("struct:tag:json", "billedAmount")
+	Attribute("specialist", Integer, "BillSheet specialist", func() {
+		Metadata("struct:tag:datastore", "specialist,noindex")
+		Metadata("struct:tag:json", "specialist")
 	})
 	Attribute("consumer", Integer, "BillSheet consumer", func() {
 		Metadata("struct:tag:datastore", "consumer,noindex")
 		Metadata("struct:tag:json", "consumer")
 	})
-	Attribute("status", Integer, "BillSheet status", func() {
-		Metadata("struct:tag:datastore", "status,noindex")
-		Metadata("struct:tag:json", "status")
+	Attribute("hours", Number, "Hours hours", func() {
+		Metadata("struct:tag:datastore", "hours,noindex")
+		Metadata("struct:tag:json", "hours")
 	})
-	Attribute("confirmation", String, "BillSheet confirmation", func() {
-		Metadata("struct:tag:datastore", "confirmation,noindex")
-		Metadata("struct:tag:json", "confirmation")
+	Attribute("units", Number, "Units units", func() {
+		Metadata("struct:tag:datastore", "units,noindex")
+		Metadata("struct:tag:json", "units")
 	})
-	Attribute("service", Integer, "BillSheet service", func() {
-		Metadata("struct:tag:datastore", "service,noindex")
-		Metadata("struct:tag:json", "service")
+	Attribute("serviceDate", String, "BillSheet serviceDate", func() {
+		Metadata("struct:tag:datastore", "serviceDate,noindex")
+		Metadata("struct:tag:json", "serviceDate")
 	})
-	Attribute("county", Integer, "BillSheet county", func() {
-		Metadata("struct:tag:datastore", "county,noindex")
-		Metadata("struct:tag:json", "county")
+	Attribute("serviceCode", Integer, "BillSheet serviceCode", func() {
+		Metadata("struct:tag:datastore", "serviceCode,noindex")
+		Metadata("struct:tag:json", "serviceCode")
 	})
-	Attribute("specialist", Integer, "BillSheet specialist", func() {
-		Metadata("struct:tag:datastore", "specialist,noindex")
-		Metadata("struct:tag:json", "specialist")
+	Attribute("contractType", String, "BillSheet contractType", func() {
+		Metadata("struct:tag:datastore", "contractType,noindex")
+		Metadata("struct:tag:json", "contractType")
+	})
+	Attribute("recipientID", String, "recipientID", func() {
+		Metadata("struct:tag:datastore", "recipientID,noindex")
+		Metadata("struct:tag:json", "recipientID")
 	})
 	Attribute("recordNumber", String, "BillSheet recordNumber", func() {
 		Metadata("struct:tag:datastore", "recordNumber,noindex")
 		Metadata("struct:tag:json", "recordNumber")
 	})
+	Attribute("status", Integer, "BillSheet status", func() {
+		Metadata("struct:tag:datastore", "status,noindex")
+		Metadata("struct:tag:json", "status")
+	})
+	Attribute("billedCode", String, "BillSheet billedCode", func() {
+		Metadata("struct:tag:datastore", "billedCode,noindex")
+		Metadata("struct:tag:json", "billedCode")
+	})
+	Attribute("billedAmount", Number, "BillSheet billedAmount", func() {
+		Metadata("struct:tag:datastore", "billedAmount,noindex")
+		Metadata("struct:tag:json", "billedAmount")
+	})
+	Attribute("county", Integer, "BillSheet county", func() {
+		Metadata("struct:tag:datastore", "county,noindex")
+		Metadata("struct:tag:json", "county")
+	})
+	Attribute("confirmation", String, "BillSheet confirmation", func() {
+		Metadata("struct:tag:datastore", "confirmation,noindex")
+		Metadata("struct:tag:json", "confirmation")
+	})
+	Attribute("description", String, "BillSheet description", func() {
+		Metadata("struct:tag:datastore", "description,noindex")
+		Metadata("struct:tag:json", "description")
+	})
 
-	Required("recipientID", "serviceDate", "billedAmount", "consumer", "status", "confirmation", "service", "county", "specialist", "recordNumber")
+	Required("specialist", "consumer", "serviceDate", "serviceCode", "county")
 })
 
 var BillSheetQueryPayload = Type("BillSheetQueryPayload", func() {
@@ -137,18 +157,23 @@ var BillSheetItem = Type("billSheetItem", func() {
 	Reference(BillSheetPayload)
 
 	Attribute("id")
-	Attribute("recipientID")
-	Attribute("serviceDate")
-	Attribute("billedAmount")
-	Attribute("consumer")
-	Attribute("status")
-	Attribute("confirmation")
-	Attribute("service")
-	Attribute("county")
 	Attribute("specialist")
+	Attribute("consumer")
+	Attribute("hours")
+	Attribute("units")
+	Attribute("serviceDate")
+	Attribute("serviceCode")
+	Attribute("contractType")
+	Attribute("recipientID")
 	Attribute("recordNumber")
+	Attribute("status")
+	Attribute("billedCode")
+	Attribute("billedAmount")
+	Attribute("county")
+	Attribute("confirmation")
+	Attribute("description")
 
-	Required("id", "recipientID", "serviceDate", "billedAmount", "consumer", "status", "confirmation", "service", "county", "specialist", "recordNumber")
+	Required("id", "specialist", "consumer", "serviceDate", "serviceCode", "county")
 })
 
 var BillSheetMedia = MediaType("application/billsheetapi.billsheetentity", func() {
@@ -159,34 +184,44 @@ var BillSheetMedia = MediaType("application/billsheetapi.billsheetentity", func(
 
 	Attributes(func() {
 		Attribute("id")
-		Attribute("recipientID")
-		Attribute("serviceDate")
-		Attribute("billedAmount")
-		Attribute("consumer")
-		Attribute("status")
-		Attribute("confirmation")
-		Attribute("service")
-		Attribute("county")
 		Attribute("specialist")
+		Attribute("consumer")
+		Attribute("hours")
+		Attribute("units")
+		Attribute("serviceDate")
+		Attribute("serviceCode")
+		Attribute("contractType")
+		Attribute("recipientID")
 		Attribute("recordNumber")
+		Attribute("status")
+		Attribute("billedCode")
+		Attribute("billedAmount")
+		Attribute("county")
+		Attribute("confirmation")
+		Attribute("description")
 		Attribute("billsheets", ArrayOf("billSheetItem"))
 		Attribute("pager", Pager)
 
-		Required("id", "recipientID", "serviceDate", "billedAmount", "consumer", "status", "confirmation", "service", "county", "specialist", "recordNumber", "billsheets", "pager")
+		Required("id", "specialist", "consumer", "serviceDate", "serviceCode", "county")
 	})
 
 	View("default", func() {
 		Attribute("id")
-		Attribute("recipientID")
-		Attribute("serviceDate")
-		Attribute("billedAmount")
-		Attribute("consumer")
-		Attribute("status")
-		Attribute("confirmation")
-		Attribute("service")
-		Attribute("county")
 		Attribute("specialist")
+		Attribute("consumer")
+		Attribute("hours")
+		Attribute("units")
+		Attribute("serviceDate")
+		Attribute("serviceCode")
+		Attribute("contractType")
+		Attribute("recipientID")
 		Attribute("recordNumber")
+		Attribute("status")
+		Attribute("billedCode")
+		Attribute("billedAmount")
+		Attribute("county")
+		Attribute("confirmation")
+		Attribute("description")
 	})
 
 	View("paging", func() {

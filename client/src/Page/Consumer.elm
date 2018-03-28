@@ -685,6 +685,11 @@ formRows ( editable, date, datePicker, serviceCodes, dias, countyData ) =
         , DatePicker.view focusedDate ( date |> settings ) datePicker
             |> Html.map DatePicker
         ]
+    , Form.float "Units"
+        [ editable.units |> toString |> value
+        , onInput ( SetFormValue ( \v -> { editable | units = Form.toFloat v } ) )
+        ]
+        []
     , Form.text "Other"
         [ value editable.other
         , onInput ( SetFormValue ( \v -> { editable | other = v } ) )
@@ -737,6 +742,7 @@ config model =
         )
         , Table.floatColumn "Copay" .copay
         , Table.stringColumn "Discharge Date" .dischargeDate
+        , Table.floatColumn "Units" .copay
         , Table.stringColumn "Other" .other
         , customColumn ( viewButton Edit "Edit" ) ""
         , customColumn ( viewButton Delete "Delete" ) ""

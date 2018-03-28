@@ -64,6 +64,11 @@ view query viewLists =
         q =
             query
                 |> Maybe.withDefault Dict.empty
+
+        consumers = Maybe.withDefault [] viewLists.consumers
+        counties = Maybe.withDefault [] viewLists.counties
+        specialists = Maybe.withDefault [] viewLists.specialists
+        status = Maybe.withDefault [] viewLists.status
     in
     form [ onSubmit Submit ]
         [ h3 [] [ "Bill Sheet Search" |> text ]
@@ -71,7 +76,7 @@ view query viewLists =
             [ "consumerSelection" |> id
             , Select Form.ConsumerID |> onInput
             ] (
-                viewLists.consumers
+                consumers
                     |> List.map ( \m -> ( m.id |> toString, m.lastname ++ ", " ++ m.firstname ) )
                     |> (::) ( "-1", "-- Select a consumer --" )
                     |> List.map ( "-1" |> Form.option )
@@ -80,7 +85,7 @@ view query viewLists =
             [ "statusSelection" |> id
             , Select Form.StatusID |> onInput
             ] (
-                viewLists.status
+                status
                     |> List.map ( \m -> ( m.id |> toString, m.name ) )
                     |> (::) ( "-1", "-- Select a status --" )
                     |> List.map ( "-1" |> Form.option )
@@ -89,7 +94,7 @@ view query viewLists =
             [ "specialistSelection" |> id
             , Select Form.SpecialistID |> onInput
             ] (
-                viewLists.specialists
+                specialists
                     |> List.map ( \m -> ( m.id |> toString, m.lastname ++ ", " ++ m.firstname ) )
                     |> (::) ( "-1", "-- Select a specialist --" )
                     |> List.map ( "-1" |> Form.option )
@@ -98,7 +103,7 @@ view query viewLists =
             [ "countySelection" |> id
             , Select Form.CountyID |> onInput
             ] (
-                viewLists.counties
+                counties
                     |> List.map ( \m -> ( m.id |> toString, m.name ) )
                     |> (::) ( "-1", "-- Select a consumer --" )
                     |> List.map ( "-1" |> Form.option )

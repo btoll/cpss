@@ -37,8 +37,10 @@ message =
 modelValidator : Validator ( Field, String ) BillSheet
 modelValidator =
     Validate.all
-        [ ifBlank .recipientID ( RecipientID, message )
-        , ifBlank .serviceDate ( ServiceDate, message )
+--        [ ifBlank .recipientID ( RecipientID, message )
+--        , ifBlank .serviceDate ( ServiceDate, message )
+--        ]
+        [ ifBlank .serviceDate ( ServiceDate, message )
         ]
 
 

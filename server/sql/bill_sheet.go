@@ -18,9 +18,9 @@ func NewBillSheet(payload interface{}) *BillSheet {
 		Data: payload,
 		Stmt: map[string]string{
 			"DELETE": "DELETE FROM billsheet WHERE id=?",
-			"INSERT": "INSERT billsheet SET recipientID=?,serviceDate=?,billedAmount=?,consumer=?,status=?,confirmation=?,service=?,county=?,specialist=?,recordNumber=?",
+			"INSERT": "INSERT billsheet SET specialist=?,consumer=?,hours=?,units=?,serviceDate=?,serviceCode=?,contractType=?,recipientID=?,recordNumber=?,status=?,billedCode=?,billedAmount=?,county=?,confirmation=?,description=?",
 			"SELECT": "SELECT %s FROM billsheet %s",
-			"UPDATE": "UPDATE billsheet SET recipientID=?,serviceDate=?,billedAmount=?,consumer=?,status=?,confirmation=?,service=?,county=?,specialist=?,recordNumber=? WHERE id=?",
+			"UPDATE": "UPDATE billsheet SET specialist=?,consumer=?,hours=?,units=?,serviceDate=?,serviceCode=?,contractType=?,recipientID=?,recordNumber=?,status=?,billedCode=?,billedAmount=?,county=?,confirmation=?,description=? WHERE id=?",
 		},
 	}
 }
@@ -29,32 +29,42 @@ func (s *BillSheet) CollectRows(rows *mysql.Rows, coll []*app.BillSheetItem) err
 	i := 0
 	for rows.Next() {
 		var id int
-		var recipientID string
-		var serviceDate string
-		var billedAmount float64
-		var consumer int
-		var status int
-		var confirmation string
-		var service int
-		var county int
 		var specialist int
+		var consumer int
+		var hours float64
+		var units float64
+		var serviceDate string
+		var serviceCode int
+		var contractType string
+		var recipientID string
 		var recordNumber string
-		err := rows.Scan(&id, &recipientID, &serviceDate, &billedAmount, &consumer, &status, &confirmation, &service, &county, &specialist, &recordNumber)
+		var status int
+		var billedCode string
+		var billedAmount float64
+		var county int
+		var confirmation string
+		var description string
+		err := rows.Scan(&id, &specialist, &consumer, &hours, &units, &serviceDate, &serviceCode, &contractType, &recipientID, &recordNumber, &status, &billedCode, &billedAmount, &county, &confirmation, &description)
 		if err != nil {
 			return err
 		}
 		coll[i] = &app.BillSheetItem{
 			ID:           id,
-			RecipientID:  recipientID,
-			ServiceDate:  serviceDate,
-			BilledAmount: billedAmount,
-			Consumer:     consumer,
-			Status:       status,
-			Confirmation: confirmation,
-			Service:      service,
-			County:       county,
 			Specialist:   specialist,
-			RecordNumber: recordNumber,
+			Consumer:     consumer,
+			Hours:        &hours,
+			Units:        &units,
+			ServiceDate:  serviceDate,
+			ServiceCode:  serviceCode,
+			ContractType: &contractType,
+			RecipientID:  &recipientID,
+			RecordNumber: &recordNumber,
+			Status:       &status,
+			BilledCode:   &billedCode,
+			BilledAmount: &billedAmount,
+			County:       county,
+			Confirmation: &confirmation,
+			Description:  &description,
 		}
 		i++
 	}
@@ -67,7 +77,7 @@ func (s *BillSheet) Create(db *mysql.DB) (interface{}, error) {
 	if err != nil {
 		return -1, err
 	}
-	res, err := stmt.Exec(payload.RecipientID, payload.ServiceDate, payload.BilledAmount, payload.Consumer, payload.Status, payload.Confirmation, payload.Service, payload.County, payload.Specialist, payload.RecordNumber)
+	res, err := stmt.Exec(payload.Specialist, payload.Consumer, payload.Hours, payload.Units, payload.ServiceDate, payload.ServiceCode, payload.ContractType, payload.RecipientID, payload.RecordNumber, payload.Status, payload.BilledCode, payload.BilledAmount, payload.County, payload.Confirmation, payload.Description)
 	if err != nil {
 		return -1, err
 	}
@@ -84,22 +94,27 @@ func (s *BillSheet) Update(db *mysql.DB) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, err = stmt.Exec(payload.RecipientID, payload.ServiceDate, payload.BilledAmount, payload.Consumer, payload.Status, payload.Confirmation, payload.Service, payload.County, payload.Specialist, payload.RecordNumber, payload.ID)
+	_, err = stmt.Exec(payload.Specialist, payload.Consumer, payload.Hours, payload.Units, payload.ServiceDate, payload.ServiceCode, payload.ContractType, payload.RecipientID, payload.RecordNumber, payload.Status, payload.BilledCode, payload.BilledAmount, payload.County, payload.Confirmation, payload.Description, payload.ID)
 	if err != nil {
 		return nil, err
 	}
 	return &app.BillSheetMedia{
 		ID:           *payload.ID,
-		RecipientID:  payload.RecipientID,
-		ServiceDate:  payload.ServiceDate,
-		BilledAmount: payload.BilledAmount,
-		Consumer:     payload.Consumer,
-		Status:       payload.Status,
-		Confirmation: payload.Confirmation,
-		Service:      payload.Service,
-		County:       payload.County,
 		Specialist:   payload.Specialist,
+		Consumer:     payload.Consumer,
+		Hours:        payload.Hours,
+		Units:        payload.Units,
+		ServiceDate:  payload.ServiceDate,
+		ServiceCode:  payload.ServiceCode,
+		ContractType: payload.ContractType,
+		RecipientID:  payload.RecipientID,
 		RecordNumber: payload.RecordNumber,
+		Status:       payload.Status,
+		BilledCode:   payload.BilledCode,
+		BilledAmount: payload.BilledAmount,
+		County:       payload.County,
+		Confirmation: payload.Confirmation,
+		Description:  payload.Description,
 	}, nil
 }
 

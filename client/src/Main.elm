@@ -7,7 +7,6 @@ import Data.DIA exposing (DIA)
 import Data.Session exposing (Session)
 import Data.ServiceCode exposing (ServiceCode)
 import Data.Status exposing (Status)
-import Data.TimeEntry exposing (TimeEntry)
 import Data.User exposing (User)
 import Html exposing (Html, text)
 import Http
@@ -21,7 +20,6 @@ import Page.NotFound as NotFound
 import Page.ServiceCode as ServiceCode
 import Page.Specialist as Specialist
 import Page.Status as Status
-import Page.TimeEntry as TimeEntry
 import Ports exposing (SessionCredentials, getSessionCredentials, setSessionCredentials)
 import Request.Specialist
 import Route exposing (Route)
@@ -52,7 +50,6 @@ type Page
     | ServiceCode ServiceCode.Model
     | Specialist Specialist.Model
     | Status Status.Model
-    | TimeEntry TimeEntry.Model
 
 
 
@@ -106,7 +103,6 @@ type Msg
     | ServiceCodeMsg ServiceCode.Msg
     | SpecialistMsg Specialist.Msg
     | StatusMsg Status.Msg
-    | TimeEntryMsg TimeEntry.Msg
     | ReadSessionCredentials SessionCredentials
     | FetchedUserSession ( Result Http.Error User )
 
@@ -124,18 +120,26 @@ setRoute maybeRoute model =
                     } ! []
 
                 Just user ->
-                    case user.authLevel of
-                        1 ->
-                            let
-                                ( subModel, subMsg ) =
-                                    BillSheet.init model.build.url
-                            in
-                            { model |
-                                page = BillSheet subModel
-                            } ! [ Cmd.map BillSheetMsg subMsg ]
+--                    case user.authLevel of
+--                        1 ->
+--                            let
+--                                ( subModel, subMsg ) =
+--                                    BillSheet.init model.build.url
+--                            in
+--                            { model |
+--                                page = BillSheet subModel
+--                            } ! [ Cmd.map BillSheetMsg subMsg ]
+--
+--                        _ ->
+--                            { model | page = Errored "You are not authorized to view this page" } ! []
 
-                        _ ->
-                            { model | page = Errored "You are not authorized to view this page" } ! []
+                    let
+                        ( subModel, subMsg ) =
+                            BillSheet.init model.build.url user
+                    in
+                    { model |
+                        page = BillSheet subModel
+                    } ! [ Cmd.map BillSheetMsg subMsg ]
 
         Just Route.Consumer ->
             case model.session.user of
@@ -312,28 +316,6 @@ setRoute maybeRoute model =
                         _ ->
                             { model | page = Errored "You are not authorized to view this page" } ! []
 
-        Just Route.TimeEntry ->
-            case model.session.user of
-                Nothing ->
-                    { model |
-                        page = Login Login.init
-                        , onLogin = maybeRoute
-                    } ! []
-
-                Just user ->
-                    case user.authLevel of
-                        2 ->
-                            let
-                                ( subModel, subMsg ) =
-                                    TimeEntry.init model.build.url model.session
-                            in
-                            { model |
-                                page = TimeEntry subModel
-                            } ! [ Cmd.map TimeEntryMsg subMsg ]
-
-                        _ ->
-                            { model | page = Errored "You are not authorized to view this page" } ! []
-
         Nothing ->
             case model.session.user of
                 Nothing ->
@@ -448,9 +430,6 @@ update msg model =
         ( StatusMsg subMsg, Status subModel ) ->
             toPage Status StatusMsg Status.update subMsg subModel
 
-        ( TimeEntryMsg subMsg, TimeEntry subModel ) ->
-            toPage TimeEntry TimeEntryMsg TimeEntry.update subMsg subModel
-
         _ ->
             model ! []
 
@@ -474,7 +453,7 @@ view model =
                 |> frame session.user Page.Home
 
         BillSheet subModel ->
-            BillSheet.view subModel
+            BillSheet.view session subModel
                 |> frame session.user Page.BillSheet
                 |> Html.map BillSheetMsg
 
@@ -520,11 +499,6 @@ view model =
             Status.view subModel
                 |> frame session.user Page.Status
                 |> Html.map StatusMsg
-
-        TimeEntry subModel ->
-            TimeEntry.view subModel
-                |> frame model.session.user Page.TimeEntry
-                |> Html.map TimeEntryMsg
 
 
 

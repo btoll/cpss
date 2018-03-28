@@ -18,7 +18,7 @@ type ActivePage
     | ServiceCode
     | Specialist
     | Status
-    | TimeEntry
+--    | TimeEntry
 
 
 
@@ -57,7 +57,7 @@ siteLinks user page =
                     ]
                 _ ->
                     [ SiteLink Home Route.Home [ text "Home" ]
-                    , SiteLink TimeEntry Route.TimeEntry [ text "Time Entry" ]
+                    , SiteLink BillSheet Route.BillSheet [ text "Time Entry" ]
                     , SiteLink Logout Route.Logout [ text "Logout" ]
                     ]
 
@@ -67,7 +67,7 @@ siteLinks user page =
 frame : Maybe User -> ActivePage -> Html msg -> Html msg
 frame user page content =
     -- Add a page id to be able to target the current page (see navbar.css).
-    main_ [ id ( ( toString page ) |> String.toLower ), class "page-frame" ]
+    main_ [ "page-frame" |> class, page |> toString >> String.toLower >> id ]
         [ viewHeader user page
         , content
         , viewFooter

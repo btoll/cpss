@@ -18,9 +18,9 @@ func NewConsumer(payload interface{}) *Consumer {
 		Data: payload,
 		Stmt: map[string]string{
 			"DELETE": "DELETE FROM consumer WHERE id=?",
-			"INSERT": "INSERT consumer SET firstname=?,lastname=?,active=?,county=?,serviceCode=?,fundingSource=?,zip=?,bsu=?,recipientID=?,dia=?,copay=?,dischargeDate=?,other=?",
+			"INSERT": "INSERT consumer SET firstname=?,lastname=?,active=?,county=?,serviceCode=?,fundingSource=?,zip=?,bsu=?,recipientID=?,dia=?,copay=?,dischargeDate=?,units=?,other=?",
 			"SELECT": "SELECT %s FROM consumer %s",
-			"UPDATE": "UPDATE consumer SET firstname=?,lastname=?,active=?,county=?,serviceCode=?,fundingSource=?,zip=?,bsu=?,recipientID=?,dia=?,copay=?,dischargeDate=?,other=? WHERE id=?",
+			"UPDATE": "UPDATE consumer SET firstname=?,lastname=?,active=?,county=?,serviceCode=?,fundingSource=?,zip=?,bsu=?,recipientID=?,dia=?,copay=?,dischargeDate=?,units=?,other=? WHERE id=?",
 		},
 	}
 }
@@ -41,8 +41,9 @@ func (s *Consumer) CollectRows(rows *mysql.Rows, coll []*app.ConsumerItem) error
 		var dia int
 		var copay float64
 		var dischargeDate string
+		var units float64
 		var other string
-		err := rows.Scan(&id, &firstname, &lastname, &active, &county, &serviceCode, &fundingSource, &zip, &bsu, &recipientID, &dia, &copay, &dischargeDate, &other)
+		err := rows.Scan(&id, &firstname, &lastname, &active, &county, &serviceCode, &fundingSource, &zip, &bsu, &recipientID, &dia, &copay, &dischargeDate, &units, &other)
 		if err != nil {
 			return err
 		}
@@ -60,6 +61,7 @@ func (s *Consumer) CollectRows(rows *mysql.Rows, coll []*app.ConsumerItem) error
 			Dia:           dia,
 			Copay:         copay,
 			DischargeDate: dischargeDate,
+			Units:         units,
 			Other:         other,
 		}
 		i++
@@ -73,7 +75,7 @@ func (s *Consumer) Create(db *mysql.DB) (interface{}, error) {
 	if err != nil {
 		return -1, err
 	}
-	res, err := stmt.Exec(payload.Firstname, payload.Lastname, payload.Active, payload.County, payload.ServiceCode, payload.FundingSource, payload.Zip, payload.Bsu, payload.RecipientID, payload.Dia, payload.Copay, payload.DischargeDate, payload.Other)
+	res, err := stmt.Exec(payload.Firstname, payload.Lastname, payload.Active, payload.County, payload.ServiceCode, payload.FundingSource, payload.Zip, payload.Bsu, payload.RecipientID, payload.Dia, payload.Copay, payload.DischargeDate, payload.Units, payload.Other)
 	if err != nil {
 		return -1, err
 	}
@@ -108,6 +110,7 @@ func (s *Consumer) Update(db *mysql.DB) (interface{}, error) {
 		Dia:           payload.Dia,
 		Copay:         payload.Copay,
 		DischargeDate: payload.DischargeDate,
+		Units:         payload.Units,
 		Other:         payload.Other,
 	}, nil
 }

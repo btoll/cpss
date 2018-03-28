@@ -22,7 +22,7 @@ type Route
     | ServiceCode
     | Specialist
     | Status
-    | TimeEntry
+--    | TimeEntry
 
 
 route : Parser (Route -> a) a
@@ -38,7 +38,7 @@ route =
         , Url.map ServiceCode (s "servicecode")
         , Url.map Specialist (s "specialist")
         , Url.map Status (s "status")
-        , Url.map TimeEntry (s "timeEntry")
+--        , Url.map TimeEntry (s "timeEntry")
         ]
 
 
@@ -81,8 +81,8 @@ routeToString page =
                 Status ->
                     [ "status" ]
 
-                TimeEntry ->
-                    [ "timeEntry" ]
+--                TimeEntry ->
+--                    [ "timeEntry" ]
     in
         "#/" ++ String.join "/" pieces
 

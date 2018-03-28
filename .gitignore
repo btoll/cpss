@@ -17,3 +17,5 @@ exclude-from.txt
 # The binary build artifact.
 server/cpss
 
+*.swp
+
