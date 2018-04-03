@@ -68,7 +68,8 @@ init user =
         newBillSheet = Data.BillSheet.new
     in
     { tableState = Table.initialSort "ID"
-    , editing = { newBillSheet | specialist = user.id } |> Just
+--    , editing = { newBillSheet | specialist = user.id } |> Just
+    , editing = Nothing
     , disabled = True
     , date = Nothing
     , datePicker = datePicker
@@ -86,6 +87,9 @@ type Msg
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
+    let
+        m = (Debug.log "model.editing" model.editing)
+    in
     case msg of
         DatePicker subMsg ->
             let

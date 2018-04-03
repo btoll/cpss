@@ -47,16 +47,14 @@ type alias Model =
     , viewLists : ViewLists
     , query : Maybe Query
     , pagerState : Pager
-    , subView :
-        { model :
-            { tableState : Table.State
-            , editing : Maybe BillSheet
-            , disabled : Bool
-            , date : Maybe Date
-            , datePicker : DatePicker.DatePicker
-            }
-        , authLevel : Int
+    , subModel :
+        { tableState : Table.State
+        , editing : Maybe BillSheet
+        , disabled : Bool
+        , date : Maybe Date
+        , datePicker : DatePicker.DatePicker
         }
+    , user : User
     }
 
 
@@ -101,10 +99,8 @@ init url user =
         }
     , query = Nothing
     , pagerState = Data.Pager.new
-    , subView =
-        { model = subModel
-        , authLevel = user.authLevel
-        }
+    , subModel = subModel
+    , user = user
     } ! cmd
 
 
@@ -145,48 +141,44 @@ update : String -> Msg -> Model -> ( Model, Cmd Msg )
 update url msg model =
     let
         oldViewLists = model.viewLists
-        oldSubViewModel = model.subView.model
+        subModel = model.subModel
     in
     case msg of
         Add ->
             { model |
                 action = Adding
-                , subView = { model =
-                    { oldSubViewModel |
-                        editing = Nothing
-                    }
-                    , authLevel = model.subView.authLevel
-                }
+--                , subView = { model =
+--                    { oldSubViewModel |
+--                        editing = Nothing
+--                    }
+--                    , authLevel = model.subView.authLevel
+--                }
             } ! []
 
         BillSheetTimeEntryMsg subMsg ->
             let
-                oldSubView = model.subView
-
                 ( m, cmd ) =
-                    oldSubView.model
+                    model.subModel
                         |> Page.BillSheet.TimeEntry.update subMsg
             in
             { model |
-                subView = { oldSubView | model =  m }
+                subModel = m
             } ! [ Cmd.map BillSheetTimeEntryMsg cmd ]
 
         BillSheetBillSheetMsg subMsg ->
             let
-                oldSubView = model.subView
-
                 ( m, cmd ) =
-                    oldSubView.model
+                    subModel
                         |> Page.BillSheet.BillSheet.update subMsg
             in
             { model |
-                subView = { oldSubView | model =  m }
+                subModel = m
             } ! [ Cmd.map BillSheetBillSheetMsg cmd ]
 
         Cancel ->
             { model |
                 action = None
---                , editing = Nothing
+                , subModel = { subModel | editing = Nothing }
                 , errors = []
             } ! []
 
@@ -201,12 +193,7 @@ update url msg model =
         Delete billsheet ->
             { model |
                 showModal = ( True , Modal.Delete |> Just )
-                , subView = { model =
-                    { oldSubViewModel |
-                        editing = billsheet |> Just
-                    }
-                    , authLevel = model.subView.authLevel
-                }
+                , subModel = { subModel | editing = billsheet |> Just }
             } ! []
 
         Deleted ( Ok id ) ->
@@ -224,23 +211,20 @@ update url msg model =
                     { oldViewLists |
                         billsheets = billsheets
                     }
+                , subModel = { subModel | editing = Nothing }
             } ! []
 
         Deleted ( Err err ) ->
             { model |
                 action = None
+                , subModel = { subModel | editing = Nothing }
 --                , errors = (::) "There was a problem, the record could not be deleted!" model.errors
             } ! []
 
         Edit billsheet ->
             { model |
                 action = Editing
-                , subView = { model =
-                    { oldSubViewModel |
-                        editing = billsheet |> Just
-                    }
-                    , authLevel = model.subView.authLevel
-                }
+                , subModel = { subModel | editing = billsheet |> Just }
             } ! []
 
         Fetch result ->
@@ -328,7 +312,7 @@ update url msg model =
 
                         ( True, Nothing ) ->
                             ( False, Nothing, Nothing
-                            , Maybe.withDefault new model.subView.model.editing
+                            , Maybe.withDefault new model.subModel.editing
                                 |> Request.BillSheet.delete url
                                 |> Http.toTask
                                 |> Task.attempt Deleted
@@ -383,7 +367,7 @@ update url msg model =
         Post ->
             let
                 errors =
-                    case model.subView.model.editing of
+                    case model.subModel.editing of
                         Nothing ->
                             []
 
@@ -391,13 +375,14 @@ update url msg model =
                             Validate.BillSheet.errors billsheet
 
                 ( action, subCmd ) = if errors |> List.isEmpty then
-                    case model.subView.model.editing of
+                    case model.subModel.editing of
                         Nothing ->
                             ( None, Cmd.none )
 
                         Just billsheet ->
                             ( None
-                            , Request.BillSheet.post url billsheet
+                            , { billsheet | specialist = model.user.id }
+                                |> Request.BillSheet.post url
                                 |> Http.toTask
                                 |> Task.attempt Posted
                             )
@@ -412,14 +397,14 @@ update url msg model =
         Posted ( Ok billsheet ) ->
             let
                 billsheets =
-                    case model.subView.model.editing of
+                    case model.subModel.editing of
                         Nothing ->
                             oldViewLists.billsheets
 
                         Just newBillSheet ->
                             case oldViewLists.billsheets of
                                 Nothing ->
-                                    Nothing
+                                    [ { newBillSheet | id = billsheet.id } ] |> Just
 
                                 Just billsheets ->
                                     billsheets
@@ -433,18 +418,13 @@ update url msg model =
         Posted ( Err err ) ->
             { model |
 --                , errors = (::) "There was a problem, the record could not be saved!" model.errors
-                subView = { model =
-                    { oldSubViewModel |
-                        editing = Nothing
-                    }
-                    , authLevel = model.subView.authLevel
-                }
+                subModel = { subModel | editing = Nothing }
             } ! []
 
         Put ->
             let
                 errors =
-                    case model.subView.model.editing of
+                    case model.subModel.editing of
                         Nothing ->
                             []
 
@@ -452,7 +432,7 @@ update url msg model =
                             Validate.BillSheet.errors billsheet
 
                 ( action, subCmd ) = if errors |> List.isEmpty then
-                    case model.subView.model.editing of
+                    case model.subModel.editing of
                         Nothing ->
                             ( None, Cmd.none )
 
@@ -473,7 +453,7 @@ update url msg model =
         Putted ( Ok billsheet ) ->
             let
                 billsheets =
-                    case model.subView.model.editing of
+                    case model.subModel.editing of
                         Nothing ->
                             oldViewLists.billsheets
 
@@ -485,28 +465,22 @@ update url msg model =
                                 Just billsheets ->
                                     billsheets
                                         |> List.filter ( \m -> billsheet.id /= m.id )
-                                        |> (::) { newBillSheet | id = billsheet.id }
+                                        |> (::)
+                                            { newBillSheet |
+                                                id = billsheet.id
+                                                , specialist = model.user.id
+                                            }
                                         |> Just
             in
             { model |
                 viewLists = { oldViewLists | billsheets = billsheets }
-                , subView = { model =
-                    { oldSubViewModel |
-                        editing = Nothing
-                    }
-                    , authLevel = model.subView.authLevel
-                }
+                , subModel = { subModel | editing = Nothing }
             } ! []
 
         Putted ( Err err ) ->
             { model |
 --                , errors = (::) "There was a problem, the record could not be updated!" model.errors
-                subView = { model =
-                    { oldSubViewModel |
-                        editing = Nothing
-                    }
-                    , authLevel = model.subView.authLevel
-                }
+                subModel = { subModel | editing = Nothing }
             } ! []
 
         Query query ->
@@ -546,7 +520,7 @@ drawView : Model -> List ( Html Msg )
 drawView model =
     let
         editable : BillSheet
-        editable = case model.subView.model.editing of
+        editable = case model.subModel.editing of
             Nothing ->
                 new
 
@@ -594,12 +568,12 @@ drawView model =
         Adding ->
             let
                 l =
-                    case model.subView.authLevel of
+                    case model.user.authLevel of
                         1 ->
-                            ( model.subView.model |> Page.BillSheet.BillSheet.formRows model.viewLists |> List.map ( Html.map BillSheetBillSheetMsg ) )
+                            ( model.subModel |> Page.BillSheet.BillSheet.formRows model.viewLists |> List.map ( Html.map BillSheetBillSheetMsg ) )
 
                         _ ->
-                            ( model.subView.model |> Page.BillSheet.TimeEntry.formRows model.viewLists |> List.map ( Html.map BillSheetTimeEntryMsg ) )
+                            ( model.subModel |> Page.BillSheet.TimeEntry.formRows model.viewLists |> List.map ( Html.map BillSheetTimeEntryMsg ) )
             in
             [ form [ Post |> onSubmit ]
                 ( (++)
@@ -612,12 +586,12 @@ drawView model =
         Editing ->
             let
                 l =
-                    case model.subView.authLevel of
+                    case model.user.authLevel of
                         1 ->
-                            ( model.subView.model |> Page.BillSheet.BillSheet.formRows model.viewLists |> List.map ( Html.map BillSheetBillSheetMsg ) )
+                            ( model.subModel |> Page.BillSheet.BillSheet.formRows model.viewLists |> List.map ( Html.map BillSheetBillSheetMsg ) )
 
                         _ ->
-                            ( model.subView.model |> Page.BillSheet.TimeEntry.formRows model.viewLists |> List.map ( Html.map BillSheetTimeEntryMsg ) )
+                            ( model.subModel |> Page.BillSheet.TimeEntry.formRows model.viewLists |> List.map ( Html.map BillSheetTimeEntryMsg ) )
             in
             [ form [ Put |> onSubmit ]
                 ( (++)
@@ -632,7 +606,7 @@ config : Model -> Table.Config BillSheet Msg
 config model =
     let
         tableColumns =
-            case model.subView.authLevel of
+            case model.user.authLevel of
                 1 ->
                     Page.BillSheet.BillSheet.tableColumns
 

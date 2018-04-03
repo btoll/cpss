@@ -60,11 +60,10 @@ settings date =
 
 
 
---init : ( Model, Cmd Msg )
 init : Model
 init =
     let
-        ( datePicker, datePickerFx ) =
+        ( datePicker, _ ) =
             DatePicker.init
     in
     { tableState = Table.initialSort "ID"
@@ -72,7 +71,6 @@ init =
     , disabled = True
     , date = Nothing
     , datePicker = datePicker
---    } ! [ Cmd.map DatePicker datePickerFx ]
     }
 
 
@@ -179,6 +177,14 @@ formRows viewLists model =
             Just billsheet ->
                 billsheet
 
+        focusedDate : Maybe Date
+        focusedDate =
+            case (/=) editable.serviceDate "" of
+                True ->
+                    editable.serviceDate |> Util.Date.unsafeFromString |> Just
+                False ->
+                    model.date
+
         consumers = Maybe.withDefault [] viewLists.consumers
         counties = Maybe.withDefault [] viewLists.counties
         serviceCodes = Maybe.withDefault [] viewLists.serviceCodes
@@ -202,7 +208,7 @@ formRows viewLists model =
         )
     , div []
         [ label [] [ text "Service Date" ]
-        , DatePicker.view model.date ( settings model.date ) model.datePicker
+        , DatePicker.view focusedDate ( model.date |> settings ) model.datePicker
             |> Html.map DatePicker
         ]
     , Form.float "Billed Amount"
