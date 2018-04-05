@@ -742,7 +742,7 @@ config model =
         )
         , Table.floatColumn "Copay" .copay
         , Table.stringColumn "Discharge Date" .dischargeDate
-        , Table.floatColumn "Units" .copay
+        , Table.floatColumn "Units" .units
         , Table.stringColumn "Other" .other
         , customColumn ( viewButton Edit "Edit" ) ""
         , customColumn ( viewButton Delete "Delete" ) ""

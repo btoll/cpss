@@ -25,6 +25,30 @@ func NewBillSheet(payload interface{}) *BillSheet {
 	}
 }
 
+func updateConsumerUnits(id int, unitsToDecrement float64, db *mysql.DB) error {
+	rows, err := db.Query(fmt.Sprintf("SELECT units FROM consumer WHERE id=%d", id))
+	if err != nil {
+		return err
+	}
+	var currentUnits float64
+	for rows.Next() {
+		err := rows.Scan(&currentUnits)
+		if err != nil {
+			return err
+		}
+	}
+	stmt, err := db.Prepare("UPDATE consumer SET units=? WHERE id=?")
+	if err != nil {
+		return err
+	}
+	newUnits := currentUnits - unitsToDecrement
+	if newUnits < 0 {
+		newUnits = 0
+	}
+	_, err = stmt.Exec(newUnits, id)
+	return err
+}
+
 func (s *BillSheet) CollectRows(rows *mysql.Rows, coll []*app.BillSheetItem) error {
 	i := 0
 	for rows.Next() {
@@ -73,6 +97,12 @@ func (s *BillSheet) CollectRows(rows *mysql.Rows, coll []*app.BillSheetItem) err
 
 func (s *BillSheet) Create(db *mysql.DB) (interface{}, error) {
 	payload := s.Data.(*app.BillSheetPayload)
+	// For now, don't update the billsheet table if the update on consumer fails!
+	// 4 units per hour!
+	err := updateConsumerUnits(payload.Consumer, *payload.Hours*4, db)
+	if err != nil {
+		return nil, err
+	}
 	stmt, err := db.Prepare(s.Stmt["INSERT"])
 	if err != nil {
 		return -1, err
@@ -90,6 +120,11 @@ func (s *BillSheet) Create(db *mysql.DB) (interface{}, error) {
 
 func (s *BillSheet) Update(db *mysql.DB) (interface{}, error) {
 	payload := s.Data.(*app.BillSheetPayload)
+	// For now, don't update the billsheet table if the update on consumer fails!
+	err := updateConsumerUnits(payload.Consumer, *payload.Units, db)
+	if err != nil {
+		return nil, err
+	}
 	stmt, err := db.Prepare(s.Stmt["UPDATE"])
 	if err != nil {
 		return nil, err
