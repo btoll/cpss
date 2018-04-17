@@ -67,7 +67,7 @@ init =
             DatePicker.init
     in
     { tableState = Table.initialSort "ID"
-    , editing = Nothing
+    , editing = new |> Just
     , disabled = True
     , date = Nothing
     , datePicker = datePicker
@@ -197,6 +197,11 @@ formRows viewLists model =
         , autofocus True
         ]
         []
+    , div []
+        [ label [] [ text "Service Date" ]
+        , DatePicker.view focusedDate ( model.date |> settings ) model.datePicker
+            |> Html.map DatePicker
+        ]
     , Form.select "Service Code"
         [ id "serviceCodeSelection"
         , editable |> Select Form.ServiceCodeID |> onInput
@@ -206,19 +211,14 @@ formRows viewLists model =
                 |> (::) ( "-1", "-- Select a service code --" )
                 |> List.map ( editable.serviceCode |> toString |> Form.option )
         )
-    , div []
-        [ label [] [ text "Service Date" ]
-        , DatePicker.view focusedDate ( model.date |> settings ) model.datePicker
-            |> Html.map DatePicker
-        ]
-    , Form.float "Billed Amount"
-        [ editable.billedAmount |> toString |> value
-        , onInput ( SetFormValue (\v -> { editable | billedAmount = Form.toFloat v } ) )
-        ]
-        []
     , Form.float "Units"
         [ editable.units |> toString |> value
         , onInput ( SetFormValue (\v -> { editable | units = Form.toFloat v } ) )
+        ]
+        []
+    , Form.float "Billed Amount"
+        [ editable.billedAmount |> toString |> value
+        , onInput ( SetFormValue (\v -> { editable | billedAmount = Form.toFloat v } ) )
         ]
         []
     , Form.select "Consumer"
@@ -283,8 +283,9 @@ tableColumns customColumn viewButton editMsg deleteMsg viewLists =
     in
     [ Table.stringColumn "Recipient ID" .recipientID
     , Table.stringColumn "Service Date" .serviceDate
-    , Table.floatColumn "Billed Amount" .billedAmount
+    , Table.intColumn "Service Code" .serviceCode
     , Table.floatColumn "Units" .units
+    , Table.floatColumn "Billed Amount" .billedAmount
     , Table.stringColumn "Consumer" (
         .consumer
             >> ( \id ->
@@ -304,7 +305,6 @@ tableColumns customColumn viewButton editMsg deleteMsg viewLists =
             >> .name
     )
     , Table.stringColumn "Confirmation" .confirmation
-    , Table.intColumn "Service Code" .serviceCode
     , Table.stringColumn "County" (
         .county
             >> ( \id ->

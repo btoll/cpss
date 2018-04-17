@@ -19,7 +19,8 @@ INSERT `status` VALUES
 	(NULL,'Denied'),
 	(NULL,'Re-billed'),
 	(NULL,'Audited'),
-	(NULL,'Hold');
+	(NULL,'Hold'),
+	(NULL,'Void');
 /*!40000 ALTER TABLE `status` ENABLE KEYS */;
 UNLOCK TABLES;
 

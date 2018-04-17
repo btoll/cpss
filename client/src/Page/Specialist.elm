@@ -480,7 +480,7 @@ drawView (
         Adding ->
             [ form [ onSubmit Post ]
                 ( (++)
-                    ( editable |> formRows )
+                    ( editable |> formRows action )
                     [ Form.submit disabled Cancel ]
                 )
             ]
@@ -499,7 +499,7 @@ drawView (
         Editing ->
             [ form [ onSubmit ( Put Editing ) ]
                 ( (++)
-                    ( editable |> formRows )
+                    ( editable |> formRows action )
                     [ Form.submit disabled Cancel ]
                 )
             ]
@@ -516,8 +516,8 @@ drawView (
             ]
 
 
-formRows : User -> List ( Html Msg )
-formRows editable =
+formRows : Action -> User -> List ( Html Msg )
+formRows action editable =
     [ Form.text "Username"
         [ value editable.username
         , onInput ( SetFormValue ( \v -> { editable | username = v } ) )
@@ -527,6 +527,7 @@ formRows editable =
     , Form.password "Password"
         [ value editable.password
         , onInput ( SetFormValue ( \v -> { editable | password = v } ) )
+        , ( if (==) action Adding then False else True ) |> Html.Attributes.disabled
         ]
         []
     , Form.text "First Name"
@@ -571,7 +572,6 @@ config =
     , toMsg = SetTableState
     , columns =
         [ Table.stringColumn "Username" .username
-        , Table.stringColumn "Password" ( .password >> String.slice 0 10 )       -- Just show a small portion of the hashed password.
         , Table.stringColumn "First Name" .firstname
         , Table.stringColumn "Last Name" .lastname
         , Table.stringColumn "Email" .email

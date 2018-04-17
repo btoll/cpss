@@ -10,7 +10,7 @@ import Date exposing (Date, Day(..), day, dayOfWeek, month, year)
 import DatePicker exposing (defaultSettings, DateEvent(..))
 import Dict exposing (Dict)
 import Html exposing (Html, Attribute, button, div, form, h1, input, label, section, text)
-import Html.Attributes exposing (action, autofocus, checked, for, hidden, id, style, type_, value)
+import Html.Attributes exposing (action, autofocus, checked, for, hidden, id, multiple, style, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Http
 import Table exposing (defaultCustomizations)
@@ -214,6 +214,7 @@ formRows viewLists model =
     , Form.select "Service Code"
         [ id "serviceCodeSelection"
         , editable |> Select Form.ServiceCodeID |> onInput
+        , True |> multiple
         ] (
             serviceCodes
                 |> List.map ( \m -> ( m.id |> toString, m.name ) )
