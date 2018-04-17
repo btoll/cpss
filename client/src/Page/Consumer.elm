@@ -5,6 +5,7 @@ import Data.City exposing (City)
 import Data.Consumer exposing (Consumer, ConsumerWithPager, new)
 import Data.County exposing (County)
 import Data.DIA exposing (DIA)
+import Data.FundingSource exposing (FundingSource)
 import Data.Pager exposing (Pager)
 import Data.ServiceCode exposing (ServiceCode)
 import Date exposing (Date, Day(..), day, dayOfWeek, month, year)
@@ -18,6 +19,7 @@ import Request.City
 import Request.Consumer
 import Request.County
 import Request.DIA
+import Request.FundingSource
 import Request.ServiceCode
 import Table exposing (defaultCustomizations)
 import Task exposing (Task)
@@ -45,6 +47,7 @@ type alias Model =
     , serviceCodes : List ServiceCode
     , consumers : List Consumer
     , dias : List DIA
+    , fundingSources : List FundingSource
     , query : Maybe Query
     , pager : Pager
     }
@@ -101,10 +104,12 @@ init url =
     , serviceCodes = []
     , consumers = []
     , dias = []
+    , fundingSources = []
     , query = Nothing
     , pager = Data.Pager.new
     } ! [ Cmd.map DatePicker datePickerFx
     , Request.DIA.list url |> Http.send ( Dias >> Fetch )
+    , Request.FundingSource.list url |> Http.send ( FundingSources >> Fetch )
     , Request.ServiceCode.list url |> Http.send ( ServiceCodes >> Fetch )
     , Request.County.list url |> Http.send ( Counties >> Fetch )
     , 0 |> Request.Consumer.page url "" |> Http.send ( Consumers >> Fetch )
@@ -119,6 +124,7 @@ type FetchedData
     | Consumers ( Result Http.Error ConsumerWithPager )
     | Counties ( Result Http.Error ( List County ) )
     | Dias ( Result Http.Error ( List DIA ) )
+    | FundingSources ( Result Http.Error ( List FundingSource ) )
     | ServiceCodes ( Result Http.Error ( List ServiceCode ) )
 
 
@@ -275,7 +281,19 @@ update url msg model =
 
                 Dias ( Err err ) ->
                     { model |
-                        countyData = ( [], model.countyData |> Tuple.second )
+                        dias = []
+                        , tableState = Table.initialSort "ID"
+                    } ! []
+
+                FundingSources ( Ok fundingSources ) ->
+                    { model |
+                        fundingSources = fundingSources
+                        , tableState = Table.initialSort "ID"
+                    } ! []
+
+                FundingSources ( Err err ) ->
+                    { model |
+                        fundingSources = []
                         , tableState = Table.initialSort "ID"
                     } ! []
 
@@ -481,6 +499,9 @@ update url msg model =
                 Form.DIAID ->
                     ( { consumer | dia = selectionToInt } |> newModel ) ! []
 
+                Form.FundingSourceID ->
+                    ( { consumer | fundingSource = selectionToInt } |> newModel ) ! []
+
                 Form.ServiceCodeID ->
                     ( { consumer | serviceCode = selectionToInt } |> newModel ) ! []
 
@@ -534,6 +555,7 @@ drawView (
     , serviceCodes
     , consumers
     , dias
+    , fundingSources
     , query
     } as model ) =
     let
@@ -581,7 +603,7 @@ drawView (
         Adding ->
             [ form [ onSubmit Post ]
                 ( (++)
-                    ( ( editable, date, datePicker, serviceCodes, dias, countyData ) |> formRows )
+                    ( ( editable, date, datePicker, serviceCodes, dias, fundingSources, countyData ) |> formRows )
                     [ Form.submit disabled Cancel ]
                 )
             ]
@@ -589,14 +611,14 @@ drawView (
         Editing ->
             [ form [ onSubmit Put ]
                 ( (++)
-                    ( ( editable, date, datePicker, serviceCodes, dias, countyData ) |> formRows )
+                    ( ( editable, date, datePicker, serviceCodes, dias, fundingSources, countyData ) |> formRows )
                     [ Form.submit disabled Cancel ]
                 )
             ]
 
 
-formRows : ( Consumer, Maybe Date, DatePicker.DatePicker, List ServiceCode, List DIA, CountyData ) -> List ( Html Msg )
-formRows ( editable, date, datePicker, serviceCodes, dias, countyData ) =
+formRows : ( Consumer, Maybe Date, DatePicker.DatePicker, List ServiceCode, List DIA, List FundingSource, CountyData ) -> List ( Html Msg )
+formRows ( editable, date, datePicker, serviceCodes, dias, fundingSources, countyData ) =
     let
         focusedDate : Maybe Date
         focusedDate =
@@ -641,11 +663,15 @@ formRows ( editable, date, datePicker, serviceCodes, dias, countyData ) =
                 |> (::) ( "-1", "-- Select a service code --" )
                 |> List.map ( editable.serviceCode |> toString |> Form.option )
         )
-    , Form.text "Funding Source"
-        [ value editable.fundingSource
-        , onInput ( SetFormValue ( \v -> { editable | fundingSource = v } ) )
-        ]
-        []
+    , Form.select "Funding Source"
+        [ id "fundingSourceSelection"
+        , editable |> Select Form.FundingSourceID |> onInput
+        ] (
+            fundingSources
+                |> List.map ( \m -> ( m.id |> toString, m.name ) )
+                |> (::) ( "-1", "-- Select a Funding Source --" )
+                |> List.map ( editable.fundingSource |> toString |> Form.option )
+        )
     , Form.select "Zip Code"
         [ id "zipCodeSelection"
         , editable |> Select Form.ZipID |> onInput
@@ -727,7 +753,15 @@ config model =
                 >> Maybe.withDefault { id = -1, name = "" }
                 >> .name
         )
-        , Table.stringColumn "Funding Source" .fundingSource
+        , Table.stringColumn "Funding Source" (
+            .fundingSource
+                >> ( \id ->
+                    model.fundingSources |> List.filter ( \m -> m.id |> (==) id )
+                    )
+                >> List.head
+                >> Maybe.withDefault { id = -1, name = "" }
+                >> .name
+        )
         , Table.stringColumn "Zip Code" .zip
         , Table.stringColumn "BSU" .bsu
         , Table.stringColumn "Recipient ID" .recipientID

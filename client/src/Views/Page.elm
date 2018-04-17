@@ -13,6 +13,7 @@ type ActivePage
     | Consumer
     | County
     | DIA
+    | FundingSource
     | Login
     | Logout
     | ServiceCode
@@ -53,6 +54,7 @@ siteLinks user page =
                     , SiteLink County Route.County [ text "Cities / Counties" ]
                     , SiteLink ServiceCode Route.ServiceCode [ text "Service Code" ]
                     , SiteLink DIA Route.DIA [ text "DIA" ]
+                    , SiteLink FundingSource Route.FundingSource [ text "Funding Source" ]
                     , SiteLink Logout Route.Logout [ text "Logout" ]
                     ]
                 _ ->

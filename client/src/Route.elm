@@ -17,6 +17,7 @@ type Route
     | Consumer
     | County
     | DIA
+    | FundingSource
     | Login
     | Logout
     | ServiceCode
@@ -33,6 +34,7 @@ route =
         , Url.map Consumer (s "consumer")
         , Url.map County (s "counties")
         , Url.map DIA (s "dia")
+        , Url.map FundingSource (s "fundingSource")
         , Url.map Login (s "login")
         , Url.map Logout (s "logout")
         , Url.map ServiceCode (s "servicecode")
@@ -65,6 +67,9 @@ routeToString page =
 
                 DIA ->
                     [ "dia" ]
+
+                FundingSource ->
+                    [ "fundingSource" ]
 
                 Login ->
                     [ "login" ]

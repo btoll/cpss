@@ -37,6 +37,8 @@ func main() {
 	app.MountServiceCodeController(service, j)
 	k := NewDIAController(service)
 	app.MountDIAController(service, k)
+	l := NewFundingSourceController(service)
+	app.MountFundingSourceController(service, l)
 
 	// Start service
 	if err := service.ListenAndServe(":8080"); err != nil {

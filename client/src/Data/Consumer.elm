@@ -24,7 +24,7 @@ type alias Consumer =
     , active : Bool
     , county : Int
     , serviceCode : Int
-    , fundingSource : String
+    , fundingSource : Int
     , zip : String
     , bsu : String
     , recipientID : String
@@ -50,7 +50,7 @@ new =
     , active = True
     , county = -1
     , serviceCode = -1
-    , fundingSource = ""
+    , fundingSource = -1
     , zip = ""
     , bsu = ""
     , recipientID = ""
@@ -71,7 +71,7 @@ decoder =
         |> optional "active" bool True
         |> optional "county" int -1
         |> optional "serviceCode" int -1
-        |> optional "fundingSource" string ""
+        |> optional "fundingSource" int -1
         |> optional "zip" string ""
         |> optional "bsu" string ""
         |> optional "recipientID" string ""
@@ -103,7 +103,7 @@ encoder consumer =
         , ( "active", Encode.bool consumer.active )
         , ( "county", Encode.int consumer.county )
         , ( "serviceCode", Encode.int consumer.serviceCode )
-        , ( "fundingSource", Encode.string consumer.fundingSource )
+        , ( "fundingSource", Encode.int consumer.fundingSource )
         , ( "zip", Encode.string consumer.zip )
         , ( "bsu", Encode.string consumer.bsu )
         , ( "recipientID", Encode.string consumer.recipientID )

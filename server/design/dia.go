@@ -81,8 +81,8 @@ var DIAItem = Type("DIAItem", func() {
 	Attribute("name")
 
 	Required("id", "name")
-
 })
+
 var DIAMedia = MediaType("application/diacodeapi.diacodeentity", func() {
 	Description("DIA response")
 	TypeName("DIAMedia")

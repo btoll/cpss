@@ -34,7 +34,7 @@ func (s *Consumer) CollectRows(rows *mysql.Rows, coll []*app.ConsumerItem) error
 		var active bool
 		var county int
 		var serviceCode int
-		var fundingSource string
+		var fundingSource int
 		var zip string
 		var bsu string
 		var recipientID string

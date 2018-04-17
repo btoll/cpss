@@ -100,7 +100,7 @@ var ConsumerPayload = Type("ConsumerPayload", func() {
 		Metadata("struct:tag:datastore", "serviceCode,noindex")
 		Metadata("struct:tag:json", "serviceCode")
 	})
-	Attribute("fundingSource", String, "Consumer fundingSource", func() {
+	Attribute("fundingSource", Integer, "Consumer fundingSource", func() {
 		Metadata("struct:tag:datastore", "fundingSource,noindex")
 		Metadata("struct:tag:json", "fundingSource")
 	})

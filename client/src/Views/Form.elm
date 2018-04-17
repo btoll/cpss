@@ -23,6 +23,7 @@ type Selection
     = ConsumerID
     | CountyID
     | DIAID
+    | FundingSourceID
     | ServiceCodeID
     | SpecialistID
     | StatusID
