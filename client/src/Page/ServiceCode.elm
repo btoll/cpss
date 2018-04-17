@@ -122,22 +122,21 @@ update url msg model =
             } ! []
 
         ModalMsg subMsg ->
-            model ! []
---            let
---                cmd =
---                    case subMsg |> Modal.update model.query of
---                        ( False, _ ) ->
---                            Cmd.none
---
---                        ( True, _ ) ->
---                            Maybe.withDefault new model.editing
---                                |> Request.ServiceCode.delete url
---                                |> Http.toTask
---                                |> Task.attempt Deleted
---            in
---            { model |
---                showModal = ( False, Nothing )
---            } ! [ cmd ]
+            let
+                cmd =
+                    case subMsg |> Modal.update Nothing of
+                        ( False, _ ) ->
+                            Cmd.none
+
+                        ( True, _ ) ->
+                            Maybe.withDefault new model.editing
+                                |> Request.ServiceCode.delete url
+                                |> Http.toTask
+                                |> Task.attempt Deleted
+            in
+            { model |
+                showModal = ( False, Nothing )
+            } ! [ cmd ]
 
         Post ->
             let
