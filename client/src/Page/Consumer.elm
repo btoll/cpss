@@ -8,8 +8,6 @@ import Data.DIA exposing (DIA)
 import Data.FundingSource exposing (FundingSource)
 import Data.Pager exposing (Pager)
 import Data.ServiceCode exposing (ServiceCode)
-import Date exposing (Date, Day(..), day, dayOfWeek, month, year)
-import DatePicker exposing (defaultSettings, DateEvent(..))
 import Dict exposing (Dict)
 import Html exposing (Html, Attribute, button, div, form, h1, input, label, node, section, text)
 import Html.Attributes exposing (action, autofocus, checked, for, hidden, id, style, type_, value)
@@ -23,7 +21,6 @@ import Request.FundingSource
 import Request.ServiceCode
 import Table exposing (defaultCustomizations)
 import Task exposing (Task)
-import Util.Date
 import Validate.Consumer
 import Views.Errors as Errors
 import Views.Form as Form
@@ -41,8 +38,6 @@ type alias Model =
     , editing : Maybe Consumer
     , disabled : Bool
     , showModal : ( Bool, Maybe Modal.Modal )
-    , date : Maybe Date
-    , datePicker : DatePicker.DatePicker
     , countyData : CountyData
     , serviceCodes : List ServiceCode
     , consumers : List Consumer
@@ -60,46 +55,15 @@ type alias CountyData
 type Action = None | Adding | Editing
 
 
-commonSettings : DatePicker.Settings
-commonSettings =
-    defaultSettings
-
-
-settings : Maybe Date -> DatePicker.Settings
-settings date =
-    let
-        isDisabled =
-            case date of
-                Nothing ->
-                    commonSettings.isDisabled
-
-                Just date ->
-                    \d ->
-                        Date.toTime d
-                            > Date.toTime date
-                            || (commonSettings.isDisabled d)
-    in
-        { commonSettings
-            | placeholder = ""
-            , isDisabled = isDisabled
-        }
-
-
 
 init : String -> ( Model, Cmd Msg )
 init url =
-    let
-        ( datePicker, datePickerFx ) =
-            DatePicker.init
-    in
     { errors = []
     , tableState = Table.initialSort "ID"
     , action = None
     , editing = Nothing
     , disabled = True
     , showModal = ( False, Nothing )
-    , date = Nothing
-    , datePicker = datePicker
     , countyData = ( [], [] )
     , serviceCodes = []
     , consumers = []
@@ -107,8 +71,7 @@ init url =
     , fundingSources = []
     , query = Nothing
     , pager = Data.Pager.new
-    } ! [ Cmd.map DatePicker datePickerFx
-    , Request.DIA.list url |> Http.send ( Dias >> Fetch )
+    } ! [ Request.DIA.list url |> Http.send ( Dias >> Fetch )
     , Request.FundingSource.list url |> Http.send ( FundingSources >> Fetch )
     , Request.ServiceCode.list url |> Http.send ( ServiceCodes >> Fetch )
     , Request.County.list url |> Http.send ( Counties >> Fetch )
@@ -132,7 +95,6 @@ type Msg
     = Add
     | Cancel
     | ClearSearch
-    | DatePicker DatePicker.Msg
     | Delete Consumer
     | Deleted ( Result Http.Error Int )
     | Edit Consumer
@@ -173,42 +135,6 @@ update url msg model =
                     |> Request.Consumer.page url ""
                     |> Http.send ( Consumers >> Fetch )
                 ]
-
-        DatePicker subMsg ->
-            let
-                ( newDatePicker, datePickerFx, dateEvent ) =
-                    DatePicker.update ( settings model.date ) subMsg model.datePicker
-
-                ( newDate, newConsumer ) =
-                    let
-                        consumer = Maybe.withDefault new model.editing
-                    in
-                    case dateEvent of
-                        Changed newDate ->
-                            let
-                                dateString =
-                                    case dateEvent of
-                                        Changed date ->
-                                            case date of
-                                                Nothing ->
-                                                    ""
-
-                                                Just d ->
-                                                    d |> Util.Date.simple
-
-                                        _ ->
-                                            consumer.dischargeDate
-                            in
-                            ( newDate , { consumer | dischargeDate = dateString } )
-
-                        _ ->
-                            ( model.date, { consumer | dischargeDate = consumer.dischargeDate } )
-            in
-            { model
-                | date = newDate
-                , datePicker = newDatePicker
-                , editing = Just newConsumer
-            } ! [ Cmd.map DatePicker datePickerFx ]
 
         Delete consumer ->
             { model |
@@ -547,8 +473,6 @@ drawView : Model -> List ( Html Msg )
 drawView (
     { action
     , countyData
-    , date
-    , datePicker
     , disabled
     , editing
     , tableState
@@ -603,7 +527,7 @@ drawView (
         Adding ->
             [ form [ onSubmit Post ]
                 ( (++)
-                    ( ( editable, date, datePicker, serviceCodes, dias, fundingSources, countyData ) |> formRows )
+                    ( ( editable, serviceCodes, dias, fundingSources, countyData ) |> formRows )
                     [ Form.submit disabled Cancel ]
                 )
             ]
@@ -611,23 +535,14 @@ drawView (
         Editing ->
             [ form [ onSubmit Put ]
                 ( (++)
-                    ( ( editable, date, datePicker, serviceCodes, dias, fundingSources, countyData ) |> formRows )
+                    ( ( editable, serviceCodes, dias, fundingSources, countyData ) |> formRows )
                     [ Form.submit disabled Cancel ]
                 )
             ]
 
 
-formRows : ( Consumer, Maybe Date, DatePicker.DatePicker, List ServiceCode, List DIA, List FundingSource, CountyData ) -> List ( Html Msg )
-formRows ( editable, date, datePicker, serviceCodes, dias, fundingSources, countyData ) =
-    let
-        focusedDate : Maybe Date
-        focusedDate =
-            case (/=) editable.dischargeDate "" of
-                True ->
-                    editable.dischargeDate |> Util.Date.unsafeFromString |> Just
-                False ->
-                    date
-    in
+formRows : ( Consumer, List ServiceCode, List DIA, List FundingSource, CountyData ) -> List ( Html Msg )
+formRows ( editable, serviceCodes, dias, fundingSources, countyData ) =
     [ Form.text "First Name"
         [ value editable.firstname
         , onInput ( SetFormValue ( \v -> { editable | firstname = v } ) )
@@ -701,16 +616,6 @@ formRows ( editable, date, datePicker, serviceCodes, dias, fundingSources, count
                 |> (::) ( "-1", "-- Select a DIA --" )
                 |> List.map ( editable.dia |> toString |> Form.option )
         )
-    , Form.float "Copay"
-        [ editable.copay |> toString |> value
-        , onInput ( SetFormValue ( \v -> { editable | copay = Form.toFloat v } ) )
-        ]
-        []
-    , div []
-        [ label [] [ text "Discharge Date" ]
-        , DatePicker.view focusedDate ( date |> settings ) datePicker
-            |> Html.map DatePicker
-        ]
     , Form.float "Units"
         [ editable.units |> toString |> value
         , onInput ( SetFormValue ( \v -> { editable | units = Form.toFloat v } ) )
@@ -774,8 +679,6 @@ config model =
                 >> Maybe.withDefault { id = -1, name = "" }
                 >> .name
         )
-        , Table.floatColumn "Copay" .copay
-        , Table.stringColumn "Discharge Date" .dischargeDate
         , Table.floatColumn "Units" .units
         , Table.stringColumn "Other" .other
         , customColumn ( viewButton Edit "Edit" ) ""

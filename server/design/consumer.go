@@ -120,14 +120,6 @@ var ConsumerPayload = Type("ConsumerPayload", func() {
 		Metadata("struct:tag:datastore", "dia,noindex")
 		Metadata("struct:tag:json", "dia")
 	})
-	Attribute("copay", Number, "Consumer copay", func() {
-		Metadata("struct:tag:datastore", "copay,noindex")
-		Metadata("struct:tag:json", "copay")
-	})
-	Attribute("dischargeDate", String, "Consumer dischargeDate", func() {
-		Metadata("struct:tag:datastore", "dischargeDate,noindex")
-		Metadata("struct:tag:json", "dischargeDate")
-	})
 	Attribute("units", Number, "Units units", func() {
 		Metadata("struct:tag:datastore", "units,noindex")
 		Metadata("struct:tag:json", "units")
@@ -137,7 +129,7 @@ var ConsumerPayload = Type("ConsumerPayload", func() {
 		Metadata("struct:tag:json", "other")
 	})
 
-	Required("firstname", "lastname", "active", "county", "serviceCode", "fundingSource", "zip", "bsu", "recipientID", "dia", "copay", "dischargeDate", "units", "other")
+	Required("firstname", "lastname", "active", "county", "serviceCode", "fundingSource", "zip", "bsu", "recipientID", "dia", "units", "other")
 })
 
 var ConsumerQueryPayload = Type("ConsumerQueryPayload", func() {
@@ -163,12 +155,10 @@ var ConsumerItem = Type("consumerItem", func() {
 	Attribute("bsu")
 	Attribute("recipientID")
 	Attribute("dia")
-	Attribute("copay")
-	Attribute("dischargeDate")
 	Attribute("units")
 	Attribute("other")
 
-	Required("id", "firstname", "lastname", "active", "county", "serviceCode", "fundingSource", "zip", "bsu", "recipientID", "dia", "copay", "dischargeDate", "units", "other")
+	Required("id", "firstname", "lastname", "active", "county", "serviceCode", "fundingSource", "zip", "bsu", "recipientID", "dia", "units", "other")
 
 })
 
@@ -190,14 +180,12 @@ var ConsumerMedia = MediaType("application/consumerapi.consumerentity", func() {
 		Attribute("bsu")
 		Attribute("recipientID")
 		Attribute("dia")
-		Attribute("copay")
-		Attribute("dischargeDate")
 		Attribute("units")
 		Attribute("other")
 		Attribute("consumers", ArrayOf("consumerItem"))
 		Attribute("pager", Pager)
 
-		Required("id", "firstname", "lastname", "active", "county", "serviceCode", "fundingSource", "zip", "bsu", "recipientID", "dia", "copay", "dischargeDate", "units", "other", "consumers", "pager")
+		Required("id", "firstname", "lastname", "active", "county", "serviceCode", "fundingSource", "zip", "bsu", "recipientID", "dia", "units", "other", "consumers", "pager")
 	})
 
 	View("default", func() {
@@ -212,8 +200,6 @@ var ConsumerMedia = MediaType("application/consumerapi.consumerentity", func() {
 		Attribute("bsu")
 		Attribute("recipientID")
 		Attribute("dia")
-		Attribute("copay")
-		Attribute("dischargeDate")
 		Attribute("units")
 		Attribute("other")
 	})

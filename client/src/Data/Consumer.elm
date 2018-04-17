@@ -29,8 +29,6 @@ type alias Consumer =
     , bsu : String
     , recipientID : String
     , dia : Int
-    , copay : Float
-    , dischargeDate : String
     , units : Float
     , other : String
     }
@@ -55,8 +53,6 @@ new =
     , bsu = ""
     , recipientID = ""
     , dia = -1
-    , copay = 0.00
-    , dischargeDate = ""
     , units = 0.00
     , other = ""
     }
@@ -76,8 +72,6 @@ decoder =
         |> optional "bsu" string ""
         |> optional "recipientID" string ""
         |> optional "dia" int -1
-        |> optional "copay" float 0.0
-        |> optional "dischargeDate" string ""
         |> optional "units" float 0.0
         |> optional "other" string ""
 
@@ -108,8 +102,6 @@ encoder consumer =
         , ( "bsu", Encode.string consumer.bsu )
         , ( "recipientID", Encode.string consumer.recipientID )
         , ( "dia", Encode.int consumer.dia )
-        , ( "copay", Encode.float consumer.copay )
-        , ( "dischargeDate", Encode.string consumer.dischargeDate )
         , ( "units", Encode.float consumer.units )
         , ( "other", Encode.string consumer.other )
         ]
