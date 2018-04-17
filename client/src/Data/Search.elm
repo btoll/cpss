@@ -48,6 +48,7 @@ type Search
     | County
     | ServiceCode
     | Status
+    | TimeEntry
     | User
 --    | UserWithPager
 

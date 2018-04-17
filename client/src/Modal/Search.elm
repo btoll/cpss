@@ -6,12 +6,14 @@ import Html exposing (Html, div)
 import Search.BillSheet as BillSheet
 import Search.Consumer as Consumer
 import Search.Specialist as Specialist
+import Search.TimeEntry as TimeEntry
 
 
 type Msg
     = BillSheetMsg BillSheet.Msg
     | ConsumerMsg Consumer.Msg
     | SpecialistMsg Specialist.Msg
+    | TimeEntryMsg TimeEntry.Msg
 
 
 
@@ -26,6 +28,9 @@ update query msg =
 
         SpecialistMsg subMsg ->
             subMsg |> Specialist.update query
+
+        TimeEntryMsg subMsg ->
+            subMsg |> TimeEntry.update query
 
 
 
@@ -48,6 +53,16 @@ view t query viewLists =
                     query
                         |> Consumer.view
                         >> Html.map ConsumerMsg
+
+                TimeEntry ->
+                    case viewLists of
+                        Nothing ->
+                            div [] []
+
+                        Just lists ->
+                            lists
+                                |> TimeEntry.view query
+                                >> Html.map TimeEntryMsg
 
                 User ->
                     query

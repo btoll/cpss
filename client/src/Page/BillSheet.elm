@@ -183,11 +183,17 @@ update url msg model =
             } ! []
 
         ClearSearch ->
+            let
+                whereClause =
+                    if (==) model.user.authLevel 1
+                    then ""
+                    else (++) "specialist=" ( model.user.id |> toString )
+            in
             { model |
                 query = Nothing
             } ! [ 0
-                    |> Request.BillSheet.page url ""
-                    |> Http.send ( BillSheets >> Fetch )
+                    |> Request.BillSheet.page url whereClause
+                    >> Http.send ( BillSheets >> Fetch )
                 ]
 
         Delete billsheet ->
@@ -320,20 +326,37 @@ update url msg model =
 
                         {- Search Modal -}
                         ( False, Just query ) ->
+                            let
+                                -- Since there's so much common functionality shared by the BillSheet and
+                                -- TimeEntry pages, we must always check to see which page is being viewed.
+                                -- The BillSheet is an admin-only page, and thus should not be send a Specialist
+                                -- in the where clause.
+                                maybeInsertSpecialist query =
+                                    if (==) model.user.authLevel 1
+                                    then query
+                                    else Dict.insert "specialist" ( model.user.id |> toString ) query
+                            in
                             ( False
                             , Nothing
-                            , query |> Just     -- We need to save the search query for paging!
+                            , query |> Just                     -- We need to save the search query for paging!
                             , Http.send ( BillSheets >> Fetch )
                                 << Request.BillSheet.query url
-                                << String.dropRight 5   -- Remove the trailing " AND ".
+                                << String.dropRight 5           -- Remove the trailing " AND ".
                                 << Dict.foldl fmtEquality ""
+                                << maybeInsertSpecialist
                                 <| query
                             )
 
                         ( True, Just query ) ->
+                            let
+                                whichSearch =
+                                    if (==) model.user.authLevel 1
+                                    then Data.Search.BillSheet
+                                    else Data.Search.TimeEntry
+                            in
                             ( True
                             , model.viewLists |> Just
-                                |> Modal.Search Data.Search.BillSheet model.query
+                                |> Modal.Search whichSearch model.query
                                 |> Just
                             , query |> Just
                             , Cmd.none
@@ -487,8 +510,20 @@ update url msg model =
             model ! []
 
         Search viewLists ->
+            let
+                whichSearch =
+                    if (==) model.user.authLevel 1
+                    then Data.Search.BillSheet
+                    else Data.Search.TimeEntry
+            in
             { model |
-                showModal = ( True, viewLists |> Just |> Modal.Search Data.Search.BillSheet model.query |> Just )
+                showModal =
+                    ( True,
+                    viewLists
+                        |> Just
+                        >> Modal.Search whichSearch model.query
+                        >> Just
+                    )
             } ! []
 
         SetTableState newState ->
