@@ -87,6 +87,7 @@ update url msg model =
         Add ->
             { model |
                 action = Adding
+                , disabled = True
                 , editing = Nothing
             } ! []
 
@@ -117,6 +118,7 @@ update url msg model =
         Edit county ->
             { model |
                 action = Editing
+                , disabled = True
                 , editing = Just county
             } ! []
 
@@ -197,6 +199,7 @@ update url msg model =
             in
             { model |
                 action = action
+                , disabled = True
                 , errors = errors
             } ! [ subCmd ]
 
@@ -248,6 +251,7 @@ update url msg model =
             in
             { model |
                 action = action
+                , disabled = True
                 , errors = errors
             } ! [ subCmd ]
 

@@ -13,7 +13,7 @@ import Date exposing (Date, Day(..), day, dayOfWeek, month, year)
 import DatePicker exposing (defaultSettings, DateEvent(..))
 import Dict exposing (Dict)
 import Html exposing (Html, Attribute, button, div, form, h1, input, label, section, text)
-import Html.Attributes exposing (action, autofocus, checked, disabled, for, hidden, id, style, type_, value)
+import Html.Attributes exposing (action, autofocus, checked, for, hidden, id, style, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Http
 import Modal.Search
@@ -147,12 +147,7 @@ update url msg model =
         Add ->
             { model |
                 action = Adding
---                , subView = { model =
---                    { oldSubViewModel |
---                        editing = Nothing
---                    }
---                    , authLevel = model.subView.authLevel
---                }
+                , disabled = True
             } ! []
 
         BillSheetTimeEntryMsg subMsg ->
@@ -162,7 +157,8 @@ update url msg model =
                         |> Page.BillSheet.TimeEntry.update subMsg
             in
             { model |
-                subModel = m
+                disabled = False
+                , subModel = m
             } ! [ Cmd.map BillSheetTimeEntryMsg cmd ]
 
         BillSheetBillSheetMsg subMsg ->
@@ -172,7 +168,8 @@ update url msg model =
                         |> Page.BillSheet.BillSheet.update subMsg
             in
             { model |
-                subModel = m
+                disabled = False
+                , subModel = m
             } ! [ Cmd.map BillSheetBillSheetMsg cmd ]
 
         Cancel ->
@@ -230,6 +227,7 @@ update url msg model =
         Edit billsheet ->
             { model |
                 action = Editing
+                , disabled = True
                 , subModel = { subModel | editing = billsheet |> Just }
             } ! []
 
@@ -414,6 +412,7 @@ update url msg model =
             in
                 { model |
                     action = action
+                    , disabled = True
                     , errors = errors
                 } ! [ subCmd ]
 
@@ -470,6 +469,7 @@ update url msg model =
             in
                 { model |
                     action = action
+                    , disabled = True
                     , errors = errors
                 } ! [ subCmd ]
 
@@ -590,7 +590,7 @@ drawView model =
     case model.action of
         None ->
             [ button [ Add |> onClick ] [ text "Add Bill Sheet" ]
-            , button [ isDisabled |> disabled, model.viewLists |> Search |> onClick ] [ text "Search" ]
+            , button [ isDisabled |> Html.Attributes.disabled, model.viewLists |> Search |> onClick ] [ text "Search" ]
             , button [ hideClearTextButton |> hidden, ClearSearch |> onClick ] [ text "Clear Search" ]
             , showPager
             , showList
@@ -613,8 +613,7 @@ drawView model =
             [ form [ Post |> onSubmit ]
                 ( (++)
                     l
---                    [ Form.submit disabled Cancel ]
-                    [ Form.submit False Cancel ]
+                    [ Form.submit model.disabled Cancel ]
                 )
             ]
 

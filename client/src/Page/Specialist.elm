@@ -96,6 +96,7 @@ update url msg model =
         Add ->
             { model |
                 action = Adding
+                , disabled = True
                 , editing = Nothing
             } ! []
 
@@ -116,7 +117,6 @@ update url msg model =
             { model |
                 action = None
                 , changingPassword = ""
-                , disabled = True
                 , editing = Nothing
                 , errors = []
             } ! []
@@ -155,6 +155,7 @@ update url msg model =
         Edit specialist ->
             { model |
                 action = Editing
+                , disabled = True
                 , editing = Just specialist
             } ! []
 
@@ -288,6 +289,7 @@ update url msg model =
             in
                 { model |
                     action = action
+                    , disabled = True
                     , editing = Nothing
                     , errors = errors
                 } ! [ subCmd ]
@@ -332,6 +334,7 @@ update url msg model =
                     in
                         { model |
                             action = action
+                            , disabled = True
                             , errors = errors
                         } ! [ subCmd ]
 
@@ -345,6 +348,7 @@ update url msg model =
                     in
                         { model |
                             action = SettingPassword specialist
+                            , disabled = True
                             , changingPassword = ""
                         } ! [ subCmd ]
 
@@ -358,6 +362,7 @@ update url msg model =
                     in
                         { model |
                             action = None
+                            , disabled = True
                             , changingPassword = ""
                         } ! [ subCmd ]
 

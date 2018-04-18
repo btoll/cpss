@@ -75,6 +75,7 @@ update url msg model =
         Add ->
             { model |
                 action = Adding
+                , disabled = True
                 , editing = Nothing
             } ! []
 
@@ -106,6 +107,7 @@ update url msg model =
         Edit status ->
             { model |
                 action = Editing
+                , disabled = True
                 , editing = Just status
             } ! []
 
@@ -164,6 +166,7 @@ update url msg model =
             in
                 { model |
                     action = action
+                    , disabled = True
                     , errors = errors
                 } ! [ subCmd ]
 
@@ -214,6 +217,7 @@ update url msg model =
             in
                 { model |
                     action = action
+                    , disabled = True
                     , errors = errors
                 } ! [ subCmd ]
 

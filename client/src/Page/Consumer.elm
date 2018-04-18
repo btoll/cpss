@@ -118,6 +118,7 @@ update url msg model =
         Add ->
             { model |
                 action = Adding
+                , disabled = True
                 , editing = Nothing
             } ! []
 
@@ -156,6 +157,7 @@ update url msg model =
         Edit consumer ->
             { model |
                 action = Editing
+                , disabled = True
                 , editing = Just consumer
             -- Fetch the county's zip codes to set the zip code drop-down to the correct value.
             } ! [ consumer.county |> toString |> Request.City.get url |> Http.send ( Cities >> Fetch ) ]
@@ -323,6 +325,7 @@ update url msg model =
             in
                 { model |
                     action = action
+                    , disabled = True
                     , errors = errors
                 } ! [ subCmd ]
 
@@ -374,6 +377,7 @@ update url msg model =
             in
             { model |
                 action = action
+                , disabled = True
                 , errors = errors
             } ! [ subCmd ]
 
