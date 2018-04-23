@@ -438,9 +438,18 @@ update url msg model =
             } ! []
 
         Posted ( Err err ) ->
+            let
+                e =
+                    case err of
+                        Http.BadStatus e ->
+                            e.body
+
+                        _ ->
+                            "nop"
+            in
             { model |
---                , errors = (::) "There was a problem, the record could not be saved!" model.errors
-                subModel = { subModel | editing = Nothing }
+                errors = (::) ( Validate.BillSheet.ServerError, e ) model.errors
+                , subModel = { subModel | editing = Nothing }
             } ! []
 
         Put ->
@@ -650,15 +659,15 @@ config model =
     Table.customConfig
     { toId = .id >> toString
     , toMsg = SetTableState
-    , columns = model.viewLists |> tableColumns customColumn viewButton Edit Delete
+    , columns = model.viewLists |> tableColumns customColumn viewButton viewCheckbox Edit Delete
     , customizations = defaultCustomizations
     }
 
 
-customColumn : ( BillSheet -> Table.HtmlDetails Msg ) -> Table.Column BillSheet Msg
-customColumn viewElement =
+customColumn : String -> ( BillSheet -> Table.HtmlDetails Msg ) -> Table.Column BillSheet Msg
+customColumn colName viewElement =
     Table.veryCustomColumn
-        { name = ""
+        { name = colName
         , viewData = viewElement
         , sorter = Table.unsortable
         }
@@ -669,5 +678,12 @@ viewButton msg name billsheet =
     Table.HtmlDetails []
         [ button [ onClick <| msg <| billsheet ] [ text name ]
         ]
+
+
+viewCheckbox : BillSheet -> Table.HtmlDetails Msg
+viewCheckbox { hold } =
+  Table.HtmlDetails []
+    [ input [ checked hold, Html.Attributes.disabled True, type_ "checkbox" ] []
+    ]
 
 

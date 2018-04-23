@@ -11,13 +11,11 @@ import DatePicker exposing (defaultSettings, DateEvent(..))
 import Dict exposing (Dict)
 import Html exposing (Html, Attribute, button, div, form, h1, input, label, section, text)
 import Html.Attributes exposing (action, autofocus, checked, for, hidden, id, multiple, style, type_, value)
-import Html.Events exposing (onClick, onInput, onSubmit)
+import Html.Events exposing (onCheck, onClick, onInput, onSubmit)
 import Http
 import Table exposing (defaultCustomizations)
 import Task exposing (Task)
 import Util.Date
-import Validate.BillSheet
-import Views.Errors as Errors
 import Views.Form as Form
 
 
@@ -80,6 +78,7 @@ init user =
 type Msg
     = DatePicker DatePicker.Msg
     | Select Form.Selection BillSheet String
+    | SetCheckboxValue ( Bool -> BillSheet ) Bool
     | SetFormValue ( String -> BillSheet ) String
     | SetTableState Table.State
 
@@ -157,6 +156,12 @@ update msg model =
                 _ ->
                     model ! []
 
+        SetCheckboxValue setBoolValue b ->
+            { model |
+                editing = setBoolValue b |> Just
+                , disabled = False
+            } ! []
+
         SetFormValue setFormValue s ->
             { model |
                 editing = Just ( setFormValue s )
@@ -214,13 +219,18 @@ formRows viewLists model =
     , Form.select "Service Code"
         [ id "serviceCodeSelection"
         , editable |> Select Form.ServiceCodeID |> onInput
-        , True |> multiple
+--        , True |> multiple
         ] (
             serviceCodes
                 |> List.map ( \m -> ( m.id |> toString, m.name ) )
                 |> (::) ( "-1", "-- Select a service code --" )
                 |> List.map ( editable.serviceCode |> toString |> Form.option )
         )
+    , Form.checkbox "Hold"
+        [ checked editable.hold
+        , onCheck ( SetCheckboxValue ( \v -> { editable | hold = v } ) )
+        ]
+        []
     , Form.float "Hours"
         [ editable.hours |> toString |> value
         , onInput ( SetFormValue (\v -> { editable | hours = Form.toFloat v } ) )
@@ -258,7 +268,7 @@ formRows viewLists model =
 -- TABLE CONFIGURATION
 
 
-tableColumns customColumn viewButton editMsg deleteMsg viewLists =
+tableColumns customColumn viewButton viewCheckbox editMsg deleteMsg viewLists =
     let
         consumers = Maybe.withDefault [] viewLists.consumers
         counties = Maybe.withDefault [] viewLists.counties
@@ -274,6 +284,7 @@ tableColumns customColumn viewButton editMsg deleteMsg viewLists =
     )
     , Table.stringColumn "Service Date" .serviceDate
     , Table.intColumn "Service Code" .serviceCode
+    , customColumn "Hold" viewCheckbox
     , Table.floatColumn "Hours" .hours
     , Table.stringColumn "Description" .description
     , Table.stringColumn "County" (
@@ -287,8 +298,8 @@ tableColumns customColumn viewButton editMsg deleteMsg viewLists =
     )
     , Table.stringColumn "Contract Type" .contractType
     , Table.stringColumn "Billed Code" .billedCode
-    , customColumn ( viewButton editMsg "Edit" )
-    , customColumn ( viewButton deleteMsg "Delete" )
+    , customColumn "" ( viewButton editMsg "Edit" )
+    , customColumn "" ( viewButton deleteMsg "Delete" )
     ]
 
 

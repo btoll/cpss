@@ -11,13 +11,11 @@ import DatePicker exposing (defaultSettings, DateEvent(..))
 import Dict exposing (Dict)
 import Html exposing (Html, Attribute, button, div, form, h1, input, label, section, text)
 import Html.Attributes exposing (action, autofocus, checked, for, hidden, id, style, type_, value)
-import Html.Events exposing (onClick, onInput, onSubmit)
+import Html.Events exposing (onCheck, onClick, onInput, onSubmit)
 import Http
 import Table exposing (defaultCustomizations)
 import Task exposing (Task)
 import Util.Date
-import Validate.BillSheet
-import Views.Errors as Errors
 import Views.Form as Form
 
 
@@ -77,6 +75,7 @@ init =
 type Msg
     = DatePicker DatePicker.Msg
     | Select Form.Selection BillSheet String
+    | SetCheckboxValue ( Bool -> BillSheet ) Bool
     | SetFormValue ( String -> BillSheet ) String
     | SetTableState Table.State
 
@@ -151,6 +150,12 @@ update msg model =
                 _ ->
                     model ! []
 
+        SetCheckboxValue setBoolValue b ->
+            { model |
+                editing = setBoolValue b |> Just
+                , disabled = False
+            } ! []
+
         SetFormValue setFormValue s ->
             { model |
                 editing = Just ( setFormValue s )
@@ -211,6 +216,11 @@ formRows viewLists model =
                 |> (::) ( "-1", "-- Select a service code --" )
                 |> List.map ( editable.serviceCode |> toString |> Form.option )
         )
+    , Form.checkbox "Hold"
+        [ checked editable.hold
+        , onCheck ( SetCheckboxValue ( \v -> { editable | hold = v } ) )
+        ]
+        []
     , Form.float "Units"
         [ editable.units |> toString |> value
         , onInput ( SetFormValue (\v -> { editable | units = Form.toFloat v } ) )
@@ -274,7 +284,7 @@ formRows viewLists model =
 -- TABLE CONFIGURATION
 
 
-tableColumns customColumn viewButton editMsg deleteMsg viewLists =
+tableColumns customColumn viewButton viewCheckbox editMsg deleteMsg viewLists =
     let
         consumers = Maybe.withDefault [] viewLists.consumers
         counties = Maybe.withDefault [] viewLists.counties
@@ -284,6 +294,7 @@ tableColumns customColumn viewButton editMsg deleteMsg viewLists =
     [ Table.stringColumn "Recipient ID" .recipientID
     , Table.stringColumn "Service Date" .serviceDate
     , Table.intColumn "Service Code" .serviceCode
+    , customColumn "Hold" viewCheckbox
     , Table.floatColumn "Units" .units
     , Table.floatColumn "Billed Amount" .billedAmount
     , Table.stringColumn "Consumer" (
@@ -324,8 +335,8 @@ tableColumns customColumn viewButton editMsg deleteMsg viewLists =
             >> ( \m -> m.firstname ++ " " ++  m.lastname )
     )
     , Table.stringColumn "Record Number" .recordNumber
-    , customColumn ( viewButton editMsg "Edit" )
-    , customColumn ( viewButton deleteMsg "Delete" )
+    , customColumn "" ( viewButton editMsg "Edit" )
+    , customColumn "" ( viewButton deleteMsg "Delete" )
     ]
 
 

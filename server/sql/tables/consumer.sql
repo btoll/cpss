@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS `consumer` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `firstname` varchar(100) DEFAULT NULL,
   `lastname` varchar(100) DEFAULT NULL,
-  `active` tinyint DEFAULT -1,
+  `active` tinyint DEFAULT 1,
   `county` mediumint DEFAULT -1,
   `serviceCode` int(11) DEFAULT -1,
   `fundingSource` int(11) DEFAULT NULL,
@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS `consumer` (
   `other` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `ID` (`id`),
+  /*CONSTRAINT `fkactive` FOREIGN KEY (`active`) REFERENCES `active` (`active_id`),*/
   CONSTRAINT `fkserviceCode` FOREIGN KEY (`serviceCode`) REFERENCES `service_code` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 ;
 

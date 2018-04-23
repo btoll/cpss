@@ -1,4 +1,4 @@
-module Validate.BillSheet exposing (Field, errors)
+module Validate.BillSheet exposing (Field(..), errors)
 
 import Data.BillSheet exposing (BillSheet)
 import Validate exposing (Validator, ifBlank, validate)
@@ -8,6 +8,7 @@ import Validate exposing (Validator, ifBlank, validate)
 type Field
     = RecipientID
     | ServiceDate
+    | ServerError
 
 
 
