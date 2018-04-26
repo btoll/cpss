@@ -1,33 +1,26 @@
 module Validate.BillSheet exposing (Field(..), errors)
 
 import Data.BillSheet exposing (BillSheet)
-import Validate exposing (Validator, ifBlank, validate)
+import Validate exposing (Validator, ifBlank, ifNotInt, validate)
 
 
 
 type Field
-    = RecipientID
-    | ServiceDate
+    = Consumer
+    | County
+    | RecipientID
     | ServerError
+    | ServiceCode
+    | ServiceDate
 
 
 
---    { id : String
---    , recipientID : String
---    , serviceDate : String
---    , billedAmount : Float
---    , consumer : String
---    , status : String
---    , confirmation : String
---    , service : String
---    , county : String
---    , specialist : String
---    , recordNumber : String
---    , selected : Bool
---    }
 errors : BillSheet -> List ( Field, String )
 errors billsheet =
     validate modelValidator billsheet
+--errors : Model -> List ( Field, String )
+--errors model =
+--    validate modelValidator model
 
 
 message : String
@@ -35,13 +28,19 @@ message =
     "Cannot be blank."
 
 
+
+type alias Model =
+        { serviceDate : String, consumer : String }
+
 modelValidator : Validator ( Field, String ) BillSheet
+--modelValidator : Validator ( Field, String ) Model
 modelValidator =
     Validate.all
 --        [ ifBlank .recipientID ( RecipientID, message )
 --        , ifBlank .serviceDate ( ServiceDate, message )
 --        ]
         [ ifBlank .serviceDate ( ServiceDate, message )
+--        , ifNotInt .consumer ( Consumer, "Select a consumer" )
         ]
 
 

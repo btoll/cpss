@@ -1,4 +1,4 @@
-module Validate.DIA exposing (Field, errors)
+module Validate.DIA exposing (Field(..), errors)
 
 import Data.DIA exposing (DIA)
 import Validate exposing (Validator, ifBlank, validate)
@@ -7,6 +7,7 @@ import Validate exposing (Validator, ifBlank, validate)
 
 type Field
     = Name
+    | ServerError
 
 
 

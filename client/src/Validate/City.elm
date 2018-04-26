@@ -1,4 +1,4 @@
-module Validate.City exposing (Field, errors)
+module Validate.City exposing (Field(..), errors)
 
 import Data.City exposing (City)
 import Validate exposing (Validator, ifBlank, validate)
@@ -7,6 +7,7 @@ import Validate exposing (Validator, ifBlank, validate)
 
 type Field
     = Name
+    | ServerError
 
 
 

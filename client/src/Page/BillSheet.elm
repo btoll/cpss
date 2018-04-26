@@ -148,6 +148,7 @@ update url msg model =
             { model |
                 action = Adding
                 , disabled = True
+                , errors = []
             } ! []
 
         BillSheetTimeEntryMsg subMsg ->
@@ -195,8 +196,9 @@ update url msg model =
 
         Delete billsheet ->
             { model |
-                showModal = ( True , Modal.Delete |> Just )
+                 showModal = ( True , Modal.Delete |> Just )
                 , subModel = { subModel | editing = billsheet |> Just }
+                , errors = []
             } ! []
 
         Deleted ( Ok id ) ->
@@ -218,16 +220,26 @@ update url msg model =
             } ! []
 
         Deleted ( Err err ) ->
+            let
+                e =
+                    case err of
+                        Http.BadStatus e ->
+                            e.body
+
+                        _ ->
+                            "nop"
+            in
             { model |
                 action = None
+                , errors = (::) ( Validate.BillSheet.ServerError, e ) model.errors
                 , subModel = { subModel | editing = Nothing }
---                , errors = (::) "There was a problem, the record could not be deleted!" model.errors
             } ! []
 
         Edit billsheet ->
             { model |
                 action = Editing
                 , disabled = True
+                , errors = []
                 , subModel = { subModel | editing = billsheet |> Just }
             } ! []
 
@@ -510,9 +522,18 @@ update url msg model =
             } ! []
 
         Putted ( Err err ) ->
+            let
+                e =
+                    case err of
+                        Http.BadStatus e ->
+                            e.body
+
+                        _ ->
+                            "nop"
+            in
             { model |
---                , errors = (::) "There was a problem, the record could not be updated!" model.errors
-                subModel = { subModel | editing = Nothing }
+                errors = (::) ( Validate.BillSheet.ServerError, e ) model.errors
+                , subModel = { subModel | editing = Nothing }
             } ! []
 
         Query query ->
@@ -533,6 +554,7 @@ update url msg model =
                         >> Modal.Search whichSearch model.query
                         >> Just
                     )
+                , errors = []
             } ! []
 
         SetTableState newState ->

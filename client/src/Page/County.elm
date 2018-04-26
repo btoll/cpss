@@ -88,6 +88,7 @@ update url msg model =
             { model |
                 action = Adding
                 , disabled = True
+                , errors = []
                 , editing = Nothing
             } ! []
 
@@ -102,6 +103,7 @@ update url msg model =
             { model |
                 editing = Just city
                 , showModal = ( True , Modal.Delete |> Just )
+                , errors = []
             } ! []
 
         Deleted ( Ok id ) ->
@@ -110,9 +112,18 @@ update url msg model =
             } ! []
 
         Deleted ( Err err ) ->
+            let
+                e =
+                    case err of
+                        Http.BadStatus e ->
+                            e.body
+
+                        _ ->
+                            "nop"
+            in
             { model |
                 action = None
---                , errors = (::) "There was a problem, the record could not be deleted!" model.errors
+                , errors = (::) ( Validate.City.ServerError, e ) model.errors
             } ! []
 
         Edit county ->
@@ -120,6 +131,7 @@ update url msg model =
                 action = Editing
                 , disabled = True
                 , editing = Just county
+                , errors = []
             } ! []
 
         Fetch result ->
@@ -132,9 +144,19 @@ update url msg model =
                     } ! []
 
                 Cities ( Err err ) ->
+                    let
+                        e =
+                            case err of
+                                Http.BadStatus e ->
+                                    e.body
+
+                                _ ->
+                                    "nop"
+                    in
                     { model |
                         cities = []
                         , tableState = Table.initialSort "ID"
+                        , errors = (::) ( Validate.City.ServerError, e ) model.errors
                     } ! []
 
                 Counties ( Ok counties ) ->
@@ -144,8 +166,18 @@ update url msg model =
                     } ! []
 
                 Counties ( Err err ) ->
+                    let
+                        e =
+                            case err of
+                                Http.BadStatus e ->
+                                    e.body
+
+                                _ ->
+                                    "nop"
+                    in
                     { model |
                         tableState = Table.initialSort "ID"
+                        , errors = (::) ( Validate.City.ServerError, e ) model.errors
                     } ! []
 
         ModalMsg subMsg ->
@@ -220,9 +252,18 @@ update url msg model =
             } ! []
 
         Posted ( Err err ) ->
+            let
+                e =
+                    case err of
+                        Http.BadStatus e ->
+                            e.body
+
+                        _ ->
+                            "nop"
+            in
             { model |
                 editing = Nothing
---                , errors = (::) "There was a problem, the record could not be saved!" model.errors
+                , errors = (::) ( Validate.City.ServerError, e ) model.errors
             } ! []
 
         Put ->
@@ -273,9 +314,18 @@ update url msg model =
             } ! []
 
         Putted ( Err err ) ->
+            let
+                e =
+                    case err of
+                        Http.BadStatus e ->
+                            e.body
+
+                        _ ->
+                            "nop"
+            in
             { model |
                 editing = Nothing
---                , errors = (::) "There was a problem, the record could not be updated!" model.errors
+                , errors = (::) ( Validate.City.ServerError, e ) model.errors
             } ! []
 
         SelectCounty city countyID ->

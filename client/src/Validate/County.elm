@@ -1,4 +1,4 @@
-module Validate.County exposing (Field, errors)
+module Validate.County exposing (Field(..), errors)
 
 import Data.County exposing (County)
 import Validate exposing (Validator, ifBlank, validate)
@@ -7,6 +7,7 @@ import Validate exposing (Validator, ifBlank, validate)
 
 type Field
     = Name
+    | ServerError
 
 
 

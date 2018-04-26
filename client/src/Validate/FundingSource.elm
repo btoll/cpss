@@ -1,4 +1,4 @@
-module Validate.FundingSource exposing (Field, errors)
+module Validate.FundingSource exposing (Field(..), errors)
 
 import Data.FundingSource exposing (FundingSource)
 import Validate exposing (Validator, ifBlank, validate)
@@ -7,6 +7,7 @@ import Validate exposing (Validator, ifBlank, validate)
 
 type Field
     = Name
+    | ServerError
 
 
 

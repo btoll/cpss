@@ -1,4 +1,4 @@
-module Validate.ServiceCode exposing (Field, errors)
+module Validate.ServiceCode exposing (Field(..), errors)
 
 import Data.ServiceCode exposing (ServiceCode)
 import Validate exposing (Validator, ifBlank, validate)
@@ -7,6 +7,7 @@ import Validate exposing (Validator, ifBlank, validate)
 
 type Field
     = Name
+    | ServerError
 
 
 

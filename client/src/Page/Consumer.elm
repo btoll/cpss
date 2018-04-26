@@ -120,6 +120,7 @@ update url msg model =
                 action = Adding
                 , disabled = True
                 , editing = Nothing
+                , errors = []
             } ! []
 
         Cancel ->
@@ -141,6 +142,7 @@ update url msg model =
             { model |
                 editing = Just consumer
                 , showModal = ( True , Modal.Delete |> Just )
+                , errors = []
             } ! []
 
         Deleted ( Ok id ) ->
@@ -149,9 +151,18 @@ update url msg model =
             } ! []
 
         Deleted ( Err err ) ->
+            let
+                e =
+                    case err of
+                        Http.BadStatus e ->
+                            e.body
+
+                        _ ->
+                            "nop"
+            in
             { model |
                 action = None
---                , errors = (::) "There was a problem, the record could not be deleted!" model.errors
+                , errors = (::) ( Validate.Consumer.ServerError, e ) model.errors
             } ! []
 
         Edit consumer ->
@@ -159,6 +170,7 @@ update url msg model =
                 action = Editing
                 , disabled = True
                 , editing = Just consumer
+                , errors = []
             -- Fetch the county's zip codes to set the zip code drop-down to the correct value.
             } ! [ consumer.county |> toString |> Request.City.get url |> Http.send ( Cities >> Fetch ) ]
 
@@ -171,8 +183,18 @@ update url msg model =
                     } ! []
 
                 Cities ( Err err ) ->
+                    let
+                        e =
+                            case err of
+                                Http.BadStatus e ->
+                                    e.body
+
+                                _ ->
+                                    "nop"
+                    in
                     { model |
                         countyData = ( model.countyData |> Tuple.first, [] )
+                        , errors = (::) ( Validate.Consumer.ServerError, e ) model.errors
                         , tableState = Table.initialSort "ID"
                     } ! []
 
@@ -184,8 +206,18 @@ update url msg model =
                     } ! []
 
                 Consumers ( Err err ) ->
+                    let
+                        e =
+                            case err of
+                                Http.BadStatus e ->
+                                    e.body
+
+                                _ ->
+                                    "nop"
+                    in
                     { model |
                         consumers = []
+                        , errors = (::) ( Validate.Consumer.ServerError, e ) model.errors
                         , tableState = Table.initialSort "ID"
                     } ! []
 
@@ -196,8 +228,18 @@ update url msg model =
                     } ! []
 
                 Counties ( Err err ) ->
+                    let
+                        e =
+                            case err of
+                                Http.BadStatus e ->
+                                    e.body
+
+                                _ ->
+                                    "nop"
+                    in
                     { model |
                         countyData = ( [], model.countyData |> Tuple.second )
+                        , errors = (::) ( Validate.Consumer.ServerError, e ) model.errors
                         , tableState = Table.initialSort "ID"
                     } ! []
 
@@ -208,8 +250,18 @@ update url msg model =
                     } ! []
 
                 Dias ( Err err ) ->
+                    let
+                        e =
+                            case err of
+                                Http.BadStatus e ->
+                                    e.body
+
+                                _ ->
+                                    "nop"
+                    in
                     { model |
                         dias = []
+                        , errors = (::) ( Validate.Consumer.ServerError, e ) model.errors
                         , tableState = Table.initialSort "ID"
                     } ! []
 
@@ -220,8 +272,18 @@ update url msg model =
                     } ! []
 
                 FundingSources ( Err err ) ->
+                    let
+                        e =
+                            case err of
+                                Http.BadStatus e ->
+                                    e.body
+
+                                _ ->
+                                    "nop"
+                    in
                     { model |
                         fundingSources = []
+                        , errors = (::) ( Validate.Consumer.ServerError, e ) model.errors
                         , tableState = Table.initialSort "ID"
                     } ! []
 
@@ -232,8 +294,18 @@ update url msg model =
                     } ! []
 
                 ServiceCodes ( Err err ) ->
+                    let
+                        e =
+                            case err of
+                                Http.BadStatus e ->
+                                    e.body
+
+                                _ ->
+                                    "nop"
+                    in
                     { model |
                         serviceCodes = []
+                        , errors = (::) ( Validate.Consumer.ServerError, e ) model.errors
                         , tableState = Table.initialSort "ID"
                     } ! []
 
@@ -346,9 +418,18 @@ update url msg model =
             } ! []
 
         Posted ( Err err ) ->
+            let
+                e =
+                    case err of
+                        Http.BadStatus e ->
+                            e.body
+
+                        _ ->
+                            "nop"
+            in
             { model |
                 editing = Nothing
---                , errors = (::) "There was a problem, the record could not be saved!" model.errors
+                , errors = (::) ( Validate.Consumer.ServerError, e ) model.errors
             } ! []
 
         Put ->
@@ -399,14 +480,24 @@ update url msg model =
                 } ! []
 
         Putted ( Err err ) ->
+            let
+                e =
+                    case err of
+                        Http.BadStatus e ->
+                            e.body
+
+                        _ ->
+                            "nop"
+            in
             { model |
                 editing = Nothing
---                , errors = (::) "There was a problem, the record could not be updated!" model.errors
+                , errors = (::) ( Validate.Consumer.ServerError, e ) model.errors
             } ! []
 
         Search ->
             { model |
                 showModal = ( True , Nothing |> Modal.Search Data.Search.Consumer model.query |> Just )
+                , errors = []
             } ! []
 
         Select selectType consumer selection ->

@@ -1,4 +1,4 @@
-module Validate.Status exposing (Field, errors)
+module Validate.Status exposing (Field(..), errors)
 
 import Data.Status exposing (Status)
 import Validate exposing (Validator, ifBlank, validate)
@@ -7,6 +7,7 @@ import Validate exposing (Validator, ifBlank, validate)
 
 type Field
     = Name
+    | ServerError
 
 
 

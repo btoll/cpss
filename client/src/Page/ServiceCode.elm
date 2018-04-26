@@ -77,6 +77,7 @@ update url msg model =
                 action = Adding
                 , disabled = True
                 , editing = Nothing
+                , errors = []
             } ! []
 
         Cancel ->
@@ -90,6 +91,7 @@ update url msg model =
             { model |
                 editing = Just serviceCode
                 , showModal = ( True , Modal.Delete |> Just )
+                , errors = []
             } ! []
 
         Deleted ( Ok serviceCode ) ->
@@ -98,17 +100,25 @@ update url msg model =
             } ! []
 
         Deleted ( Err err ) ->
-            model ! []
-            -- TODO!
---            { model |
---                errors = [ "There was a problem when attempting to delete the service code!" ]
---            } ! []
+            let
+                e =
+                    case err of
+                        Http.BadStatus e ->
+                            e.body
+
+                        _ ->
+                            "nop"
+            in
+            { model |
+                errors = (::) ( Validate.ServiceCode.ServerError, e ) model.errors
+            } ! []
 
         Edit serviceCode ->
             { model |
                 action = Editing
                 , disabled = True
                 , editing = Just serviceCode
+                , errors = []
             } ! []
 
         FetchedServiceCode ( Ok serviceCodes ) ->
@@ -118,9 +128,19 @@ update url msg model =
             } ! []
 
         FetchedServiceCode ( Err err ) ->
+            let
+                e =
+                    case err of
+                        Http.BadStatus e ->
+                            e.body
+
+                        _ ->
+                            "nop"
+            in
             { model |
                 serviceCodes = []
                 , tableState = Table.initialSort "ID"
+                , errors = (::) ( Validate.ServiceCode.ServerError, e ) model.errors
             } ! []
 
         ModalMsg subMsg ->
@@ -187,8 +207,18 @@ update url msg model =
                 } ! []
 
         Posted ( Err err ) ->
+            let
+                e =
+                    case err of
+                        Http.BadStatus e ->
+                            e.body
+
+                        _ ->
+                            "nop"
+            in
             { model |
                 editing = Nothing
+                , errors = (::) ( Validate.ServiceCode.ServerError, e ) model.errors
             } ! []
 
         Put ->
@@ -239,9 +269,18 @@ update url msg model =
                 } ! []
 
         Putted ( Err err ) ->
+            let
+                e =
+                    case err of
+                        Http.BadStatus e ->
+                            e.body
+
+                        _ ->
+                            "nop"
+            in
             { model |
                 editing = Nothing
---                , errors = (::) "There was a problem, the record could not be updated!" model.errors
+                , errors = (::) ( Validate.ServiceCode.ServerError, e ) model.errors
             } ! []
 
         SetTableState newState ->

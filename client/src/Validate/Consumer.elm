@@ -1,4 +1,4 @@
-module Validate.Consumer exposing (Field, errors)
+module Validate.Consumer exposing (Field(..), errors)
 
 import Data.Consumer exposing (Consumer)
 import Validate exposing (Validator, ifBlank, validate)
@@ -8,6 +8,7 @@ import Validate exposing (Validator, ifBlank, validate)
 type Field
     = FirstName
     | LastName
+    | ServerError
 
 
 

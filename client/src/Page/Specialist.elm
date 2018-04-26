@@ -98,6 +98,7 @@ update url msg model =
                 action = Adding
                 , disabled = True
                 , editing = Nothing
+                , errors = []
             } ! []
 
         Authenticated specialist ( Ok user ) ->
@@ -107,10 +108,18 @@ update url msg model =
             } ! []
 
         Authenticated specialist ( Err err ) ->
+            let
+                e =
+                    case err of
+                        Http.BadStatus e ->
+                            e.body
+
+                        _ ->
+                            "nop"
+            in
             { model |
                 action = ChangingPassword specialist
-                -- TODO!
---                , errors = [ None, "Passwords do not match!" ]
+                , errors = (::) ( Validate.Specialist.ServerError, e ) model.errors
             } ! []
 
         Cancel ->
@@ -139,6 +148,7 @@ update url msg model =
             { model |
                 editing = Just specialist
                 , showModal = ( True , Modal.Delete |> Just )
+                , errors = []
             } ! []
 
         Deleted ( Ok specialist ) ->
@@ -147,9 +157,18 @@ update url msg model =
             } ! []
 
         Deleted ( Err err ) ->
+            let
+                e =
+                    case err of
+                        Http.BadStatus e ->
+                            e.body
+
+                        _ ->
+                            "nop"
+            in
             { model |
                 action = None
---                , errors = (::) "There was a problem, the record could not be deleted!" model.errors
+                , errors = (::) ( Validate.Specialist.ServerError, e ) model.errors
             } ! []
 
         Edit specialist ->
@@ -157,6 +176,7 @@ update url msg model =
                 action = Editing
                 , disabled = True
                 , editing = Just specialist
+                , errors = []
             } ! []
 
         FetchedSpecialists ( Ok specialists ) ->
@@ -167,9 +187,18 @@ update url msg model =
             } ! []
 
         FetchedSpecialists ( Err err ) ->
+            let
+                e =
+                    case err of
+                        Http.BadStatus e ->
+                            e.body
+
+                        _ ->
+                            "nop"
+            in
             { model |
                 specialists = []
---                , errors = (::) "There was a problem, the record(s) could not be retrieved!" model.errors
+                , errors = (::) ( Validate.Specialist.ServerError, e ) model.errors
                 , tableState = Table.initialSort "ID"
             } ! []
 
@@ -194,11 +223,17 @@ update url msg model =
 
         Hashed ( Err err ) ->
             let
-                e = (Debug.log "err" err)
+                e =
+                    case err of
+                        Http.BadStatus e ->
+                            e.body
+
+                        _ ->
+                            "nop"
             in
             { model |
                 action = None
---                , errors = (::) "There was a problem, the password could not be hashed!" model.errors
+                , errors = (::) ( Validate.Specialist.ServerError, e ) model.errors
             } ! []
 
         ModalMsg subMsg ->
@@ -301,9 +336,18 @@ update url msg model =
             } ! []
 
         Posted ( Err err ) ->
+            let
+                e =
+                    case err of
+                        Http.BadStatus e ->
+                            e.body
+
+                        _ ->
+                            "nop"
+            in
             { model |
                 editing = Nothing
---                , errors = (::) "There was a problem, the record could not be saved!" model.errors
+                , errors = (::) ( Validate.Specialist.ServerError, e ) model.errors
             } ! []
 
         Put action ->
@@ -391,14 +435,24 @@ update url msg model =
                 } ! []
 
         Putted ( Err err ) ->
+            let
+                e =
+                    case err of
+                        Http.BadStatus e ->
+                            e.body
+
+                        _ ->
+                            "nop"
+            in
             { model |
                 editing = Nothing
---                , errors = (::) "There was a problem, the record could not be updated!" model.errors
+                , errors = (::) ( Validate.Specialist.ServerError, e ) model.errors
             } ! []
 
         Search ->
             { model |
                 showModal = ( True, Nothing |> Modal.Search Data.Search.User model.query |> Just )
+                , errors = []
             } ! []
 
         SetFormValue setFormValue s ->

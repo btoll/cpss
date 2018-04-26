@@ -1,4 +1,4 @@
-module Validate.Specialist exposing (Field, errors)
+module Validate.Specialist exposing (Field(..), errors)
 
 import Data.User exposing (User)
 import Validate exposing (Validator, ifBlank, validate)
@@ -7,9 +7,10 @@ import Validate exposing (Validator, ifBlank, validate)
 
 type Field
     = None
-    | Username
-    | Password
     | Email
+    | Password
+    | ServerError
+    | Username
 
 
 
