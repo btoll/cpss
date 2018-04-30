@@ -80,6 +80,7 @@ init flags location =
             { user = Nothing
             , sessionName = ""
             , expiry = ""
+            , loginDate = ""
             }
         , build = { url = url }
         , page = initialPage
@@ -124,11 +125,12 @@ setRoute maybeRoute model =
                     } ! []
 
                 Just user ->
+                    -- TODO
 --                    case user.authLevel of
 --                        1 ->
 --                            let
 --                                ( subModel, subMsg ) =
---                                    BillSheet.init model.build.url
+--                                    BillSheet.init model.build.url model.session
 --                            in
 --                            { model |
 --                                page = BillSheet subModel
@@ -139,7 +141,7 @@ setRoute maybeRoute model =
 
                     let
                         ( subModel, subMsg ) =
-                            BillSheet.init model.build.url user
+                            BillSheet.init model.build.url model.session
                     in
                     { model |
                         page = BillSheet subModel
@@ -253,6 +255,7 @@ setRoute maybeRoute model =
                     } ! []
 
                 -- TODO: Not sure it ever matches Just!!
+                -- Upate: 2018-04-30 99% sure it doesn't!!
                 Just user ->
                     { model | page = Blank } ! [ Route.Home |> Route.modifyUrl ]
 
@@ -265,6 +268,7 @@ setRoute maybeRoute model =
                         user = Nothing
                         , sessionName = ""
                         , expiry = ""
+                        , loginDate = ""
                         }
                     , page = Login Login.init
                     , onLogin = Just Route.Home
@@ -273,6 +277,7 @@ setRoute maybeRoute model =
                         { userID = ""
                         , sessionName = ""
                         , expiry = ""
+                        , loginDate = ""
                         }
                     ]
 
@@ -416,16 +421,18 @@ update msg model =
                                             { user = Just user
                                             , sessionName = ""
                                             , expiry = ""
+                                            , loginDate = session.loginDate
                                             }
                                         , page = Blank
-                                        , onLogin = Nothing
-                                    } |> setRoute model.onLogin     -- Redirect after logging in.
+                                        , onLogin = model.onLogin
+                                    } |> setRoute model.onLogin         -- Redirect after logging in.
                             in
                             m ! [ routeCmd
-                                , setSessionCredentials             -- Send session credentials to JavaScript to be put into local storage.
+                                , setSessionCredentials                 -- Send session credentials to JavaScript to be put into local storage.
                                     { userID = user.id |> toString
-                                    , sessionName = "derp"  -- TODO
-                                    , expiry = "?"          -- TODO
+                                    , sessionName = "derp"              -- TODO
+                                    , expiry = "?"                      -- TODO
+                                    , loginDate = session.loginDate
                                     }
                                 ]
             in
@@ -447,6 +454,7 @@ update msg model =
                     { oldSession |
                         sessionName = session.sessionName
                         , expiry = session.expiry
+                        , loginDate = session.loginDate
                     }
             } ! [ cmd ]
 

@@ -76,12 +76,12 @@ parse date =
         minute = toString ( Date.minute date )
         min = if ( minute |> String.length ) == 1 then ( (++) "0" minute ) else minute
     in
-        { year = year
-        , month = mo
-        , day = d
-        , hour = h
-        , minute = min
-        }
+    { year = year
+    , month = mo
+    , day = d
+    , hour = h
+    , minute = min
+    }
 
 
 rfc3339 : Date -> String
@@ -104,7 +104,7 @@ simple date =
 -- http://package.elm-lang.org/packages/rluiten/elm-date-extra/latest
 -- https://github.com/rluiten/elm-date-extra/blob/9.2.3/src/Date/Extra/Utils.elm
 --
--- NOTE: I found that passing a string date like "2018/02/02" would return a date
+-- NOTE: I found that passing a string date like "2018-02-02" would return a date
 -- of:
 --
 --      <Fri Feb 01 2018 00:00:00 GMT-0500 (EST)>
@@ -145,7 +145,7 @@ unsafeFromString stringDate =
             , day
             ] |> String.join "-"
     in
-    case Date.fromString sd of
+    case sd |> Date.fromString of
         Err err ->
             Debug.crash "unsafeFromString"
 

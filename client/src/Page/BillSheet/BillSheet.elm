@@ -37,6 +37,7 @@ commonSettings =
     defaultSettings
 
 
+-- Disable all dates before current date (taken from localStorage session).
 settings : Maybe Date -> DatePicker.Settings
 settings date =
     let
@@ -48,7 +49,7 @@ settings date =
                 Just date ->
                     \d ->
                         Date.toTime d
-                            > Date.toTime date
+                            < Date.toTime date
                             || (commonSettings.isDisabled d)
     in
         { commonSettings
@@ -58,18 +59,21 @@ settings date =
 
 
 
-init : Model
-init =
+init : String -> ( Model, Cmd Msg )
+init date =
     let
-        ( datePicker, _ ) =
+        ( datePicker, datePickerFx ) =
             DatePicker.init
     in
-    { tableState = Table.initialSort "ID"
-    , editing = new |> Just
-    , disabled = True
-    , date = Nothing
-    , datePicker = datePicker
-    }
+    (
+        { tableState = Table.initialSort "ID"
+        , editing = { new | serviceDate = date } |> Just
+        , disabled = True
+        , date = date |> Util.Date.unsafeFromString |> Just
+        , datePicker = datePicker
+        }
+        , Cmd.map DatePicker datePickerFx
+    )
 
 
 type Msg

@@ -1,4 +1,5 @@
 port module Ports exposing (SessionCredentials, getSessionCredentials, setSessionCredentials)
+import Date exposing (Date)
 
 
 
@@ -18,6 +19,7 @@ type alias SessionCredentials =
     { sessionName : String
     , expiry : String
     , userID : String
+    , loginDate : String
     }
 
 

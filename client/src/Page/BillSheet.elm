@@ -59,14 +59,23 @@ type alias Model =
 
 
 
-init : String -> User -> ( Model, Cmd Msg )
-init url user =
+init : String -> Session -> ( Model, Cmd Msg )
+init url session =
     let
+        user =
+            Maybe.withDefault Data.User.new session.user
+
         ( subModel, cmd ) =
             case user.authLevel of
                 1 ->
-                    ( Page.BillSheet.BillSheet.init,
-                        [ Request.Consumer.list url |> Http.send ( Consumers >> Fetch )
+                    let
+                        ( model, subCmd ) =
+                            Page.BillSheet.BillSheet.init session.loginDate
+                    in
+                    (
+                        model
+                        , [ Cmd.map BillSheetBillSheetMsg subCmd
+                        , Request.Consumer.list url |> Http.send ( Consumers >> Fetch )
                         , Request.County.list url |> Http.send ( Counties >> Fetch )
                         , Request.ServiceCode.list url |> Http.send ( ServiceCodes >> Fetch )
                         , Request.Specialist.list url |> Http.send ( Specialists >> Fetch )
@@ -76,8 +85,14 @@ init url user =
                     )
 
                 _ ->
-                    ( user |> Page.BillSheet.TimeEntry.init,
-                        [ Request.Consumer.list url |> Http.send ( Consumers >> Fetch )
+                    let
+                        ( model, subCmd ) =
+                            Page.BillSheet.TimeEntry.init session.loginDate
+                    in
+                    (
+                        model
+                        , [ Cmd.map BillSheetTimeEntryMsg subCmd
+                        , Request.Consumer.list url |> Http.send ( Consumers >> Fetch )
                         , Request.County.list url |> Http.send ( Counties >> Fetch )
                         , Request.ServiceCode.list url |> Http.send ( ServiceCodes >> Fetch )
                         , Request.BillSheet.query url ( (++) "specialist=" ( user.id |> toString ) ) |> Http.send ( BillSheets >> Fetch )

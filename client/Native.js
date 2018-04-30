@@ -39,14 +39,28 @@
 //});
 
 app.ports.setSessionCredentials.subscribe(user => {
+    const d = new Date();
+    const month = (d.getMonth() + 1).toString();
+    const day = d.getDate().toString();
+
     localStorage.setItem('userID', user.userID);
     localStorage.setItem('sessionName', user.sessionName);
     localStorage.setItem('expiry', user.expiry);
+    localStorage.setItem('loginDate', d.getFullYear() + '-' + (month.length == 2 ? month : '0' + month) + '-' + (day.length == 2 ? day : '0' + day));
+
+    // Send back into Elm to set the populate the session upon a new login!
+    app.ports.getSessionCredentials.send({
+        userID: localStorage.getItem('userID') || '',
+        sessionName: localStorage.getItem('sessionName') || '',
+        expiry: localStorage.getItem('expiry') || '',
+        loginDate: localStorage.getItem('loginDate') || ''
+    });
 });
 
 app.ports.getSessionCredentials.send({
     userID: localStorage.getItem('userID') || '',
     sessionName: localStorage.getItem('sessionName') || '',
-    expiry: localStorage.getItem('expiry') || ''
+    expiry: localStorage.getItem('expiry') || '',
+    loginDate: localStorage.getItem('loginDate') || ''
 });
 

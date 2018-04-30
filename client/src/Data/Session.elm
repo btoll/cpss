@@ -4,6 +4,7 @@ module Data.Session exposing (Session)
 --import Data.AuthToken exposing (AuthToken)
 import Data.User as User exposing (User)
 --import Util exposing ((=>))
+import Date exposing (Date)
 
 
 
@@ -11,6 +12,7 @@ type alias Session =
     { user : Maybe User
     , sessionName : String
     , expiry : String
+    , loginDate : String
     }
 
 
