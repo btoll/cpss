@@ -440,6 +440,7 @@ update url msg model =
                 { model |
                     action = action
                     , disabled = True
+                    , subModel = { subModel | editing = if errors |> List.isEmpty then Nothing else model.subModel.editing }
                     , errors = errors
                 } ! [ subCmd ]
 
