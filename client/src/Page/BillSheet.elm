@@ -28,6 +28,7 @@ import Request.Status
 import Table exposing (defaultCustomizations)
 import Task exposing (Task)
 import Validate.BillSheet
+import Validate.TimeEntry
 import Views.Errors as Errors
 import Views.Form as Form
 import Views.Modal as Modal
@@ -39,7 +40,7 @@ import Views.Pager
 
 
 type alias Model =
-    { errors : List ( Validate.BillSheet.Field, String )
+    { errors : List String
     , tableState : Table.State
     , action : ViewAction
     , disabled : Bool
@@ -246,7 +247,7 @@ update url msg model =
             in
             { model |
                 action = None
-                , errors = (::) ( Validate.BillSheet.ServerError, e ) model.errors
+                , errors = (::) e model.errors
                 , subModel = { subModel | editing = Nothing }
             } ! []
 
@@ -420,7 +421,9 @@ update url msg model =
                             []
 
                         Just billsheet ->
-                            Validate.BillSheet.errors billsheet
+                            if model.user.authLevel == 1
+                            then Validate.BillSheet.errors billsheet
+                            else Validate.TimeEntry.errors billsheet
 
                 ( action, subCmd ) = if errors |> List.isEmpty then
                     case model.subModel.editing of
@@ -476,7 +479,7 @@ update url msg model =
                             "nop"
             in
             { model |
-                errors = (::) ( Validate.BillSheet.ServerError, e ) model.errors
+                errors = (::) e model.errors
                 , subModel = { subModel | editing = Nothing }
             } ! []
 
@@ -548,7 +551,7 @@ update url msg model =
                             "nop"
             in
             { model |
-                errors = (::) ( Validate.BillSheet.ServerError, e ) model.errors
+                errors = (::) e model.errors
                 , subModel = { subModel | editing = Nothing }
             } ! []
 

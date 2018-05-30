@@ -21,7 +21,8 @@ import Views.Modal as Modal
 
 
 type alias Model =
-    { errors : List ( Validate.Status.Field, String )
+--    { errors : List ( Validate.Status.Field, String )
+    { errors : List String
     , tableState : Table.State
     , action : Action
     , editing : Maybe Status
@@ -110,7 +111,8 @@ update url msg model =
                             "nop"
             in
             { model |
-                errors = (::) ( Validate.Status.ServerError, e ) model.errors
+--                errors = (::) ( Validate.Status.ServerError, e ) model.errors
+                errors = model.errors
             } ! []
 
         Edit status ->
@@ -140,7 +142,7 @@ update url msg model =
             { model |
                 status = []
                 , tableState = Table.initialSort "ID"
-                , errors = (::) ( Validate.Status.ServerError, e ) model.errors
+--                , errors = (::) ( Validate.Status.ServerError, e ) model.errors
             } ! []
 
         ModalMsg subMsg ->
@@ -219,38 +221,39 @@ update url msg model =
             in
             { model |
                 editing = Nothing
-                , errors = (::) ( Validate.Status.ServerError, e ) model.errors
+--                , errors = (::) ( Validate.Status.ServerError, e ) model.errors
             } ! []
 
         Put ->
-            let
-                errors =
-                    case model.editing of
-                        Nothing ->
-                            []
-
-                        Just status ->
-                            Validate.Status.errors status
-
-                ( action, subCmd ) = if errors |> List.isEmpty then
-                    case model.editing of
-                        Nothing ->
-                            ( None, Cmd.none )
-
-                        Just status ->
-                            ( None
-                            , Request.Status.put url status
-                                |> Http.toTask
-                                |> Task.attempt Putted
-                            )
-                    else
-                        ( Editing, Cmd.none )
-            in
-                { model |
-                    action = action
-                    , disabled = True
-                    , errors = errors
-                } ! [ subCmd ]
+--            let
+--                errors =
+--                    case model.editing of
+--                        Nothing ->
+--                            []
+--
+--                        Just status ->
+--                            Validate.Status.errors status
+--
+--                ( action, subCmd ) = if errors |> List.isEmpty then
+--                    case model.editing of
+--                        Nothing ->
+--                            ( None, Cmd.none )
+--
+--                        Just status ->
+--                            ( None
+--                            , Request.Status.put url status
+--                                |> Http.toTask
+--                                |> Task.attempt Putted
+--                            )
+--                    else
+--                        ( Editing, Cmd.none )
+--            in
+--                { model |
+--                    action = action
+--                    , disabled = True
+--                    , errors = errors
+--                } ! [ subCmd ]
+            model ! []
 
         Putted ( Ok st ) ->
             let
@@ -281,7 +284,7 @@ update url msg model =
             in
             { model |
                 editing = Nothing
-                , errors = (::) ( Validate.Status.ServerError, e ) model.errors
+--                , errors = (::) ( Validate.Status.ServerError, e ) model.errors
             } ! []
 
         SetTableState newState ->
@@ -304,7 +307,7 @@ view model =
     section []
         ( (++)
             [ h1 [] [ text "Status" ]
-            , Errors.view model.errors
+--            , Errors.view model.errors
             ]
             ( drawView model )
         )

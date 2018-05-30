@@ -1,30 +1,14 @@
-module Validate.DIA exposing (Field(..), errors)
+module Validate.DIA exposing (errors)
 
 import Data.DIA exposing (DIA)
-import Validate exposing (Validator, ifBlank, validate)
+import Validate.Validate exposing (fold, isBlank)
 
 
 
-type Field
-    = Name
-    | ServerError
-
-
-
-errors : DIA -> List ( Field, String )
-errors dia =
-    validate modelValidator dia
-
-
-message : String
-message =
-    "Cannot be blank."
-
-
-modelValidator : Validator ( Field, String ) DIA
-modelValidator =
-    Validate.all
-        [ ifBlank .name ( Name, message )
-        ]
+errors : DIA -> List String
+errors model =
+    [ isBlank model.name "DIA cannot be blank."
+    ]
+        |> fold
 
 

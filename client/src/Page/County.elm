@@ -23,7 +23,7 @@ import Views.Pager
 -- MODEL
 
 type alias Model =
-    { errors : List ( Validate.City.Field, String )
+    { errors : List String
     , tableState : Table.State
     , action : Action
     , editing : Maybe City
@@ -123,7 +123,7 @@ update url msg model =
             in
             { model |
                 action = None
-                , errors = (::) ( Validate.City.ServerError, e ) model.errors
+                , errors = (::) e model.errors
             } ! []
 
         Edit county ->
@@ -156,7 +156,7 @@ update url msg model =
                     { model |
                         cities = []
                         , tableState = Table.initialSort "ID"
-                        , errors = (::) ( Validate.City.ServerError, e ) model.errors
+                        , errors = (::) e model.errors
                     } ! []
 
                 Counties ( Ok counties ) ->
@@ -177,7 +177,7 @@ update url msg model =
                     in
                     { model |
                         tableState = Table.initialSort "ID"
-                        , errors = (::) ( Validate.City.ServerError, e ) model.errors
+                        , errors = (::) e model.errors
                     } ! []
 
         ModalMsg subMsg ->
@@ -264,7 +264,7 @@ update url msg model =
             in
             { model |
                 editing = Nothing
-                , errors = (::) ( Validate.City.ServerError, e ) model.errors
+                , errors = (::) e model.errors
             } ! []
 
         Put ->
@@ -326,7 +326,7 @@ update url msg model =
             in
             { model |
                 editing = Nothing
-                , errors = (::) ( Validate.City.ServerError, e ) model.errors
+                , errors = (::) e model.errors
             } ! []
 
         SelectCounty city countyID ->

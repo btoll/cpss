@@ -12,6 +12,7 @@ module Data.User exposing
     , succeed
     )
 
+
 import Data.Pager
 import Json.Decode as Decode exposing (Decoder, bool, float, int, list, string)
 import Json.Decode.Pipeline exposing (decode, optional, required)

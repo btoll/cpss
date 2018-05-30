@@ -5,7 +5,8 @@ import Html.Attributes exposing (class)
 
 
 
-view : List ( a, String ) -> Html msg
+--view : List ( a, String ) -> Html msg
+view : List String -> Html msg
 view errors =
     if ( errors |> List.length ) == 0
     then
@@ -14,11 +15,7 @@ view errors =
         errors
             |> List.map
                 ( \t ->
-                    let
-                        tipe = t |> Tuple.first |> toString
-                        description = t |> Tuple.second
-                    in
-                    p [] [ tipe ++ ": " ++ description |> text ]
+                    p [] [ t |> text ]
                 )
             |> div [ class "error" ]
 

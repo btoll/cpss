@@ -1,30 +1,14 @@
-module Validate.Status exposing (Field(..), errors)
+module Validate.Status exposing (errors)
 
 import Data.Status exposing (Status)
-import Validate exposing (Validator, ifBlank, validate)
+import Validate.Validate exposing (fold, isBlank)
 
 
 
-type Field
-    = Name
-    | ServerError
-
-
-
-errors : Status -> List ( Field, String )
-errors status =
-    validate modelValidator status
-
-
-message : String
-message =
-    "Cannot be blank."
-
-
-modelValidator : Validator ( Field, String ) Status
-modelValidator =
-    Validate.all
-        [ ifBlank .name ( Name, message )
-        ]
+errors : Status -> List String
+errors model =
+    [ isBlank model.name "Status cannot be blank."
+    ]
+        |> fold
 
 

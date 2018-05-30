@@ -24,7 +24,7 @@ import Views.Pager
 
 
 type alias Model =
-    { errors : List ( Validate.Specialist.Field, String )
+    { errors : List String
     , tableState : Table.State
     , action : Action
     , editing : Maybe User
@@ -119,7 +119,7 @@ update url msg model =
             in
             { model |
                 action = ChangingPassword specialist
-                , errors = (::) ( Validate.Specialist.ServerError, e ) model.errors
+                , errors = (::) e model.errors
             } ! []
 
         Cancel ->
@@ -168,7 +168,7 @@ update url msg model =
             in
             { model |
                 action = None
-                , errors = (::) ( Validate.Specialist.ServerError, e ) model.errors
+                , errors = (::) e model.errors
             } ! []
 
         Edit specialist ->
@@ -198,7 +198,7 @@ update url msg model =
             in
             { model |
                 specialists = []
-                , errors = (::) ( Validate.Specialist.ServerError, e ) model.errors
+                , errors = (::) e model.errors
                 , tableState = Table.initialSort "ID"
             } ! []
 
@@ -233,7 +233,7 @@ update url msg model =
             in
             { model |
                 action = None
-                , errors = (::) ( Validate.Specialist.ServerError, e ) model.errors
+                , errors = (::) e model.errors
             } ! []
 
         ModalMsg subMsg ->
@@ -347,7 +347,7 @@ update url msg model =
             in
             { model |
                 editing = Nothing
-                , errors = (::) ( Validate.Specialist.ServerError, e ) model.errors
+                , errors = (::) e model.errors
             } ! []
 
         Put action ->
@@ -446,7 +446,7 @@ update url msg model =
             in
             { model |
                 editing = Nothing
-                , errors = (::) ( Validate.Specialist.ServerError, e ) model.errors
+                , errors = (::) e model.errors
             } ! []
 
         Search ->

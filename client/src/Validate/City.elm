@@ -1,30 +1,18 @@
-module Validate.City exposing (Field(..), errors)
+module Validate.City exposing (errors)
 
 import Data.City exposing (City)
-import Validate exposing (Validator, ifBlank, validate)
+import Validate.Validate exposing (fold, isBlank, isSelected)
 
 
 
-type Field
-    = Name
-    | ServerError
-
-
-
-errors : City -> List ( Field, String )
-errors city =
-    validate modelValidator city
-
-
-message : String
-message =
-    "Cannot be blank."
-
-
-modelValidator : Validator ( Field, String ) City
-modelValidator =
-    Validate.all
-        [ ifBlank .name ( Name, message )
-        ]
+errors : City -> List String
+errors model =
+    -- Order matters!
+    [ isBlank model.name "City cannot be blank."
+    , isBlank model.state "State cannot be blank."
+    , isBlank model.zip "Zip Code cannot be blank."
+    , isSelected model.county "Please select a County."
+    ]
+        |> fold
 
 

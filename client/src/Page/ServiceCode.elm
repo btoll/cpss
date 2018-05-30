@@ -21,7 +21,7 @@ import Views.Modal as Modal
 
 
 type alias Model =
-    { errors : List ( Validate.ServiceCode.Field, String )
+    { errors : List String
     , tableState : Table.State
     , action : Action
     , editing : Maybe ServiceCode
@@ -110,7 +110,7 @@ update url msg model =
                             "nop"
             in
             { model |
-                errors = (::) ( Validate.ServiceCode.ServerError, e ) model.errors
+                errors = (::) e model.errors
             } ! []
 
         Edit serviceCode ->
@@ -140,7 +140,7 @@ update url msg model =
             { model |
                 serviceCodes = []
                 , tableState = Table.initialSort "ID"
-                , errors = (::) ( Validate.ServiceCode.ServerError, e ) model.errors
+                , errors = (::) e model.errors
             } ! []
 
         ModalMsg subMsg ->
@@ -219,7 +219,7 @@ update url msg model =
             in
             { model |
                 editing = Nothing
-                , errors = (::) ( Validate.ServiceCode.ServerError, e ) model.errors
+                , errors = (::) e model.errors
             } ! []
 
         Put ->
@@ -281,7 +281,7 @@ update url msg model =
             in
             { model |
                 editing = Nothing
-                , errors = (::) ( Validate.ServiceCode.ServerError, e ) model.errors
+                , errors = (::) e model.errors
             } ! []
 
         SetTableState newState ->

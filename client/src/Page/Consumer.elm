@@ -32,7 +32,7 @@ import Views.Pager
 -- MODEL
 
 type alias Model =
-    { errors : List ( Validate.Consumer.Field, String )
+    { errors : List String
     , tableState : Table.State
     , action : Action
     , editing : Maybe Consumer
@@ -162,7 +162,7 @@ update url msg model =
             in
             { model |
                 action = None
-                , errors = (::) ( Validate.Consumer.ServerError, e ) model.errors
+                , errors = (::) e model.errors
             } ! []
 
         Edit consumer ->
@@ -194,7 +194,7 @@ update url msg model =
                     in
                     { model |
                         countyData = ( model.countyData |> Tuple.first, [] )
-                        , errors = (::) ( Validate.Consumer.ServerError, e ) model.errors
+                        , errors = (::) e model.errors
                         , tableState = Table.initialSort "ID"
                     } ! []
 
@@ -217,7 +217,7 @@ update url msg model =
                     in
                     { model |
                         consumers = []
-                        , errors = (::) ( Validate.Consumer.ServerError, e ) model.errors
+                        , errors = (::) e model.errors
                         , tableState = Table.initialSort "ID"
                     } ! []
 
@@ -239,7 +239,7 @@ update url msg model =
                     in
                     { model |
                         countyData = ( [], model.countyData |> Tuple.second )
-                        , errors = (::) ( Validate.Consumer.ServerError, e ) model.errors
+                        , errors = (::) e model.errors
                         , tableState = Table.initialSort "ID"
                     } ! []
 
@@ -261,7 +261,7 @@ update url msg model =
                     in
                     { model |
                         dias = []
-                        , errors = (::) ( Validate.Consumer.ServerError, e ) model.errors
+                        , errors = (::) e model.errors
                         , tableState = Table.initialSort "ID"
                     } ! []
 
@@ -283,7 +283,7 @@ update url msg model =
                     in
                     { model |
                         fundingSources = []
-                        , errors = (::) ( Validate.Consumer.ServerError, e ) model.errors
+                        , errors = (::) e model.errors
                         , tableState = Table.initialSort "ID"
                     } ! []
 
@@ -305,7 +305,7 @@ update url msg model =
                     in
                     { model |
                         serviceCodes = []
-                        , errors = (::) ( Validate.Consumer.ServerError, e ) model.errors
+                        , errors = (::) e model.errors
                         , tableState = Table.initialSort "ID"
                     } ! []
 
@@ -430,7 +430,7 @@ update url msg model =
             in
             { model |
                 editing = Nothing
-                , errors = (::) ( Validate.Consumer.ServerError, e ) model.errors
+                , errors = (::) e model.errors
             } ! []
 
         Put ->
@@ -492,7 +492,7 @@ update url msg model =
             in
             { model |
                 editing = Nothing
-                , errors = (::) ( Validate.Consumer.ServerError, e ) model.errors
+                , errors = (::) e model.errors
             } ! []
 
         Search ->
@@ -683,16 +683,11 @@ formRows ( editable, serviceCodes, dias, fundingSources, countyData ) =
                 |> (::) ( "-1", "-- Select a Funding Source --" )
                 |> List.map ( editable.fundingSource |> toString |> Form.option )
         )
-    , Form.select "Zip Code"
-        [ id "zipCodeSelection"
-        , editable |> Select Form.ZipID |> onInput
-        ] (
-            countyData
-                |> Tuple.second
-                |> List.map ( \m -> ( m.zip, m.zip ) )
-                |> (::) ( "-1", "-- Select a zip code --" )
-                |> List.map ( editable.zip |> Form.option )
-        )
+    , Form.text "Zip code"
+        [ value editable.zip
+        , onInput ( SetFormValue (\v -> { editable | zip = v } ) )
+        ]
+        []
     , Form.text "BSU"
         [ value editable.bsu
         , onInput ( SetFormValue (\v -> { editable | bsu = v } ) )

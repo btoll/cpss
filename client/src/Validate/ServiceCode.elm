@@ -1,30 +1,14 @@
-module Validate.ServiceCode exposing (Field(..), errors)
+module Validate.ServiceCode exposing (errors)
 
 import Data.ServiceCode exposing (ServiceCode)
-import Validate exposing (Validator, ifBlank, validate)
+import Validate.Validate exposing (fold, isBlank)
 
 
 
-type Field
-    = Name
-    | ServerError
-
-
-
-errors : ServiceCode -> List ( Field, String )
-errors serviceCode =
-    validate modelValidator serviceCode
-
-
-message : String
-message =
-    "Cannot be blank."
-
-
-modelValidator : Validator ( Field, String ) ServiceCode
-modelValidator =
-    Validate.all
-        [ ifBlank .name ( Name, message )
-        ]
+errors : ServiceCode -> List String
+errors model =
+    [ isBlank model.name "Service Code cannot be blank."
+    ]
+        |> fold
 
 

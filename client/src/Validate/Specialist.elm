@@ -1,35 +1,20 @@
-module Validate.Specialist exposing (Field(..), errors)
+module Validate.Specialist exposing (errors)
 
 import Data.User exposing (User)
-import Validate exposing (Validator, ifBlank, validate)
+import Validate.Validate exposing (fold, isBlank, isSelected, isZero)
 
 
 
-type Field
-    = None
-    | Email
-    | Password
-    | ServerError
-    | Username
-
-
-
-errors : User -> List ( Field, String )
-errors specialist =
-    validate modelValidator specialist
-
-
-message : String
-message =
-    "Cannot be blank."
-
-
-modelValidator : Validator ( Field, String ) User
-modelValidator =
-    Validate.all
-        [ ifBlank .username ( Username, message )
-        , ifBlank .password ( Password, message )
-        , ifBlank .email ( Email, message )
-        ]
+errors : User -> List String
+errors model =
+    [ isBlank model.username "Username cannot be blank."
+    , isBlank model.password "Password cannot be blank."
+    , isBlank model.firstname "First Name cannot be blank."
+    , isBlank model.lastname "Last Name cannot be blank."
+    , isBlank model.email "Email cannot be blank."
+    , isZero model.payrate "Pay Rate cannot be zero."
+    , isSelected model.authLevel "Please select an Auth Level."
+    ]
+        |> fold
 
 
