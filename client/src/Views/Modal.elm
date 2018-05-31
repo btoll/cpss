@@ -3,40 +3,9 @@ module Views.Modal exposing (Modal(..), Msg, update, view)
 import Data.Search exposing (Search(..), Query, ViewLists)
 import Dict exposing (Dict)
 import Html exposing (Html, Attribute, button, div, text)
-import Html.Attributes exposing (style)
+import Html.Attributes exposing (id, style)
 import Modal.Delete as Delete
 import Modal.Search as Search
-
-
-
-maskStyle : Attribute msg
-maskStyle =
-  style
-    [ ("background-color", "rgba(0,0,0,0.3)")
-    , ("position", "fixed")
-    , ("top", "0")
-    , ("left", "0")
-    , ("width", "100%")
-    , ("height", "100%")
-    ]
-
-
-modalStyle : Attribute msg
-modalStyle =
-  style
-    [ ("background-color", "rgba(255,255,255,1.0)")
-    , ("position", "absolute")
-    , ("top", "50%")
-    , ("left", "50%")
-    , ("height", "auto")
-    , ("max-height", "80%")
-    , ("width", "700px")
-    , ("max-width", "95%")
-    , ("padding", "10px")
-    , ("border-radius", "3px")
-    , ("box-shadow", "1px 1px 5px rgba(0,0,0,0.5)")
-    , ("transform", "translate(-50%, -50%)")
-    ]
 
 
 
@@ -81,8 +50,8 @@ view query modal =
                                         |> Search.view t query      -- Note we want the passed `query` func arg here, NOT `q`!
                                         |> Html.map SearchMsg
             in
-            div [ maskStyle ] [
-                div [ modalStyle ] [ view ]
+            div [ "modal-mask" |> id ] [
+                div [ "modal-content" |> id ] [ view ]
                 ]
 
         ( _, _ ) ->

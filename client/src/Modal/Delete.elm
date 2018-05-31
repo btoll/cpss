@@ -1,6 +1,7 @@
 module Modal.Delete exposing (Msg, update, view)
 
 import Html exposing (Html, button, div, p, text)
+import Html.Attributes exposing (id)
 import Html.Events exposing (onClick)
 
 
@@ -23,7 +24,7 @@ update msg =
 
 view : Html Msg
 view =
-    div [] [
+    div [ "delete" |> id ] [
         p [] [ text "Are you sure you wish to proceed?  This is irreversible!" ]
         , button [ Yes |> onClick ] [ text "Yes" ]
         , button [ No |> onClick ] [ text "No" ]
