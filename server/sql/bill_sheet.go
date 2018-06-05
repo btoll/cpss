@@ -17,10 +17,11 @@ func NewBillSheet(payload interface{}) *BillSheet {
 	return &BillSheet{
 		Data: payload,
 		Stmt: map[string]string{
-			"DELETE": "DELETE FROM billsheet WHERE id=?",
-			"INSERT": "INSERT billsheet SET specialist=?,consumer=?,hours=?,units=?,serviceDate=?,serviceCode=?,hold=?,contractType=?,recipientID=?,recordNumber=?,status=?,billedCode=?,billedAmount=?,county=?,confirmation=?,description=?",
-			"SELECT": "SELECT %s FROM billsheet %s",
-			"UPDATE": "UPDATE billsheet SET specialist=?,consumer=?,hours=?,units=?,serviceDate=?,serviceCode=?,hold=?,contractType=?,recipientID=?,recordNumber=?,status=?,billedCode=?,billedAmount=?,county=?,confirmation=?,description=? WHERE id=?",
+			"CONSUMER_INNER_JOIN": "INNER JOIN consumer ON consumer.id = billsheet.consumer INNER JOIN active ON consumer.active = active.id",
+			"DELETE":              "DELETE FROM billsheet WHERE id=?",
+			"INSERT":              "INSERT billsheet SET specialist=?,consumer=?,hours=?,units=?,serviceDate=?,serviceCode=?,hold=?,contractType=?,recipientID=?,recordNumber=?,status=?,billedCode=?,billedAmount=?,county=?,confirmation=?,description=?",
+			"SELECT":              "SELECT %s FROM billsheet %s",
+			"UPDATE":              "UPDATE billsheet SET specialist=?,consumer=?,hours=?,units=?,serviceDate=?,serviceCode=?,hold=?,contractType=?,recipientID=?,recordNumber=?,status=?,billedCode=?,billedAmount=?,county=?,confirmation=?,description=? WHERE id=?",
 		},
 	}
 }
@@ -209,6 +210,10 @@ func (s *BillSheet) List(db *mysql.DB) (interface{}, error) {
 }
 
 func (s *BillSheet) Page(db *mysql.DB) (interface{}, error) {
+	//
+	//select billsheet.* from billsheet inner join consumer on consumer.id = billsheet.consumer inner join active on consumer.active = active.id where active.id = 1 and billsheet.specialist = 2;
+	//
+
 	// page * RecordsPerPage = limit
 	query := s.Data.(*PageQuery)
 	limit := query.Page * RecordsPerPage
@@ -255,7 +260,7 @@ func (s *BillSheet) Page(db *mysql.DB) (interface{}, error) {
 
 func (s *BillSheet) Query(db *mysql.DB) (interface{}, error) {
 	query := s.Data.(*app.BillSheetQueryPayload)
-	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)", fmt.Sprintf("WHERE %s", *query.WhereClause)))
+	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)", fmt.Sprintf("%s WHERE active.id = 1 AND %s", s.Stmt["CONSUMER_INNER_JOIN"], *query.WhereClause)))
 	if err != nil {
 		return nil, err
 	}
@@ -266,7 +271,7 @@ func (s *BillSheet) Query(db *mysql.DB) (interface{}, error) {
 			return nil, err
 		}
 	}
-	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*", fmt.Sprintf("WHERE %s LIMIT %d,%d", *query.WhereClause, 0, RecordsPerPage)))
+	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "billsheet.*", fmt.Sprintf("%s WHERE active.id = 1 AND %s LIMIT %d,%d", s.Stmt["CONSUMER_INNER_JOIN"], *query.WhereClause, 0, RecordsPerPage)))
 	if err != nil {
 		return nil, err
 	}
