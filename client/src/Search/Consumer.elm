@@ -3,14 +3,16 @@ module Search.Consumer exposing (Msg, update, view)
 import Data.Search exposing (Search(..), Query)
 import Dict exposing (Dict)
 import Html exposing (Html, form, h3, text)
-import Html.Attributes exposing (autofocus)
-import Html.Events exposing (onInput, onSubmit)
+import Html.Attributes exposing (autofocus, checked, value)
+import Html.Events exposing (onCheck, onInput, onSubmit)
+import Search.Util exposing (getBool, getText, setBool, setText)
 import Views.Form as Form
 
 
 
 type Msg
     = Cancel
+    | SetCheckboxValue ( Bool -> Query ) Bool
     | SetFormValue ( String -> Query ) String
     | Submit
 
@@ -20,7 +22,10 @@ update : Maybe Query -> Msg -> ( Bool, Maybe Query )
 update query msg =
     case msg of
         Cancel ->
-            ( False, Nothing )
+            ( False, query )
+
+        SetCheckboxValue setBoolValue b ->
+            ( True, b |> setBoolValue |> Just )
 
         SetFormValue setFormValue s ->
             ( True, s |> setFormValue |> Just )
@@ -36,28 +41,22 @@ view query =
         q =
             query
                 |> Maybe.withDefault Dict.empty
-
-        updateDict : String -> String -> Query
-        updateDict k v =
-            if (==) v "" then
-                q |> Dict.remove k
-            else
-                q |> Dict.insert k v
     in
     form [ onSubmit Submit ]
         [ h3 [] [ "Consumer Search" |> text ]
         , Form.checkbox "Active"
---            [ checked editable.active
---            , onCheck ( SetCheckboxValue ( \v -> { editable | active = v } ) )
---            ]
-            []
+            [ ( "active" |> setBool q ) |> SetCheckboxValue |> onCheck
+            , "active" |> getBool q |> checked
+            ]
             []
         , Form.text "Last Name"
-            [ True |> autofocus, ( "lastname" |> updateDict ) |> SetFormValue >> onInput
+            [ True |> autofocus, ( "lastname" |> setText q ) |> SetFormValue >> onInput
+            , "lastname" |> getText q |> value
             ]
             []
         , Form.text "First Name"
-            [ ( "firstname" |> updateDict ) |> SetFormValue >> onInput
+            [ ( "firstname" |> setText q ) |> SetFormValue >> onInput
+            , "firstname" |> getText q |> value
             ]
             []
         , Form.submit ( q |> Dict.isEmpty ) Cancel

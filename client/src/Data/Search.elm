@@ -12,7 +12,6 @@ import Dict exposing (Dict)
 
 
 
---type alias Query = List ( String, String )
 type alias Query = Dict String String
 
 

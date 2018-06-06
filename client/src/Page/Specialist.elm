@@ -505,12 +505,12 @@ drawView (
             Just specialist ->
                 specialist
 
-        ( showList, isDisabled ) =
+        showList =
             case specialists |> List.length of
                 0 ->
-                    ( div [] [], True )
+                    div [] []
                 _ ->
-                    ( Table.view config tableState specialists, False )
+                    Table.view config tableState specialists
 
         showPager =
             model.pager |> Views.Pager.view NewPage
@@ -526,7 +526,7 @@ drawView (
     case action of
         None ->
             [ button [ onClick Add ] [ text "Add Specialist" ]
-            , button [ isDisabled |> Html.Attributes.disabled, Search |> onClick ] [ text "Search" ]
+            , button [ Search |> onClick ] [ text "Search" ]
             , button [ hideClearTextButton |> hidden, ClearSearch |> onClick ] [ text "Clear Search" ]
             , showPager
             , showList

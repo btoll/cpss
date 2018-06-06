@@ -5,6 +5,7 @@ import Dict exposing (Dict)
 import Html exposing (Html, button, div, form, h3, text)
 import Html.Attributes exposing (id)
 import Html.Events exposing (onInput, onSubmit)
+import Search.Util exposing (getSelection, setSelection)
 import Views.Form as Form
 
 
@@ -20,34 +21,24 @@ update : Maybe Query -> Msg -> ( Bool, Maybe Query )
 update query msg =
     case msg of
         Cancel ->
-            ( False, Nothing )
+            ( False, query )
 
         Select selectType selection ->
             let
                 q =
                     query
                         |> Maybe.withDefault Dict.empty
-
-                updateDict : String -> Query
-                updateDict k =
-                    if (==) selection "-1" then
-                        q |> Dict.remove k
-                    else
-                        q |> Dict.insert k selection
             in
                 ( True,
                     case selectType of
                         Form.ConsumerID ->
-                            "consumer" |> updateDict |> Just
+                            selection |> setSelection q "billsheet.consumer" |> Just
 
                         Form.CountyID ->
-                            "county" |> updateDict |> Just
+                            selection |> setSelection q "billsheet.county" |> Just
 
-                        Form.SpecialistID ->
-                            "specialist" |> updateDict |> Just
-
-                        Form.StatusID ->
-                            "status" |> updateDict |> Just
+                        Form.ServiceCodeID ->
+                            selection |> setSelection q "billsheet.serviceCode" |> Just
 
                         _ ->
                             Nothing
@@ -78,7 +69,7 @@ view query viewLists =
                 consumers
                     |> List.map ( \m -> ( m.id |> toString, m.lastname ++ ", " ++ m.firstname ) )
                     |> (::) ( "-1", "-- Select a consumer --" )
-                    |> List.map ( "-1" |> Form.option )
+                    |> List.map ( "billsheet.consumer" |> getSelection q |> Form.option )
             )
         , Form.select "Service Code"
             [ "serviceCodeSelection" |> id
@@ -87,7 +78,7 @@ view query viewLists =
                 serviceCodes
                     |> List.map ( \m -> ( m.id |> toString, m.name ) )
                     |> (::) ( "-1", "-- Select a status --" )
-                    |> List.map ( "-1" |> Form.option )
+                    |> List.map ( "billsheet.serviceCode" |> getSelection q |> Form.option )
             )
         , Form.select "County"
             [ "countySelection" |> id
@@ -95,8 +86,8 @@ view query viewLists =
             ] (
                 counties
                     |> List.map ( \m -> ( m.id |> toString, m.name ) )
-                    |> (::) ( "-1", "-- Select a consumer --" )
-                    |> List.map ( "-1" |> Form.option )
+                    |> (::) ( "-1", "-- Select a county --" )
+                    |> List.map ( "billsheet.county" |> getSelection q |> Form.option )
             )
         , Form.submit ( q |> Dict.isEmpty ) Cancel
         ]

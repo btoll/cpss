@@ -355,7 +355,7 @@ update url msg model =
                             let
                                 -- Since there's so much common functionality shared by the BillSheet and
                                 -- TimeEntry pages, we must always check to see which page is being viewed.
-                                -- The BillSheet is an admin-only page, and thus should not be send a Specialist
+                                -- The BillSheet is an admin-only page, and thus should not send a Specialist
                                 -- in the where clause.
                                 maybeInsertSpecialist query =
                                     if (==) model.user.authLevel 1
@@ -612,19 +612,18 @@ drawView model =
             Just billsheet ->
                 billsheet
 
-        ( showList, isDisabled ) =
+        showList =
             case model.viewLists.billsheets of
                 Nothing ->
-                    ( div [] [], True )
+                    div [] []
 
                 Just billsheets ->
                     case billsheets |> List.length of
                         0 ->
-                            ( div [] [], True )
+                            div [] []
                         _ ->
-                            ( billsheets
+                            billsheets
                                 |> Table.view ( model |> config ) model.tableState
-                            , False )
 
         showPager =
             model.pagerState |> Views.Pager.view NewPage
@@ -640,7 +639,7 @@ drawView model =
     case model.action of
         None ->
             [ button [ Add |> onClick ] [ text "Add Bill Sheet" ]
-            , button [ isDisabled |> Html.Attributes.disabled, model.viewLists |> Search |> onClick ] [ text "Search" ]
+            , button [ model.viewLists |> Search |> onClick ] [ text "Search" ]
             , button [ hideClearTextButton |> hidden, ClearSearch |> onClick ] [ text "Clear Search" ]
             , showPager
             , showList

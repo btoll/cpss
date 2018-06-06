@@ -587,14 +587,13 @@ drawView (
             Just consumer ->
                 consumer
 
-        ( showList, isDisabled ) =
+        showList =
             case consumers |> List.length of
                 0 ->
-                    ( div [] [], True )
+                    div [] []
                 _ ->
-                    ( consumers
+                    consumers
                         |> Table.view ( model |> config ) tableState
-                    , False )
 
         showPager =
             model.pager |> Views.Pager.view NewPage
@@ -610,7 +609,7 @@ drawView (
     case action of
         None ->
             [ button [ Add |> onClick ] [ text "Add Consumer" ]
-            , button [ isDisabled |> Html.Attributes.disabled, Search |> onClick ] [ text "Search" ]
+            , button [ Search |> onClick ] [ text "Search" ]
             , button [ hideClearTextButton |> hidden, ClearSearch |> onClick ] [ text "Clear Search" ]
             , showPager
             , showList
