@@ -61,11 +61,17 @@ view toMsg pager =
             nav =
                 currentPage
                     |> navControls toMsg pager.totalPages
+
+            displayText =
+                pager.totalPages |> toString
+                    |> (++) " of "
+                    |> (++) ( 1 |> (+) currentPage |> toString )       -- Page numbering on the server is zero-based.
+
         in
         div [ "pager-container" |> class ]
             [ nav
                 |> List.drop 2
-                |> (::) ( span [ "pager-display" |> class ] [ 1 |> (+) currentPage |> toString |> text ] )       -- Page numbering on the server is zero-based.
+                |> (::) ( span [ "pager-display" |> class ] [ displayText |> text ] )
                 |> (++) ( List.take 2 nav )
                 |> div [ "pager-inner" |> class ]
             ]

@@ -1,14 +1,15 @@
 .pager-container {
-    background: #ccc;
-    border: 1px solid #aaa;
+    background-color: #ffe;
+    border: 2px solid #000;
     margin: 2em;
     padding: .5em 0;
-    width: 12em;
+    width: 14em;
 }
 
 .pager-display {
     display: inline-block;
-    width: 2.5em;
+    font-weight: bold;
+    margin: 0 5px;
 }
 
 .pager-inner {
@@ -17,6 +18,7 @@
 
 .pager-nav {
     display: inline-block;
+    font-weight: bold;
     margin: 0 .2em;
 }
 
