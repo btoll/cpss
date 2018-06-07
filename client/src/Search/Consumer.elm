@@ -5,7 +5,7 @@ import Dict exposing (Dict)
 import Html exposing (Html, form, h3, text)
 import Html.Attributes exposing (autofocus, checked, value)
 import Html.Events exposing (onCheck, onInput, onSubmit)
-import Search.Util exposing (getBool, getText, setBool, setText)
+import Util.Search exposing (getBool, getText, setBool, setText)
 import Views.Form as Form
 
 

@@ -1,4 +1,4 @@
-module Search.Util exposing (
+module Util.Search exposing (
     getBool
     , getSelection
     , getText
