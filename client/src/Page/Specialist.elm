@@ -29,7 +29,7 @@ type alias Model =
     , action : Action
     , editing : Maybe User
     , disabled : Bool
-    , changingPassword : String         -- Use for both storing current password and new password when changing password!
+    , changingPassword : String
     , showModal : ( Bool, Maybe Modal.Modal )
     , specialists : List User
     , query : Maybe Query
@@ -42,7 +42,6 @@ type Action
     | Adding
     | ChangingPassword User
     | Editing
-    | SettingPassword User
 
 
 init : String -> ( Model, Cmd Msg )
@@ -52,7 +51,7 @@ init url =
     , action = None
     , editing = Nothing
     , disabled = True
-    , changingPassword = ""         -- Use for both storing current password and new password when changing password!
+    , changingPassword = ""
     , showModal = ( False, Nothing )
     , specialists = []
     , query = Nothing
@@ -103,7 +102,7 @@ update url msg model =
 
         Authenticated specialist ( Ok user ) ->
             { model |
-                action = SettingPassword specialist
+                action = ChangingPassword specialist
                 , errors = []
             } ! []
 
@@ -386,20 +385,6 @@ update url msg model =
                     let
                         subCmd =
                             { specialist | password = model.changingPassword }
-                                |> Request.Session.auth url
-                                    |> Http.toTask
-                                    |> Task.attempt ( Authenticated specialist )
-                    in
-                        { model |
-                            action = SettingPassword specialist
-                            , disabled = True
-                            , changingPassword = ""
-                        } ! [ subCmd ]
-
-                SettingPassword specialist ->
-                    let
-                        subCmd =
-                            { specialist | password = model.changingPassword }
                                 |> Request.Session.hash url
                                     |> Http.toTask
                                     |> Task.attempt Hashed
@@ -544,17 +529,6 @@ drawView (
                 )
             ]
 
-        ChangingPassword editable ->
-            [ form [ onSubmit ( Put ( ChangingPassword editable ) ) ]
-                [ Form.text "Current Password"
-                    [ value model.changingPassword
-                    , onInput SetPasswordValue
-                    ]
-                    []
-                , Form.submit disabled Cancel
-                ]
-            ]
-
         Editing ->
             [ form [ onSubmit ( Put Editing ) ]
                 ( (++)
@@ -563,8 +537,8 @@ drawView (
                 )
             ]
 
-        SettingPassword specialist ->
-            [ form [ onSubmit ( Put ( SettingPassword specialist ) ) ]
+        ChangingPassword specialist ->
+            [ form [ onSubmit ( Put ( ChangingPassword specialist ) ) ]
                 [ Form.text "New Password"
                     [ value model.changingPassword
                     , onInput SetPasswordValue
