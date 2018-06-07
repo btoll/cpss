@@ -5,7 +5,7 @@ import Data.Pager exposing (Pager)
 import Data.User as User exposing (User, UserWithPager, new)
 import Dict exposing (Dict)
 import Html exposing (Html, Attribute, button, div, form, h1, input, label, section, text)
-import Html.Attributes exposing (action, autofocus, checked, for, hidden, id, step, style, type_, value)
+import Html.Attributes exposing (action, autofocus, checked, class, for, hidden, id, step, style, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Http
 import Request.Session
@@ -505,9 +505,11 @@ drawView (
     in
     case action of
         None ->
-            [ button [ onClick Add ] [ text "Add Specialist" ]
-            , button [ Search |> onClick ] [ text "Search" ]
-            , button [ hideClearTextButton |> hidden, ClearSearch |> onClick ] [ text "Clear Search" ]
+            [ div [ "buttons" |> class ]
+                [ button [ onClick Add ] [ text "Add Specialist" ]
+                , button [ Search |> onClick ] [ text "Search" ]
+                , button [ hideClearTextButton |> hidden, ClearSearch |> onClick ] [ text "Clear Search" ]
+                ]
             , showPager
             , showList
             , showPager

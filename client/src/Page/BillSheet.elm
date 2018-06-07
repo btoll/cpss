@@ -638,9 +638,11 @@ drawView model =
     in
     case model.action of
         None ->
-            [ button [ Add |> onClick ] [ text "Add Bill Sheet" ]
-            , button [ model.viewLists |> Search |> onClick ] [ text "Search" ]
-            , button [ hideClearTextButton |> hidden, ClearSearch |> onClick ] [ text "Clear Search" ]
+            [ div [ "buttons" |> class ]
+                [ button [ Add |> onClick ] [ text "Add Bill Sheet" ]
+                , button [ model.viewLists |> Search |> onClick ] [ text "Search" ]
+                , button [ hideClearTextButton |> hidden, ClearSearch |> onClick ] [ text "Clear Search" ]
+                ]
             , showPager
             , showList
             , showPager

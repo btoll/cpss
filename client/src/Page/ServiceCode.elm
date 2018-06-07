@@ -3,7 +3,7 @@ module Page.ServiceCode exposing (Model, Msg, init, update, view)
 import Data.ServiceCode as ServiceCode exposing (ServiceCode, new)
 import Dict exposing (Dict)
 import Html exposing (Html, Attribute, button, div, form, h1, input, label, section, text)
-import Html.Attributes exposing (action, autofocus, checked, disabled, for, id, style, type_, value)
+import Html.Attributes exposing (action, autofocus, checked, class, disabled, for, id, style, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Html.Lazy exposing (lazy)
 import Http
@@ -332,7 +332,9 @@ drawView (
     in
     case action of
         None ->
-            [ button [ onClick Add ] [ text "Add Service Code" ]
+            [ div [ "buttons" |> class ]
+                [ button [ onClick Add ] [ text "Add Service Code" ]
+                ]
             , showList
             , model.showModal
                 |> Modal.view Nothing

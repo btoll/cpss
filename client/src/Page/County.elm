@@ -5,7 +5,7 @@ import Data.County exposing (County)
 import Data.Pager exposing (Pager)
 import Dict exposing (Dict)
 import Html exposing (Html, Attribute, button, div, form, h1, input, label, node, section, span, text)
-import Html.Attributes exposing (action, autofocus, checked, for, id, style, type_, value)
+import Html.Attributes exposing (action, autofocus, checked, class, for, id, style, type_, value)
 import Html.Events exposing (onCheck, onClick, onInput, onSubmit)
 import Http
 import Request.City
@@ -390,7 +390,9 @@ drawView (
     in
     case action of
         None ->
-            [ button [ onClick Add ] [ text "Add City" ]
+            [ div [ "buttons" |> class ]
+                [ button [ onClick Add ] [ text "Add City" ]
+                ]
             , showPager
             , showList
             , showPager

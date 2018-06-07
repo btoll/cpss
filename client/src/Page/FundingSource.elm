@@ -3,7 +3,7 @@ module Page.FundingSource exposing (Model, Msg, init, update, view)
 import Data.FundingSource as FundingSource exposing (FundingSource, new)
 import Dict exposing (Dict)
 import Html exposing (Html, Attribute, button, div, form, h1, input, label, section, text)
-import Html.Attributes exposing (action, autofocus, checked, disabled, for, id, style, type_, value)
+import Html.Attributes exposing (action, autofocus, checked, class, disabled, for, id, style, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Html.Lazy exposing (lazy)
 import Http
@@ -332,7 +332,9 @@ drawView (
     in
     case action of
         None ->
-            [ button [ onClick Add ] [ text "Add Funding Source" ]
+            [ div [ "buttons" |> class ]
+                [ button [ onClick Add ] [ text "Add Funding Source" ]
+                ]
             , showList
             , model.showModal
                 |> Modal.view Nothing

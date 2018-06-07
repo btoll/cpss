@@ -50,6 +50,16 @@ nav div.container div p {
     margin-right: 20px;
     padding: 2px 10px;
 }
+main#login nav li.nav-item {        /* Hide the Login link on the login page :) */
+    visibility: hidden;
+}
+main#login nav + div {
+    margin: 5%;
+}
+main#login nav + div form {
+    padding: 2% 0;
+    width: 25%;
+}
 section {
     background: #ccc;
     border: 1px dotted #000;
@@ -57,8 +67,15 @@ section {
     margin: 2%;
     padding: 1% 2% 2%;
 }
-section > button + button {     /* `Add*` and `Search` buttons */
-    margin-left: 10px;
+section div.buttons {               /* `Add*` and `Search` buttons */
+    background-color: darkseagreen;
+    border: 1px solid #000;
+    border-left-width: 0;
+    border-right-width: 0;
+    padding: 1% 0 1% 1%;
+}
+section div.buttons button {
+    margin: 0 .4%;
 }
 div.error {
     background-color: #acc;
@@ -93,8 +110,10 @@ form {
     background-color: antiquewhite;
     border: 1px dotted #000;
     border-radius: 10px;
-    margin: 1%;
-    padding: 1% 0;
+    padding: 2% 0;
+}
+form h3 {
+    margin-left: 5%;
 }
 form > div {
     margin: 5px;

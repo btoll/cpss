@@ -10,7 +10,7 @@ import Data.Pager exposing (Pager)
 import Data.ServiceCode exposing (ServiceCode)
 import Dict exposing (Dict)
 import Html exposing (Html, Attribute, button, div, form, h1, input, label, node, section, text)
-import Html.Attributes exposing (action, autofocus, checked, for, hidden, id, style, type_, value)
+import Html.Attributes exposing (action, autofocus, checked, class, for, hidden, id, style, type_, value)
 import Html.Events exposing (onCheck, onClick, onInput, onSubmit)
 import Http
 import Request.City
@@ -606,9 +606,11 @@ drawView (
     in
     case action of
         None ->
-            [ button [ Add |> onClick ] [ text "Add Consumer" ]
-            , button [ Search |> onClick ] [ text "Search" ]
-            , button [ hideClearTextButton |> hidden, ClearSearch |> onClick ] [ text "Clear Search" ]
+            [ div [ "buttons" |> class ]
+                [ button [ Add |> onClick ] [ text "Add Consumer" ]
+                , button [ Search |> onClick ] [ text "Search" ]
+                , button [ hideClearTextButton |> hidden, ClearSearch |> onClick ] [ text "Clear Search" ]
+                ]
             , showPager
             , showList
             , showPager
