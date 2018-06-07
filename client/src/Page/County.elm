@@ -16,6 +16,7 @@ import Validate.City
 import Views.Errors as Errors
 import Views.Form as Form
 import Views.Modal as Modal
+import Views.Page exposing (ViewAction(..), pageTitle)
 import Views.Pager
 
 
@@ -25,7 +26,7 @@ import Views.Pager
 type alias Model =
     { errors : List String
     , tableState : Table.State
-    , action : Action
+    , action : ViewAction
     , editing : Maybe City
     , disabled : Bool
     , showModal : ( Bool, Maybe Modal.Modal )
@@ -33,9 +34,6 @@ type alias Model =
     , counties : List County
     , pager : Pager
     }
-
-
-type Action = None | Adding | Editing
 
 
 
@@ -353,7 +351,7 @@ view : Model -> Html Msg
 view model =
     section []
         ( (++)
-            [ h1 [] [ text "Cities / Counties" ]
+            [ h1 [] [ "Cities / Counties" |> pageTitle model.action |> text ]
             , Errors.view model.errors
             ]
             ( drawView model )
@@ -416,6 +414,9 @@ drawView (
                     [ Form.submit disabled Cancel ]
                 )
             ]
+
+        _ ->
+            [ div [] [] ]
 
 
 formRows : ( City, List County ) -> List ( Html Msg )

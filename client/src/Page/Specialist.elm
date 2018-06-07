@@ -16,6 +16,7 @@ import Validate.Specialist
 import Views.Errors as Errors
 import Views.Form as Form
 import Views.Modal as Modal
+import Views.Page exposing (ViewAction(..), pageTitle)
 import Views.Pager
 
 
@@ -26,7 +27,7 @@ import Views.Pager
 type alias Model =
     { errors : List String
     , tableState : Table.State
-    , action : Action
+    , action : ViewAction
     , editing : Maybe User
     , disabled : Bool
     , changingPassword : String
@@ -36,12 +37,6 @@ type alias Model =
     , pager : Pager
     }
 
-
-type Action
-    = None
-    | Adding
-    | ChangingPassword User
-    | Editing
 
 
 init : String -> ( Model, Cmd Msg )
@@ -81,7 +76,7 @@ type Msg
     | NewPage ( Maybe Int )
     | Post
     | Posted ( Result Http.Error User )
-    | Put Action
+    | Put ViewAction
     | Putted ( Result Http.Error User )
     | Search
     | SetFormValue ( String -> User ) String
@@ -465,7 +460,7 @@ view : Model -> Html Msg
 view model =
     section []
         ( (++)
-            [ h1 [] [ text "Specialists" ]
+            [ h1 [] [ "Specialists" |> pageTitle model.action |> text ]
             , Errors.view model.errors
             ]
             ( drawView model )
@@ -549,7 +544,7 @@ drawView (
             ]
 
 
-formRows : Action -> User -> List ( Html Msg )
+formRows : ViewAction -> User -> List ( Html Msg )
 formRows action editable =
     [ Form.text "Username"
         [ value editable.username

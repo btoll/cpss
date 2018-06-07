@@ -14,6 +14,7 @@ import Validate.ServiceCode
 import Views.Errors as Errors
 import Views.Form as Form
 import Views.Modal as Modal
+import Views.Page exposing (ViewAction(..), pageTitle)
 
 
 
@@ -23,18 +24,13 @@ import Views.Modal as Modal
 type alias Model =
     { errors : List String
     , tableState : Table.State
-    , action : Action
+    , action : ViewAction
     , editing : Maybe ServiceCode
     , disabled : Bool
     , showModal : ( Bool, Maybe Modal.Modal )
     , serviceCodes : List ServiceCode
     }
 
-
-type Action
-    = None
-    | Adding
-    | Editing
 
 
 init : String -> ( Model, Cmd Msg )
@@ -303,7 +299,7 @@ view : Model -> Html Msg
 view model =
     section []
         ( (++)
-            [ h1 [] [ text "Service Codes" ]
+            [ h1 [] [ "Service Codes" |> pageTitle model.action |> text ]
             , Errors.view model.errors
             ]
             ( drawView model )
@@ -358,6 +354,9 @@ drawView (
                     [ Form.submit disabled Cancel ]
                 )
             ]
+
+        _ ->
+            [ div [] [] ]
 
 
 formRows : ServiceCode -> List ( Html Msg )

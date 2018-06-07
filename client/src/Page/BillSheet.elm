@@ -32,7 +32,7 @@ import Validate.TimeEntry
 import Views.Errors as Errors
 import Views.Form as Form
 import Views.Modal as Modal
-import Views.Page exposing (ViewAction(..))
+import Views.Page exposing (ViewAction(..), pageTitle)
 import Views.Pager
 
 
@@ -594,7 +594,7 @@ view session model =
     in
     section []
         ( (++)
-            [ h1 [] [ ( if (==) user.authLevel 1 then "Bill Sheet" else "Time Entry" ) |> text ]
+            [ h1 [] [ ( if (==) user.authLevel 1 then "Bill Sheet" else "Time Entry" ) |> pageTitle model.action |> text ]
             , Errors.view model.errors
             ]
             ( model |> drawView )
@@ -682,6 +682,9 @@ drawView model =
                     [ Form.submit False Cancel ]
                 )
             ]
+
+        _ ->
+            [ div [] [] ]
 
 
 

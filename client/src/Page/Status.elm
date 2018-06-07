@@ -14,6 +14,7 @@ import Validate.Status
 import Views.Errors as Errors
 import Views.Form as Form
 import Views.Modal as Modal
+import Views.Page exposing (ViewAction(..), pageTitle)
 
 
 
@@ -24,18 +25,13 @@ type alias Model =
 --    { errors : List ( Validate.Status.Field, String )
     { errors : List String
     , tableState : Table.State
-    , action : Action
+    , action : ViewAction
     , editing : Maybe Status
     , disabled : Bool
     , showModal : ( Bool, Maybe Modal.Modal )
     , status : List Status
     }
 
-
-type Action
-    = None
-    | Adding
-    | Editing
 
 
 init : String -> ( Model, Cmd Msg )
@@ -306,8 +302,8 @@ view : Model -> Html Msg
 view model =
     section []
         ( (++)
-            [ h1 [] [ text "Status" ]
---            , Errors.view model.errors
+            [ h1 [] [ "Status" |> pageTitle model.action |> text ]
+            , Errors.view model.errors
             ]
             ( drawView model )
         )
@@ -361,6 +357,9 @@ drawView (
                     [ Form.submit disabled Cancel ]
                 )
             ]
+
+        _ ->
+            [ div [] [] ]
 
 
 formRows : Status -> List ( Html Msg )
