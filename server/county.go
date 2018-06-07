@@ -20,7 +20,6 @@ func NewCountyController(service *goa.Service) *CountyController {
 func (c *CountyController) List(ctx *app.ListCountyContext) error {
 	// CountyController_List: start_implement
 
-	// Put your logic here
 	collection, err := sql.List(sql.NewCounty(nil))
 	if err != nil {
 		return err
