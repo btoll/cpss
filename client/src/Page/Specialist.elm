@@ -5,7 +5,7 @@ import Data.Pager exposing (Pager)
 import Data.User as User exposing (User, UserWithPager, new)
 import Dict exposing (Dict)
 import Html exposing (Html, Attribute, button, div, form, h1, input, label, section, text)
-import Html.Attributes exposing (action, autofocus, checked, class, for, hidden, id, step, style, type_, value)
+import Html.Attributes exposing (autofocus, action, autofocus, checked, class, for, hidden, id, step, style, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Http
 import Request.Session
@@ -30,7 +30,8 @@ type alias Model =
     , action : ViewAction
     , editing : Maybe User
     , disabled : Bool
-    , changingPassword : String
+    , newPassword : String
+    , confirmPassword : String
     , showModal : ( Bool, Maybe Modal.Modal )
     , specialists : List User
     , query : Maybe Query
@@ -46,7 +47,8 @@ init url =
     , action = None
     , editing = Nothing
     , disabled = True
-    , changingPassword = ""
+    , newPassword = ""
+    , confirmPassword = ""
     , showModal = ( False, Nothing )
     , specialists = []
     , query = Nothing
@@ -80,7 +82,7 @@ type Msg
     | Putted ( Result Http.Error User )
     | Search
     | SetFormValue ( String -> User ) String
-    | SetPasswordValue String
+    | SetPasswordValue ( String -> Model ) String
     | SetTableState Table.State
 
 
@@ -119,7 +121,8 @@ update url msg model =
         Cancel ->
             { model |
                 action = None
-                , changingPassword = ""
+                , newPassword = ""
+                , confirmPassword = ""
                 , editing = Nothing
                 , errors = []
             } ! []
@@ -127,7 +130,7 @@ update url msg model =
         ChangePassword specialist ->
             { model |
                 action = ChangingPassword specialist
-                , editing = Just specialist
+                , editing = specialist |> Just
             } ! []
 
         ClearSearch ->
@@ -140,7 +143,7 @@ update url msg model =
 
         Delete specialist ->
             { model |
-                editing = Just specialist
+                editing = specialist |> Just
                 , showModal = ( True , Modal.Delete |> Just )
                 , errors = []
             } ! []
@@ -169,7 +172,7 @@ update url msg model =
             { model |
                 action = Editing
                 , disabled = True
-                , editing = Just specialist
+                , editing = specialist |> Just
                 , errors = []
             } ! []
 
@@ -379,7 +382,7 @@ update url msg model =
                 ChangingPassword specialist ->
                     let
                         subCmd =
-                            { specialist | password = model.changingPassword }
+                            { specialist | password = model.newPassword }
                                 |> Request.Session.hash url
                                     |> Http.toTask
                                     |> Task.attempt Hashed
@@ -387,7 +390,8 @@ update url msg model =
                         { model |
                             action = None
                             , disabled = True
-                            , changingPassword = ""
+                            , newPassword = ""
+                            , confirmPassword = ""
                         } ! [ subCmd ]
 
                 _ ->
@@ -437,15 +441,29 @@ update url msg model =
 
         SetFormValue setFormValue s ->
             { model |
-                editing = Just ( setFormValue s )
+                editing = s |> setFormValue |> Just
                 , disabled = False
             } ! []
 
-        SetPasswordValue s ->
-            { model |
-                changingPassword = s
-                , disabled = False
-            } ! []
+        SetPasswordValue setPasswordValue s ->
+            let
+                m =
+                    s |> setPasswordValue
+
+                passwordsMatch : Bool
+                passwordsMatch =
+                    if (
+                        -- Only enable button if both passwords aren't an empty string AND they match!
+                        (
+                            ( (==) "" m.confirmPassword ) &&
+                            ( (==) "" m.newPassword )
+                        ) ||
+                            (/=) m.newPassword m.confirmPassword
+                        )
+                    then True
+                    else False
+            in
+            { m | disabled = passwordsMatch } ! []
 
         SetTableState newState ->
             { model | tableState = newState
@@ -536,9 +554,15 @@ drawView (
 
         ChangingPassword specialist ->
             [ form [ onSubmit ( Put ( ChangingPassword specialist ) ) ]
-                [ Form.text "New Password"
-                    [ value model.changingPassword
-                    , onInput SetPasswordValue
+                [ Form.password "New Password"
+                    [ value model.newPassword
+                    , True |> autofocus
+                    , onInput ( SetPasswordValue (\v -> { model | newPassword = v } ) )
+                    ]
+                    []
+                , Form.password "Confirm Password"
+                    [ value model.confirmPassword
+                    , onInput ( SetPasswordValue (\v -> { model | confirmPassword = v } ) )
                     ]
                     []
                 , Form.submit disabled Cancel
