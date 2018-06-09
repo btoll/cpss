@@ -3,7 +3,7 @@ module Page.Login exposing (ExternalMsg(..), Model, Msg, init, update, view)
 import Data.Session as Session exposing (Session)
 import Data.User as User exposing (User)
 import Html exposing (Html, div, form, h1, text)
-import Html.Attributes exposing (autofocus, value)
+import Html.Attributes exposing (autofocus, class, value)
 import Html.Events exposing (onInput, onSubmit)
 import Http
 import Request.Session
@@ -18,6 +18,7 @@ import Views.Form as Form
 type alias Model =
     { username : String
     , password : String
+    , error : String
     }
 
 
@@ -25,6 +26,7 @@ init : Model
 init =
     { username = ""
     , password = ""
+    , error = ""
     }
 
 
@@ -40,7 +42,7 @@ type Msg
 
 
 type ExternalMsg
-    = NoOp
+    = Nop
     | SetUser User
 
 
@@ -52,19 +54,19 @@ update url msg model =
                 Request.Session.auth url model
                     |> Http.toTask
                     |> Task.attempt Authenticated
-            ] , NoOp )
+            ] , Nop )
 
         Authenticated ( Ok user ) ->
-            ( { model | username = "" , password = "" } ! [], SetUser user )
+            ( { model | username = "" , password = "", error = "" } ! [], SetUser user )
 
         Authenticated ( Err err ) ->
-            ( { model | username = "", password = "" } ! [], NoOp )
+            ( { model | username = "", password = "", error = "Bad username or password" } ! [], Nop )
 
         Cancel ->
-            ( { model | username = "", password = "" } ! [], NoOp )
+            ( { model | username = "", password = "" , error = ""} ! [], Nop )
 
         SetFormValue fn s ->
-            ( ( s |> fn ) ! [], NoOp )
+            ( ( s |> fn ) ! [], Nop )
 
 
 
@@ -73,8 +75,15 @@ update url msg model =
 
 view : Model -> Html Msg
 view model =
+    let
+        cls =
+            if model.error |> (==) ""
+            then "hide error"
+            else "error"
+    in
     div []
-        [ h1 [] [ "CPSS" |> text ]
+        [ div [ cls |> class ] [ model.error |> text ]
+        , h1 [] [ "CPSS" |> text ]
         , form [ onSubmit Authenticate ] [
             Form.text "Username"
                 [ value model.username
