@@ -61,16 +61,6 @@ var _ = Resource("BillSheet", func() {
 			Media(BillSheetMedia, "paging")
 		})
 	})
-
-	Action("query", func() {
-		Routing(POST("/query"))
-		Description("Get all billsheets matching the search criteria")
-		Payload(BillSheetQueryPayload)
-		Response(OK, func() {
-			Status(200)
-			Media(BillSheetMedia, "paging")
-		})
-	})
 })
 
 var BillSheetPayload = Type("BillSheetPayload", func() {

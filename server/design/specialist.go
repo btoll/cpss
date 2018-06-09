@@ -67,16 +67,6 @@ var _ = Resource("Specialist", func() {
 			Media(SpecialistMedia, "paging")
 		})
 	})
-
-	Action("query", func() {
-		Routing(POST("/query"))
-		Description("Get all specialists matching the search criteria")
-		Payload(SpecialistQueryPayload)
-		Response(OK, func() {
-			Status(200)
-			Media(SpecialistMedia, "paging")
-		})
-	})
 })
 
 var SpecialistPayload = Type("SpecialistPayload", func() {

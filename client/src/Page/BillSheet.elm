@@ -96,7 +96,7 @@ init url session =
                         , Request.Consumer.list url |> Http.send ( Consumers >> Fetch )
                         , Request.County.list url |> Http.send ( Counties >> Fetch )
                         , Request.ServiceCode.list url |> Http.send ( ServiceCodes >> Fetch )
-                        , Request.BillSheet.query url ( (++) "specialist=" ( user.id |> toString ) ) |> Http.send ( BillSheets >> Fetch )
+                        , 0 |> Request.BillSheet.page url ( (++) "specialist=" ( user.id |> toString ) ) |> Http.send ( BillSheets >> Fetch )
                         ]
                     )
     in
@@ -361,16 +361,18 @@ update url msg model =
                                     if (==) model.user.authLevel 1
                                     then query
                                     else Dict.insert "specialist" ( model.user.id |> toString ) query
+
+                                q =
+                                    String.dropRight 5           -- Remove the trailing " AND ".
+                                        << Dict.foldl fmtEquality ""
+                                        << maybeInsertSpecialist
+                                        <| query
                             in
                             ( False
                             , Nothing
                             , query |> Just                     -- We need to save the search query for paging!
-                            , Http.send ( BillSheets >> Fetch )
-                                << Request.BillSheet.query url
-                                << String.dropRight 5           -- Remove the trailing " AND ".
-                                << Dict.foldl fmtEquality ""
-                                << maybeInsertSpecialist
-                                <| query
+                            , Request.BillSheet.page url q 0
+                                |> Http.send ( BillSheets >> Fetch )
                             )
 
                         ( True, Just query ) ->

@@ -1,7 +1,15 @@
 module Request.City exposing (delete, get, list, page, post, put)
 
 import Http
-import Data.City exposing (City, CityWithPager, decoder, encoder, manyDecoder, pagingDecoder, succeed)
+import Data.City exposing
+    (City
+    , CityWithPager
+    , decoder
+    , encoder
+    , manyDecoder
+    , pagingDecoder
+    , succeed
+    )
 
 
 

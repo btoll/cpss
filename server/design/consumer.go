@@ -61,16 +61,6 @@ var _ = Resource("Consumer", func() {
 			Media(ConsumerMedia, "paging")
 		})
 	})
-
-	Action("query", func() {
-		Routing(POST("/query"))
-		Description("Get all consumers matching the search criteria")
-		Payload(ConsumerQueryPayload)
-		Response(OK, func() {
-			Status(200)
-			Media(ConsumerMedia, "paging")
-		})
-	})
 })
 
 var ConsumerPayload = Type("ConsumerPayload", func() {

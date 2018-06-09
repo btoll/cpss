@@ -69,19 +69,6 @@ func (c *SpecialistController) Page(ctx *app.PageSpecialistContext) error {
 	// SpecialistController_Page: end_implement
 }
 
-// Query runs the query action.
-func (c *SpecialistController) Query(ctx *app.QuerySpecialistContext) error {
-	// SpecialistController_Query: start_implement
-
-	collection, err := sql.Query(sql.NewSpecialist(ctx.Payload))
-	if err != nil {
-		return err
-	}
-	return ctx.OKPaging(collection.(*app.SpecialistMediaPaging))
-
-	// SpecialistController_Query: end_implement
-}
-
 // Show runs the show action.
 func (c *SpecialistController) Show(ctx *app.ShowSpecialistContext) error {
 	// SpecialistController_Show: start_implement

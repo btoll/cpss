@@ -1,4 +1,4 @@
-module Request.Specialist exposing (delete, get, list, page, post, put, query)
+module Request.Specialist exposing (delete, get, list, page, post, put)
 
 import Http
 import Data.User exposing
@@ -82,17 +82,5 @@ put url specialist =
             , timeout = Nothing
             , withCredentials = False
             }
-
-
-query : String -> String -> Http.Request UserWithPager
-query url whereClause =
-    let
-        body : Http.Body
-        body =
-            queryEncoder whereClause
-                |> Http.jsonBody
-    in
-        pagingDecoder
-            |> Http.post ( (++) url "/specialist/query" ) body
 
 

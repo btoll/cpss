@@ -172,9 +172,8 @@ func (s *Specialist) List(db *mysql.DB) (interface{}, error) {
 }
 
 func (s *Specialist) Page(db *mysql.DB) (interface{}, error) {
-	// page * recordsPerPage = limit
-	recordsPerPage := 50
-	limit := s.Data.(int) * recordsPerPage
+	// page * RecordsPerPage = limit
+	limit := s.Data.(int) * RecordsPerPage
 	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)", ""))
 	if err != nil {
 		return nil, err
@@ -186,62 +185,20 @@ func (s *Specialist) Page(db *mysql.DB) (interface{}, error) {
 			return nil, err
 		}
 	}
-	//	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*", "", fmt.Sprintf("LIMIT %d,%d", limit, recordsPerPage)))
-	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*", fmt.Sprintf("LIMIT %d,%d", limit, recordsPerPage)))
+	//	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*", "", fmt.Sprintf("LIMIT %d,%d", limit, RecordsPerPage)))
+	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*", fmt.Sprintf("LIMIT %d,%d", limit, RecordsPerPage)))
 	if err != nil {
 		return nil, err
 	}
-	// Only the amount of rows equal to recordsPerPage unless the last page has been requested
+	// Only the amount of rows equal to RecordsPerPage unless the last page has been requested
 	// (determined by `totalCount - limit`).
 	capacity := totalCount - limit
-	if capacity >= recordsPerPage {
-		capacity = recordsPerPage
+	if capacity >= RecordsPerPage {
+		capacity = RecordsPerPage
 	}
 	paging := &app.SpecialistMediaPaging{
 		Pager: &app.Pager{
-			CurrentPage:    limit / recordsPerPage,
-			RecordsPerPage: recordsPerPage,
-			TotalCount:     totalCount,
-			TotalPages:     int(math.Ceil(float64(totalCount) / float64(recordsPerPage))),
-		},
-		Users: make([]*app.SpecialistItem, capacity),
-	}
-	err = s.CollectRows(rows, paging.Users)
-	if err != nil {
-		return nil, err
-	}
-	return paging, nil
-}
-
-func (s *Specialist) Query(db *mysql.DB) (interface{}, error) {
-	query := s.Data.(*app.SpecialistQueryPayload)
-
-	fmt.Println()
-	fmt.Println("sql", fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)", fmt.Sprintf("WHERE %s", *query.WhereClause)))
-	fmt.Println()
-
-	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)", fmt.Sprintf("WHERE %s", *query.WhereClause)))
-	if err != nil {
-		return nil, err
-	}
-	var totalCount int
-	for rows.Next() {
-		err = rows.Scan(&totalCount)
-		if err != nil {
-			return nil, err
-		}
-	}
-	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*", fmt.Sprintf("WHERE %s LIMIT %d,%d", *query.WhereClause, 0, RecordsPerPage)))
-	if err != nil {
-		return nil, err
-	}
-	capacity := RecordsPerPage
-	if totalCount < RecordsPerPage {
-		capacity = totalCount
-	}
-	paging := &app.SpecialistMediaPaging{
-		Pager: &app.Pager{
-			CurrentPage:    0,
+			CurrentPage:    limit / RecordsPerPage,
 			RecordsPerPage: RecordsPerPage,
 			TotalCount:     totalCount,
 			TotalPages:     int(math.Ceil(float64(totalCount) / float64(RecordsPerPage))),

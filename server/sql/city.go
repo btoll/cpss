@@ -154,9 +154,8 @@ func (c *City) List(db *mysql.DB) (interface{}, error) {
 }
 
 func (c *City) Page(db *mysql.DB) (interface{}, error) {
-	// page * recordsPerPage = limit
-	recordsPerPage := 50
-	limit := c.Data.(int) * recordsPerPage
+	// page * RecordsPerPage = limit
+	limit := c.Data.(int) * RecordsPerPage
 	rows, err := db.Query(fmt.Sprintf(c.Stmt["SELECT"], "COUNT(*)", ""))
 	if err != nil {
 		return nil, err
@@ -168,22 +167,22 @@ func (c *City) Page(db *mysql.DB) (interface{}, error) {
 			return nil, err
 		}
 	}
-	rows, err = db.Query(fmt.Sprintf(c.Stmt["SELECT"], "*", fmt.Sprintf("LIMIT %d,%d", limit, recordsPerPage)))
+	rows, err = db.Query(fmt.Sprintf(c.Stmt["SELECT"], "*", fmt.Sprintf("LIMIT %d,%d", limit, RecordsPerPage)))
 	if err != nil {
 		return nil, err
 	}
-	// Only the amount of rows equal to recordsPerPage unless the last page has been requested
+	// Only the amount of rows equal to RecordsPerPage unless the last page has been requested
 	// (determined by `totalCount - limit`).
 	capacity := totalCount - limit
-	if capacity >= recordsPerPage {
-		capacity = recordsPerPage
+	if capacity >= RecordsPerPage {
+		capacity = RecordsPerPage
 	}
 	paging := &app.CityMediaPaging{
 		Pager: &app.Pager{
-			CurrentPage:    limit / recordsPerPage,
-			RecordsPerPage: recordsPerPage,
+			CurrentPage:    limit / RecordsPerPage,
+			RecordsPerPage: RecordsPerPage,
 			TotalCount:     totalCount,
-			TotalPages:     int(math.Ceil(float64(totalCount) / float64(recordsPerPage))),
+			TotalPages:     int(math.Ceil(float64(totalCount) / float64(RecordsPerPage))),
 		},
 		Cities: make([]*app.CityItem, capacity),
 	}

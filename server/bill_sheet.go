@@ -68,19 +68,6 @@ func (c *BillSheetController) Page(ctx *app.PageBillSheetContext) error {
 	// BillSheetController_Page: end_implement
 }
 
-// Query runs the query action.
-func (c *BillSheetController) Query(ctx *app.QueryBillSheetContext) error {
-	// BillSheetController_Query: start_implement
-
-	collection, err := sql.Query(sql.NewBillSheet(ctx.Payload))
-	if err != nil {
-		return err
-	}
-	return ctx.OKPaging(collection.(*app.BillSheetMediaPaging))
-
-	// BillSheetController_Query: end_implement
-}
-
 // Update runs the update action.
 func (c *BillSheetController) Update(ctx *app.UpdateBillSheetContext) error {
 	// BillSheetController_Update: start_implement

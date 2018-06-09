@@ -325,13 +325,16 @@ update url msg model =
 
                         {- Search Modal -}
                         ( False, Just query ) ->
+                            let
+                                q =
+                                    String.dropRight 5   -- Remove the trailing " AND ".
+                                        <<  Dict.foldl fmtFuzzyMatch ""
+                                        <| query
+                            in
                             ( False
                             , Nothing
                             , query |> Just     -- We need to save the search query for paging!
-                            , query
-                                |> Dict.foldl fmtFuzzyMatch ""
-                                |> String.dropRight 5   -- Remove the trailing " AND ".
-                                |> Request.Consumer.query url
+                            , Request.Consumer.page url q 0
                                 |> Http.send ( Consumers >> Fetch )
                             )
 

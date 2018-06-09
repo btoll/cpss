@@ -68,19 +68,6 @@ func (c *ConsumerController) Page(ctx *app.PageConsumerContext) error {
 	// ConsumerController_Page: end_implement
 }
 
-// Query runs the query action.
-func (c *ConsumerController) Query(ctx *app.QueryConsumerContext) error {
-	// ConsumerController_Query: start_implement
-
-	collection, err := sql.Query(sql.NewConsumer(ctx.Payload))
-	if err != nil {
-		return err
-	}
-	return ctx.OKPaging(collection.(*app.ConsumerMediaPaging))
-
-	// ConsumerController_Query: end_implement
-}
-
 // Update runs the update action.
 func (c *ConsumerController) Update(ctx *app.UpdateConsumerContext) error {
 	// ConsumerController_Update: start_implement

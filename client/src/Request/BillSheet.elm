@@ -1,4 +1,4 @@
-module Request.BillSheet exposing (delete, list, page, post, put, query)
+module Request.BillSheet exposing (delete, list, page, post, put)
 
 
 import Http
@@ -81,17 +81,5 @@ put url billsheet =
             , timeout = Nothing
             , withCredentials = False
             }
-
-
-query : String -> String -> Http.Request BillSheetWithPager
-query url whereClause =
-    let
-        body : Http.Body
-        body =
-            queryEncoder whereClause
-                |> Http.jsonBody
-    in
-        pagingDecoder
-            |> Http.post ( (++) url "/billsheet/query" ) body
 
 

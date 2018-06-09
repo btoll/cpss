@@ -27,10 +27,6 @@ type Pager interface {
 	Page(db *mysql.DB) (interface{}, error)
 }
 
-type Queryer interface {
-	Query(db *mysql.DB) (interface{}, error)
-}
-
 type Reader interface {
 	Read(db *mysql.DB) (interface{}, error)
 }
@@ -122,19 +118,6 @@ func Page(p Pager) (interface{}, error) {
 		return nil, err
 	}
 	coll, err := p.Page(db)
-	if err != nil {
-		return nil, err
-	}
-	cleanup(db)
-	return coll, nil
-}
-
-func Query(q Queryer) (interface{}, error) {
-	db, err := connect()
-	if err != nil {
-		return nil, err
-	}
-	coll, err := q.Query(db)
 	if err != nil {
 		return nil, err
 	}

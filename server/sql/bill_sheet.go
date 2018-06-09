@@ -292,43 +292,6 @@ func (s *BillSheet) Page(db *mysql.DB) (interface{}, error) {
 	return paging, nil
 }
 
-func (s *BillSheet) Query(db *mysql.DB) (interface{}, error) {
-	query := s.Data.(*app.BillSheetQueryPayload)
-	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)", fmt.Sprintf("%s WHERE active.id = 1 AND %s", s.Stmt["CONSUMER_INNER_JOIN"], *query.WhereClause)))
-	if err != nil {
-		return nil, err
-	}
-	var totalCount int
-	for rows.Next() {
-		err = rows.Scan(&totalCount)
-		if err != nil {
-			return nil, err
-		}
-	}
-	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "billsheet.*", fmt.Sprintf("%s WHERE active.id = 1 AND %s LIMIT %d,%d", s.Stmt["CONSUMER_INNER_JOIN"], *query.WhereClause, 0, RecordsPerPage)))
-	if err != nil {
-		return nil, err
-	}
-	capacity := RecordsPerPage
-	if totalCount < RecordsPerPage {
-		capacity = totalCount
-	}
-	paging := &app.BillSheetMediaPaging{
-		Pager: &app.Pager{
-			CurrentPage:    0,
-			RecordsPerPage: RecordsPerPage,
-			TotalCount:     totalCount,
-			TotalPages:     int(math.Ceil(float64(totalCount) / float64(RecordsPerPage))),
-		},
-		Billsheets: make([]*app.BillSheetItem, capacity),
-	}
-	err = s.CollectRows(rows, paging.Billsheets)
-	if err != nil {
-		return nil, err
-	}
-	return paging, nil
-}
-
 func (s *BillSheet) Update(db *mysql.DB) (interface{}, error) {
 	payload := s.Data.(*app.BillSheetPayload)
 	if _, err := isLegalDate(payload.ServiceDate); err != nil {

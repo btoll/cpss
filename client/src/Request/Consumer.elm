@@ -1,4 +1,4 @@
-module Request.Consumer exposing (delete, list, page, post, put, query)
+module Request.Consumer exposing (delete, list, page, post, put)
 
 import Http
 import Data.Consumer exposing
@@ -74,16 +74,5 @@ put url consumer =
             , timeout = Nothing
             , withCredentials = False
             }
-
-query : String -> String -> Http.Request ConsumerWithPager
-query url whereClause =
-    let
-        body : Http.Body
-        body =
-            queryEncoder whereClause
-                |> Http.jsonBody
-    in
-        pagingDecoder
-            |> Http.post ( (++) url "/consumer/query" ) body
 
 
