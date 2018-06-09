@@ -1,6 +1,6 @@
 module Search.Specialist exposing (Msg, update, view)
 
-import Data.Search exposing (Search(..), Query)
+import Data.Search exposing (Query)
 import Dict exposing (Dict)
 import Html exposing (Html, form, h3, text)
 import Html.Attributes exposing (autofocus, value)

@@ -338,7 +338,7 @@ update url msg model =
                         ( True, Just query ) ->
                             ( True
                             , Nothing
-                                |> Modal.Search Data.Search.Consumer model.query
+                                |> Modal.Search Data.Search.Consumer Nothing model.query
                                 |> Just
                             , query |> Just
                             , Cmd.none
@@ -495,7 +495,7 @@ update url msg model =
 
         Search ->
             { model |
-                showModal = ( True , Nothing |> Modal.Search Data.Search.Consumer model.query |> Just )
+                showModal = ( True , Nothing |> Modal.Search Data.Search.Consumer Nothing model.query |> Just )
                 , errors = []
             } ! []
 
@@ -615,7 +615,7 @@ drawView (
             , showList
             , showPager
             , model.showModal
-                |> Modal.view query
+                |> Modal.view Nothing query
                 |> Html.map ModalMsg
             ]
 

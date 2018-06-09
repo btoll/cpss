@@ -1,19 +1,18 @@
 module Modal.Search exposing (Msg, update, view)
 
-import Data.Search exposing (Search(..), Query, ViewLists)
+import Data.Search exposing (SearchType(..), Query, ViewLists)
+import Data.User exposing (User)
 import Dict exposing (Dict)
 import Html exposing (Html, div)
 import Search.BillSheet as BillSheet
 import Search.Consumer as Consumer
 import Search.Specialist as Specialist
-import Search.TimeEntry as TimeEntry
 
 
 type Msg
     = BillSheetMsg BillSheet.Msg
     | ConsumerMsg Consumer.Msg
     | SpecialistMsg Specialist.Msg
-    | TimeEntryMsg TimeEntry.Msg
 
 
 
@@ -29,13 +28,10 @@ update query msg =
         SpecialistMsg subMsg ->
             subMsg |> Specialist.update query
 
-        TimeEntryMsg subMsg ->
-            subMsg |> TimeEntry.update query
 
 
-
-view : Search -> Maybe Query -> Maybe ViewLists -> Html Msg
-view t query viewLists =
+view : SearchType -> User -> Maybe Query -> Maybe ViewLists -> Html Msg
+view t user query viewLists =
     let
         searchView =
             case t of
@@ -46,23 +42,13 @@ view t query viewLists =
 
                         Just lists ->
                             lists
-                                |> BillSheet.view query
+                                |> BillSheet.view user query
                                 >> Html.map BillSheetMsg
 
                 Consumer ->
                     query
                         |> Consumer.view
                         >> Html.map ConsumerMsg
-
-                TimeEntry ->
-                    case viewLists of
-                        Nothing ->
-                            div [] []
-
-                        Just lists ->
-                            lists
-                                |> TimeEntry.view query
-                                >> Html.map TimeEntryMsg
 
                 User ->
                     query

@@ -86,12 +86,13 @@ pageTitle action page =
             " - Add"
                 |> (++) page
 
+        ChangingPassword _ ->
+            " - Change Password"
+                |> (++) page
+
         Editing ->
             " - Edit"
                 |> (++) page
-
-        _ ->
-            ""
 
 
 

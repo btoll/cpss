@@ -1,6 +1,7 @@
 module Search.BillSheet exposing (Msg, update, view)
 
-import Data.Search exposing (Search(..), Query, ViewLists)
+import Data.Search exposing (Query, ViewLists)
+import Data.User exposing (User)
 import Dict exposing (Dict)
 import Html exposing (Html, button, div, form, h3, text)
 import Html.Attributes exposing (id)
@@ -37,6 +38,9 @@ update query msg =
                         Form.CountyID ->
                             selection |> setSelection q "billsheet.county" |> Just
 
+                        Form.ServiceCodeID ->
+                            selection |> setSelection q "billsheet.serviceCode" |> Just
+
                         Form.SpecialistID ->
                             selection |> setSelection q "billsheet.specialist" |> Just
 
@@ -52,8 +56,8 @@ update query msg =
 
 
 
-view : Maybe Query -> ViewLists -> Html Msg
-view query viewLists =
+view : User -> Maybe Query -> ViewLists -> Html Msg
+view user query viewLists =
     let
         q =
             query
@@ -61,48 +65,87 @@ view query viewLists =
 
         consumers = Maybe.withDefault [] viewLists.consumers
         counties = Maybe.withDefault [] viewLists.counties
+        serviceCodes = Maybe.withDefault [] viewLists.serviceCodes
         specialists = Maybe.withDefault [] viewLists.specialists
         status = Maybe.withDefault [] viewLists.status
     in
-    form [ onSubmit Submit ]
-        [ h3 [] [ "Bill Sheet Search" |> text ]
-        , Form.select "Consumer"
-            [ "consumerSelection" |> id
-            , Select Form.ConsumerID |> onInput
-            ] (
-                consumers
-                    |> List.map ( \m -> ( m.id |> toString, m.lastname ++ ", " ++ m.firstname ) )
-                    |> (::) ( "-1", "-- Select a consumer --" )
-                    |> List.map ( "billsheet.consumer" |> getSelection q |> Form.option )
-            )
-        , Form.select "Status"
-            [ "statusSelection" |> id
-            , Select Form.StatusID |> onInput
-            ] (
-                status
-                    |> List.map ( \m -> ( m.id |> toString, m.name ) )
-                    |> (::) ( "-1", "-- Select a status --" )
-                    |> List.map ( "billsheet.status" |> getSelection q |> Form.option )
-            )
-        , Form.select "Specialist"
-            [ "specialistSelection" |> id
-            , Select Form.SpecialistID |> onInput
-            ] (
-                specialists
-                    |> List.map ( \m -> ( m.id |> toString, m.lastname ++ ", " ++ m.firstname ) )
-                    |> (::) ( "-1", "-- Select a specialist --" )
-                    |> List.map ( "billsheet.specialist" |> getSelection q |> Form.option )
-            )
-        , Form.select "County"
-            [ "countySelection" |> id
-            , Select Form.CountyID |> onInput
-            ] (
-                counties
-                    |> List.map ( \m -> ( m.id |> toString, m.name ) )
-                    |> (::) ( "-1", "-- Select a county --" )
-                    |> List.map ( "billsheet.county" |> getSelection q |> Form.option )
-            )
-        , Form.submit ( q |> Dict.isEmpty ) Cancel
-        ]
+    case user.authLevel of
+        1 ->
+            form [ onSubmit Submit ]
+                [ h3 [] [ "Bill Sheet Search" |> text ]
+                , Form.select "Consumer"
+                    [ "consumerSelection" |> id
+                    , Select Form.ConsumerID |> onInput
+                    ] (
+                        consumers
+                            |> List.map ( \m -> ( m.id |> toString, m.lastname ++ ", " ++ m.firstname ) )
+                            |> (::) ( "-1", "-- Select a consumer --" )
+                            |> List.map ( "billsheet.consumer" |> getSelection q |> Form.option )
+                    )
+                , Form.select "Status"
+                    [ "statusSelection" |> id
+                    , Select Form.StatusID |> onInput
+                    ] (
+                        status
+                            |> List.map ( \m -> ( m.id |> toString, m.name ) )
+                            |> (::) ( "-1", "-- Select a status --" )
+                            |> List.map ( "billsheet.status" |> getSelection q |> Form.option )
+                    )
+                , Form.select "Specialist"
+                    [ "specialistSelection" |> id
+                    , Select Form.SpecialistID |> onInput
+                    ] (
+                        specialists
+                            |> List.map ( \m -> ( m.id |> toString, m.lastname ++ ", " ++ m.firstname ) )
+                            |> (::) ( "-1", "-- Select a specialist --" )
+                            |> List.map ( "billsheet.specialist" |> getSelection q |> Form.option )
+                    )
+                , Form.select "County"
+                    [ "countySelection" |> id
+                    , Select Form.CountyID |> onInput
+                    ] (
+                        counties
+                            |> List.map ( \m -> ( m.id |> toString, m.name ) )
+                            |> (::) ( "-1", "-- Select a county --" )
+                            |> List.map ( "billsheet.county" |> getSelection q |> Form.option )
+                    )
+                , Form.submit ( q |> Dict.isEmpty ) Cancel
+                ]
+
+        2 ->
+            form [ onSubmit Submit ]
+                [ h3 [] [ "Time Entry Search" |> text ]
+                , Form.select "Consumer"
+                    [ "consumerSelection" |> id
+                    , Select Form.ConsumerID |> onInput
+                    ] (
+                        consumers
+                            |> List.map ( \m -> ( m.id |> toString, m.lastname ++ ", " ++ m.firstname ) )
+                            |> (::) ( "-1", "-- Select a consumer --" )
+                            |> List.map ( "billsheet.consumer" |> getSelection q |> Form.option )
+                    )
+                , Form.select "Service Code"
+                    [ "serviceCodeSelection" |> id
+                    , Select Form.ServiceCodeID |> onInput
+                    ] (
+                        serviceCodes
+                            |> List.map ( \m -> ( m.id |> toString, m.name ) )
+                            |> (::) ( "-1", "-- Select a status --" )
+                            |> List.map ( "billsheet.serviceCode" |> getSelection q |> Form.option )
+                    )
+                , Form.select "County"
+                    [ "countySelection" |> id
+                    , Select Form.CountyID |> onInput
+                    ] (
+                        counties
+                            |> List.map ( \m -> ( m.id |> toString, m.name ) )
+                            |> (::) ( "-1", "-- Select a county --" )
+                            |> List.map ( "billsheet.county" |> getSelection q |> Form.option )
+                    )
+                , Form.submit ( q |> Dict.isEmpty ) Cancel
+                ]
+
+        _ ->
+            div [] []
 
 

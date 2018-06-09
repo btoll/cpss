@@ -397,7 +397,7 @@ drawView (
             , showList
             , showPager
             , model.showModal
-                |> Modal.view Nothing
+                |> Modal.view Nothing Nothing
                 |> Html.map ModalMsg
             ]
 

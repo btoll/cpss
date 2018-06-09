@@ -1,6 +1,6 @@
 module Page.BillSheet exposing (Model, Msg, init, update, view)
 
-import Data.Search exposing (Search, Query, ViewLists, fmtEquality)
+import Data.Search exposing (Query, ViewLists, fmtEquality)
 import Data.BillSheet exposing (BillSheet, BillSheetWithPager, new)
 import Data.Consumer exposing (Consumer)
 import Data.County exposing (County)
@@ -13,7 +13,7 @@ import Date exposing (Date, Day(..), day, dayOfWeek, month, year)
 import DatePicker exposing (defaultSettings, DateEvent(..))
 import Dict exposing (Dict)
 import Html exposing (Html, Attribute, button, div, form, h1, input, label, section, text)
-import Html.Attributes exposing (action, autofocus, checked, for, hidden, id, style, type_, value)
+import Html.Attributes exposing (action, autofocus, checked, class, for, hidden, id, style, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Http
 import Modal.Search
@@ -374,15 +374,9 @@ update url msg model =
                             )
 
                         ( True, Just query ) ->
-                            let
-                                whichSearch =
-                                    if (==) model.user.authLevel 1
-                                    then Data.Search.BillSheet
-                                    else Data.Search.TimeEntry
-                            in
                             ( True
                             , model.viewLists |> Just
-                                |> Modal.Search whichSearch model.query
+                                |> Modal.Search Data.Search.BillSheet ( model.user |> Just ) model.query
                                 |> Just
                             , query |> Just
                             , Cmd.none
@@ -559,18 +553,12 @@ update url msg model =
             model ! []
 
         Search viewLists ->
-            let
-                whichSearch =
-                    if (==) model.user.authLevel 1
-                    then Data.Search.BillSheet
-                    else Data.Search.TimeEntry
-            in
             { model |
                 showModal =
                     ( True,
                     viewLists
                         |> Just
-                        >> Modal.Search whichSearch model.query
+                        >> Modal.Search Data.Search.BillSheet ( model.user |> Just ) model.query
                         >> Just
                     )
                 , errors = []
@@ -647,7 +635,7 @@ drawView model =
             , showList
             , showPager
             , model.showModal
-                |> Modal.view model.query
+                |> Modal.view ( model.user |> Just ) model.query
                 |> Html.map ModalMsg
             ]
 

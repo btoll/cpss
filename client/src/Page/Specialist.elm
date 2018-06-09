@@ -1,6 +1,6 @@
 module Page.Specialist exposing (Model, Msg, init, update, view)
 
-import Data.Search exposing (Search, Query, fmtFuzzyMatch)
+import Data.Search exposing (Query, fmtFuzzyMatch)
 import Data.Pager exposing (Pager)
 import Data.User as User exposing (User, UserWithPager, new)
 import Dict exposing (Dict)
@@ -264,7 +264,7 @@ update url msg model =
                         ( True, Just query ) ->
                             ( True
                             , Nothing
-                                |> Modal.Search Data.Search.User model.query
+                                |> Modal.Search Data.Search.User Nothing model.query
                                 |> Just
                             , query |> Just
                             , Cmd.none
@@ -435,7 +435,7 @@ update url msg model =
 
         Search ->
             { model |
-                showModal = ( True, Nothing |> Modal.Search Data.Search.User model.query |> Just )
+                showModal = ( True, Nothing |> Modal.Search Data.Search.User Nothing model.query |> Just )
                 , errors = []
             } ! []
 
@@ -532,7 +532,7 @@ drawView (
             , showList
             , showPager
             , model.showModal
-                |> Modal.view query
+                |> Modal.view Nothing query
                 |> Html.map ModalMsg
             ]
 

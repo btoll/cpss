@@ -1,6 +1,7 @@
 module Views.Modal exposing (Modal(..), Msg, update, view)
 
-import Data.Search exposing (Search(..), Query, ViewLists)
+import Data.Search exposing (SearchType(..), Query, ViewLists)
+import Data.User exposing (User, new)
 import Dict exposing (Dict)
 import Html exposing (Html, Attribute, button, div, text)
 import Html.Attributes exposing (id, style)
@@ -11,7 +12,7 @@ import Modal.Search as Search
 
 type Modal
     = Delete
-    | Search Search ( Maybe Query ) ( Maybe ViewLists )
+    | Search SearchType ( Maybe User ) ( Maybe Query ) ( Maybe ViewLists )
 
 
 type Msg
@@ -31,8 +32,8 @@ update query msg =
 
 
 
-view : Maybe Query -> ( Bool, Maybe Modal ) -> Html Msg
-view query modal =
+view : Maybe User -> Maybe Query -> ( Bool, Maybe Modal ) -> Html Msg
+view user query modal =
     case modal of
         ( True, Just modal ) ->
             let
@@ -43,11 +44,16 @@ view query modal =
                             Delete.view
                                 |> Html.map DeleteMsg
 
-                        Search t q maybeViewLists ->
+                        Search t user q maybeViewLists ->
+                            let
+                                u =
+                                    user
+                                        |> Maybe.withDefault new
+                            in
                             case ( t, maybeViewLists ) of
                                 _ ->
                                     maybeViewLists
-                                        |> Search.view t query      -- Note we want the passed `query` func arg here, NOT `q`!
+                                        |> Search.view t u query      -- Note we want the passed `query` func arg here, NOT `q`!
                                         |> Html.map SearchMsg
             in
             div [ "modal-mask" |> id ] [

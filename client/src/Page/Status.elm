@@ -221,35 +221,34 @@ update url msg model =
             } ! []
 
         Put ->
---            let
---                errors =
---                    case model.editing of
---                        Nothing ->
---                            []
---
---                        Just status ->
---                            Validate.Status.errors status
---
---                ( action, subCmd ) = if errors |> List.isEmpty then
---                    case model.editing of
---                        Nothing ->
---                            ( None, Cmd.none )
---
---                        Just status ->
---                            ( None
---                            , Request.Status.put url status
---                                |> Http.toTask
---                                |> Task.attempt Putted
---                            )
---                    else
---                        ( Editing, Cmd.none )
---            in
---                { model |
---                    action = action
---                    , disabled = True
---                    , errors = errors
---                } ! [ subCmd ]
-            model ! []
+            let
+                errors =
+                    case model.editing of
+                        Nothing ->
+                            []
+
+                        Just status ->
+                            Validate.Status.errors status
+
+                ( action, subCmd ) = if errors |> List.isEmpty then
+                    case model.editing of
+                        Nothing ->
+                            ( None, Cmd.none )
+
+                        Just status ->
+                            ( None
+                            , Request.Status.put url status
+                                |> Http.toTask
+                                |> Task.attempt Putted
+                            )
+                    else
+                        ( Editing, Cmd.none )
+            in
+                { model |
+                    action = action
+                    , disabled = True
+                    , errors = errors
+                } ! [ subCmd ]
 
         Putted ( Ok st ) ->
             let
@@ -340,7 +339,7 @@ drawView (
                 ]
             , showList
             , model.showModal
-                |> Modal.view Nothing
+                |> Modal.view Nothing Nothing
                 |> Html.map ModalMsg
             ]
 

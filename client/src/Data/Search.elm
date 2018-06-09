@@ -1,4 +1,4 @@
-module Data.Search exposing (Search(..), Query, ViewLists, fmtEquality, fmtFuzzyMatch)
+module Data.Search exposing (SearchType(..), Query, ViewLists, fmtEquality, fmtFuzzyMatch)
 
 
 import Data.BillSheet exposing (BillSheet, BillSheetWithPager)
@@ -37,7 +37,7 @@ fmtFuzzyMatch k v acc =
         |> (++) acc
 
 
-type Search
+type SearchType
     = BillSheet
    -- | BillSheetWithPager
     | City
