@@ -41,7 +41,7 @@ init url =
     , action = None
     , editing = Nothing
     , disabled = True
-    , showModal = ( False, Nothing )
+    , showModal = ( True, Modal.Spinner |> Just )
     , status = []
     } ! [ Request.Status.list url |> Http.send FetchedStatus ]
 
@@ -121,7 +121,8 @@ update url msg model =
 
         FetchedStatus ( Ok status ) ->
             { model |
-                status = status
+                showModal = ( False, Nothing )
+                , status = status
                 , tableState = Table.initialSort "ID"
             } ! []
 
@@ -136,7 +137,8 @@ update url msg model =
                             "nop"
             in
             { model |
-                status = []
+                showModal = ( False, Nothing )
+                , status = []
                 , tableState = Table.initialSort "ID"
 --                , errors = (::) ( Validate.Status.ServerError, e ) model.errors
             } ! []

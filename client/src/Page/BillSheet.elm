@@ -104,7 +104,7 @@ init url session =
     , tableState = Table.initialSort "ID"
     , action = None
     , disabled = True
-    , showModal = ( False, Nothing )
+    , showModal = ( True, Modal.Spinner |> Just )
     , viewLists =
         { billsheets = Nothing
         , consumers = Nothing
@@ -265,12 +265,14 @@ update url msg model =
                     { model |
                         viewLists = { oldViewLists | billsheets = billsheets.billsheets |> Just }
                         , pagerState = billsheets.pager
+                        , showModal = ( False, Nothing )
                         , tableState = Table.initialSort "ID"
                     } ! []
 
                 BillSheets ( Err err ) ->
                     { model |
                         viewLists = { oldViewLists | billsheets = Nothing }
+                        , showModal = ( False, Nothing )
                         , tableState = Table.initialSort "ID"
                     } ! []
 

@@ -44,7 +44,7 @@ init url =
     , action = None
     , editing = Nothing
     , disabled = True
-    , showModal = ( False, Nothing )
+    , showModal = ( True, Modal.Spinner |> Just )
     , cities = []
     , counties = []
     , pager = Data.Pager.new
@@ -137,6 +137,7 @@ update url msg model =
                 Cities ( Ok cities ) ->
                     { model |
                         cities = cities.cities
+                        , showModal = ( False, Nothing )
                         , pager = cities.pager
                         , tableState = Table.initialSort "ID"
                     } ! []
@@ -153,6 +154,7 @@ update url msg model =
                     in
                     { model |
                         cities = []
+                        , showModal = ( False, Nothing )
                         , tableState = Table.initialSort "ID"
                         , errors = (::) e model.errors
                     } ! []

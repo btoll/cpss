@@ -40,7 +40,7 @@ init url =
     , action = None
     , editing = Nothing
     , disabled = True
-    , showModal = ( False, Nothing )
+    , showModal = ( True, Modal.Spinner |> Just )
     , dias = []
     } ! [ Request.DIA.list url |> Http.send FetchedDIA ]
 
@@ -120,6 +120,7 @@ update url msg model =
         FetchedDIA ( Ok dias ) ->
             { model |
                 dias = dias
+                , showModal = ( False, Nothing )
                 , tableState = Table.initialSort "ID"
             } ! []
 
@@ -135,6 +136,7 @@ update url msg model =
             in
             { model |
                 dias = []
+                , showModal = ( False, Nothing )
                 , tableState = Table.initialSort "ID"
                 , errors = (::) e model.errors
             } ! []

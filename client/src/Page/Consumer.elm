@@ -61,7 +61,7 @@ init url =
     , action = None
     , editing = Nothing
     , disabled = True
-    , showModal = ( False, Nothing )
+    , showModal = ( True, Modal.Spinner |> Just )
     , countyData = ( [], [] )
     , serviceCodes = []
     , consumers = []
@@ -200,6 +200,7 @@ update url msg model =
                     { model |
                         consumers = consumers.consumers
                         , pager = consumers.pager
+                        , showModal = ( False, Nothing )
                         , tableState = Table.initialSort "ID"
                     } ! []
 
@@ -216,6 +217,7 @@ update url msg model =
                     { model |
                         consumers = []
                         , errors = (::) e model.errors
+                        , showModal = ( False, Nothing )
                         , tableState = Table.initialSort "ID"
                     } ! []
 

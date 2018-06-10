@@ -40,7 +40,7 @@ init url =
     , action = None
     , editing = Nothing
     , disabled = True
-    , showModal = ( False, Nothing )
+    , showModal = ( True, Modal.Spinner |> Just )
     , serviceCodes = []
     } ! [ Request.ServiceCode.list url |> Http.send FetchedServiceCode ]
 
@@ -120,6 +120,7 @@ update url msg model =
         FetchedServiceCode ( Ok serviceCodes ) ->
             { model |
                 serviceCodes = serviceCodes
+                , showModal = ( False, Nothing )
                 , tableState = Table.initialSort "ID"
             } ! []
 
@@ -135,6 +136,7 @@ update url msg model =
             in
             { model |
                 serviceCodes = []
+                , showModal = ( False, Nothing )
                 , tableState = Table.initialSort "ID"
                 , errors = (::) e model.errors
             } ! []

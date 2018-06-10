@@ -49,7 +49,7 @@ init url =
     , disabled = True
     , newPassword = ""
     , confirmPassword = ""
-    , showModal = ( False, Nothing )
+    , showModal = ( True, Modal.Spinner |> Just )
     , specialists = []
     , query = Nothing
     , pager = Data.Pager.new
@@ -180,6 +180,7 @@ update url msg model =
             { model |
                 specialists = specialists.users
                 , pager = specialists.pager
+                , showModal = ( False, Nothing )
                 , tableState = Table.initialSort "ID"
             } ! []
 
@@ -196,6 +197,7 @@ update url msg model =
             { model |
                 specialists = []
                 , errors = (::) e model.errors
+                , showModal = ( False, Nothing )
                 , tableState = Table.initialSort "ID"
             } ! []
 

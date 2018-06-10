@@ -40,7 +40,7 @@ init url =
     , action = None
     , editing = Nothing
     , disabled = True
-    , showModal = ( False, Nothing )
+    , showModal = ( True, Modal.Spinner |> Just )
     , fundingSources = []
     } ! [ Request.FundingSource.list url |> Http.send FetchedFundingSource ]
 
@@ -120,6 +120,7 @@ update url msg model =
         FetchedFundingSource ( Ok fundingSources ) ->
             { model |
                 fundingSources = fundingSources
+                , showModal = ( False, Nothing )
                 , tableState = Table.initialSort "ID"
             } ! []
 
@@ -135,6 +136,7 @@ update url msg model =
             in
             { model |
                 fundingSources = []
+                , showModal = ( False, Nothing )
                 , tableState = Table.initialSort "ID"
                 , errors = (::) e model.errors
             } ! []
