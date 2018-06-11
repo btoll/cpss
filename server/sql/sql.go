@@ -1,12 +1,12 @@
 package sql
 
 import (
-	"crypto/sha256"
 	mysql "database/sql"
 	"fmt"
 
 	"github.com/btoll/cpss/server/app"
 	_ "github.com/go-sql-driver/mysql"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type CRUD interface {
@@ -16,7 +16,7 @@ type CRUD interface {
 }
 
 type Hasher interface {
-	Hash(clearText string) string
+	SaltAndHash(pwd []byte) string
 }
 
 type Lister interface {
@@ -125,44 +125,51 @@ func Page(p Pager) (interface{}, error) {
 	return coll, nil
 }
 
+func SaltAndHash(pwd string) []byte {
+	byteHash, err := bcrypt.GenerateFromPassword([]byte(pwd), bcrypt.DefaultCost)
+	if err != nil {
+		fmt.Println(err)
+		return []byte("Something went terribly wrong")
+	}
+	return byteHash
+}
+
 func VerifyPassword(username, password string) (interface{}, error) {
 	db, err := connect()
 	if err != nil {
 		return false, err
 	}
-	stmt, err := db.Prepare("SELECT * FROM specialist WHERE username=? AND password=?")
+	stmt, err := db.Prepare("SELECT * FROM specialist WHERE username=?")
 	if err != nil {
-		return false, err
+		return nil, err // "Bad username or password"
 	}
-	hashed := Hash(password)
-	row := stmt.QueryRow(&username, &hashed)
+	row := stmt.QueryRow(&username)
+	if err != nil {
+		return nil, err
+	}
 	var id int
-	//	var username string
-	//	var password string
+	var saltedHash string
 	var firstname string
 	var lastname string
 	var email string
 	var payrate float64
 	var authLevel int
-	err = row.Scan(&id, &username, &password, &firstname, &lastname, &email, &payrate, &authLevel)
+	err = row.Scan(&id, &username, &saltedHash, &firstname, &lastname, &email, &payrate, &authLevel)
+	if err != nil {
+		return nil, err
+	}
+	err = bcrypt.CompareHashAndPassword([]byte(saltedHash), []byte(password))
 	if err != nil {
 		return nil, err
 	}
 	return &app.SessionMedia{
 		ID:        id,
 		Username:  username,
-		Password:  hashed,
+		Password:  saltedHash,
 		Firstname: firstname,
 		Lastname:  lastname,
 		Email:     email,
 		Payrate:   payrate,
 		AuthLevel: authLevel,
 	}, nil
-}
-
-func Hash(clearText string) string {
-	h := sha256.New()
-	h.Write([]byte(clearText))
-	// %x -> base 16, with lower-case letters for a-f
-	return fmt.Sprintf("%x", h.Sum(nil))
 }

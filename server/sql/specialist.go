@@ -61,8 +61,8 @@ func (s *Specialist) Create(db *mysql.DB) (interface{}, error) {
 	if err != nil {
 		return -1, err
 	}
-	hashed := Hash(payload.Password)
-	res, err := stmt.Exec(payload.Username, hashed, payload.Firstname, payload.Lastname, payload.Email, payload.Payrate, payload.AuthLevel)
+	saltedHash := SaltAndHash(payload.Password)
+	res, err := stmt.Exec(payload.Username, saltedHash, payload.Firstname, payload.Lastname, payload.Email, payload.Payrate, payload.AuthLevel)
 	if err != nil {
 		return -1, err
 	}
@@ -73,7 +73,7 @@ func (s *Specialist) Create(db *mysql.DB) (interface{}, error) {
 	return &app.SpecialistMedia{
 		ID:        int(id),
 		Username:  payload.Username,
-		Password:  hashed,
+		Password:  string(saltedHash),
 		Firstname: payload.Firstname,
 		Lastname:  payload.Lastname,
 		Email:     payload.Email,

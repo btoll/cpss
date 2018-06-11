@@ -35,7 +35,7 @@ func (c *SessionController) Hash(ctx *app.HashSessionContext) error {
 
 	return ctx.OKTiny(&app.SessionMediaTiny{
 		ID:       *ctx.Payload.ID,
-		Password: sql.Hash(ctx.Payload.Password),
+		Password: string(sql.SaltAndHash(ctx.Payload.Password)),
 	})
 
 	// SessionController_Hash: end_implement
