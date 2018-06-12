@@ -65,7 +65,6 @@ init url =
 
 type Msg
     = Add
-    | Authenticated User ( Result Http.Error User )
     | Cancel
     | ChangePassword User
     | ClearSearch
@@ -95,27 +94,6 @@ update url msg model =
                 , disabled = True
                 , editing = Nothing
                 , errors = []
-            } ! []
-
-        Authenticated specialist ( Ok user ) ->
-            { model |
-                action = ChangingPassword specialist
-                , errors = []
-            } ! []
-
-        Authenticated specialist ( Err err ) ->
-            let
-                e =
-                    case err of
-                        Http.BadStatus e ->
-                            e.body
-
-                        _ ->
-                            "nop"
-            in
-            { model |
-                action = ChangingPassword specialist
-                , errors = (::) e model.errors
             } ! []
 
         Cancel ->

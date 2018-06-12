@@ -17,6 +17,7 @@ import Page.Consumer as Consumer
 import Page.County as County
 import Page.DIA as DIA
 import Page.FundingSource as FundingSource
+import Page.Home as Home
 import Page.Login as Login
 import Page.NotFound as NotFound
 import Page.ServiceCode as ServiceCode
@@ -49,6 +50,7 @@ type Page
     | County County.Model
     | DIA DIA.Model
     | FundingSource FundingSource.Model
+    | Home Home.Model
     | Login Login.Model
     | ServiceCode ServiceCode.Model
     | Specialist Specialist.Model
@@ -83,14 +85,9 @@ init flags location =
             , loginDate = ""
             }
         , build = { url = url }
-        , page = initialPage
+        , page = Blank
         , onLogin = Nothing
         }
-
-
-initialPage : Page
-initialPage =
-    Blank
 
 
 
@@ -104,6 +101,7 @@ type Msg
     | CountyMsg County.Msg
     | DIAMsg DIA.Msg
     | FundingSourceMsg FundingSource.Msg
+    | HomeMsg Home.Msg
     | LoginMsg Login.Msg
     | ServiceCodeMsg ServiceCode.Msg
     | SpecialistMsg Specialist.Msg
@@ -244,7 +242,13 @@ setRoute maybeRoute model =
                     } ! []
 
                 Just user ->
-                    { model | page = Blank } ! []
+                    let
+                        ( subModel, subMsg ) =
+                            Home.init model.session.user
+                    in
+                    { model |
+                        page = subModel |> Home
+                    } ! [ Cmd.map HomeMsg subMsg ]
 
         Just Route.Login ->
             case model.session.user of
@@ -400,6 +404,9 @@ update msg model =
         ( FetchedUserSession ( Err err ), _ ) ->
             model ! []
 
+        ( HomeMsg subMsg, Home subModel ) ->
+            toPage Home HomeMsg Home.update subMsg subModel
+
         ( LoginMsg subMsg, Login subModel ) ->
             let
                 ( ( pageModel, cmd ), msgFromPage ) =
@@ -407,7 +414,7 @@ update msg model =
 
                 ( newModel, newCmd ) =
                     case msgFromPage of
-                        Login.NoOp ->
+                        Login.Nop ->
                             ( { model | page = Login pageModel }, Cmd.map LoginMsg cmd )
 
                         Login.SetUser user ->
@@ -517,6 +524,13 @@ view model =
         Errored err ->
             text err
                 |> frame session.user Page.Other
+
+        Home subModel ->
+            -- This is for the very initial page load, while we are loading
+            -- data via HTTP. We could also render a spinner here.
+            Home.view subModel
+                |> frame session.user Page.Home
+                |> Html.map HomeMsg
 
         Login subModel ->
             Login.view subModel
