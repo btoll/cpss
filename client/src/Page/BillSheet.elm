@@ -370,8 +370,8 @@ update url msg model =
                                         << maybeInsertSpecialist
                                         <| query
                             in
-                            ( False
-                            , Nothing
+                            ( True
+                            , Modal.Spinner |> Just
                             , query |> Just                     -- We need to save the search query for paging!
                             , Request.BillSheet.page url q 0
                                 |> Http.send ( BillSheets >> Fetch )

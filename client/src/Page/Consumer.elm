@@ -333,8 +333,8 @@ update url msg model =
                                         <<  Dict.foldl fmtFuzzyMatch ""
                                         <| query
                             in
-                            ( False
-                            , Nothing
+                            ( True
+                            , Modal.Spinner |> Just
                             , query |> Just     -- We need to save the search query for paging!
                             , Request.Consumer.page url q 0
                                 |> Http.send ( Consumers >> Fetch )
