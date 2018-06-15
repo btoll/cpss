@@ -17,7 +17,11 @@ CREATE TABLE IF NOT EXISTS `specialist` (
 
 LOCK TABLES `specialist` WRITE;
 /*!40000 ALTER TABLE `specialist` DISABLE KEYS */;
-INSERT INTO `specialist` VALUES (1,'ben','$2a$10$785qQeFrhYCa3msJxvIvHuRKTlnsvOcrG4hy2hODlYO7fnPGCE9/e','Ben','Toll','ben@example.com',90,1),(2,'pete','$2a$10$Gge5yYdrFZ/v2o8w.fcK5O.fjn1fmRPGwyIDUekjPnAIlIxwS8Fda','Pete','Toll','pete@example.com',0.22,2),(3,'molly','$2a$10$XxZRIOWUhFXJE6qc4xBMS.RgT6VhpQYzRbcaL8IlnEOQAmWwNjcFW','Molly','Toll','molly@example.com',1.17,2);
+INSERT INTO `specialist` VALUES
+	(NULL,'ben','$2a$10$785qQeFrhYCa3msJxvIvHuRKTlnsvOcrG4hy2hODlYO7fnPGCE9/e','Ben','Toll','ben@example.com',90,1),
+	(NULL,'pete','$2a$10$Gge5yYdrFZ/v2o8w.fcK5O.fjn1fmRPGwyIDUekjPnAIlIxwS8Fda','Pete','Toll','pete@example.com',0.22,2),
+	(NULL,'molly','$2a$10$XxZRIOWUhFXJE6qc4xBMS.RgT6VhpQYzRbcaL8IlnEOQAmWwNjcFW','Molly','Toll','molly@example.com',1.17,2),
+	(NULL,'leta','$2a$10$4HIZLPOuBl7xO7PaphtpvuGN4ymU2T//cnxsbZo7vNlfvB4HqPHMy','Leta','Deatrick','leta@example.com',1000,1);
 /*!40000 ALTER TABLE `specialist` ENABLE KEYS */;
 UNLOCK TABLES;
 
