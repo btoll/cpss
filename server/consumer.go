@@ -59,7 +59,7 @@ func (c *ConsumerController) List(ctx *app.ListConsumerContext) error {
 func (c *ConsumerController) Page(ctx *app.PageConsumerContext) error {
 	// ConsumerController_Page: start_implement
 
-	collection, err := sql.Page(sql.NewConsumer(ctx.Page))
+	collection, err := sql.Page(sql.NewConsumer(&sql.PageQuery{ctx.Page, *ctx.Payload.WhereClause}))
 	if err != nil {
 		return err
 	}

@@ -144,9 +144,13 @@ func (s *Consumer) List(db *mysql.DB) (interface{}, error) {
 }
 
 func (s *Consumer) Page(db *mysql.DB) (interface{}, error) {
-	// page * RecordsPerPage = limit
-	limit := s.Data.(int) * RecordsPerPage
-	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)", ""))
+	query := s.Data.(*PageQuery)
+	limit := query.Page * RecordsPerPage
+	whereClause := ""
+	if query.WhereClause != "" {
+		whereClause = fmt.Sprintf("WHERE %s", query.WhereClause)
+	}
+	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)", whereClause))
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +161,7 @@ func (s *Consumer) Page(db *mysql.DB) (interface{}, error) {
 			return nil, err
 		}
 	}
-	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*", fmt.Sprintf("LIMIT %d,%d", limit, RecordsPerPage)))
+	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*", fmt.Sprintf("%s LIMIT %d,%d", whereClause, limit, RecordsPerPage)))
 	if err != nil {
 		return nil, err
 	}

@@ -60,7 +60,7 @@ func (c *SpecialistController) List(ctx *app.ListSpecialistContext) error {
 func (c *SpecialistController) Page(ctx *app.PageSpecialistContext) error {
 	// SpecialistController_Page: start_implement
 
-	collection, err := sql.Page(sql.NewSpecialist(ctx.Page))
+	collection, err := sql.Page(sql.NewSpecialist(&sql.PageQuery{ctx.Page, *ctx.Payload.WhereClause}))
 	if err != nil {
 		return err
 	}

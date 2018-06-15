@@ -247,8 +247,6 @@ func (s *BillSheet) Page(db *mysql.DB) (interface{}, error) {
 	//
 	//select billsheet.* from billsheet inner join consumer on consumer.id = billsheet.consumer inner join active on consumer.active = active.id where active.id = 1 and billsheet.specialist = 2;
 	//
-
-	// page * RecordsPerPage = limit
 	query := s.Data.(*PageQuery)
 	limit := query.Page * RecordsPerPage
 	whereClause := ""
