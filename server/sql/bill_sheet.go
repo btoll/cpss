@@ -251,9 +251,9 @@ func (s *BillSheet) Page(db *mysql.DB) (interface{}, error) {
 	limit := query.Page * RecordsPerPage
 	whereClause := ""
 	if query.WhereClause != "" {
-		whereClause = fmt.Sprintf("WHERE %s", query.WhereClause)
+		whereClause = fmt.Sprintf(" AND %s", query.WhereClause)
 	}
-	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)", whereClause))
+	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)", fmt.Sprintf("%s WHERE active.id = 1 %s", s.Stmt["CONSUMER_INNER_JOIN"], whereClause)))
 	if err != nil {
 		return nil, err
 	}
@@ -264,7 +264,7 @@ func (s *BillSheet) Page(db *mysql.DB) (interface{}, error) {
 			return nil, err
 		}
 	}
-	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*", fmt.Sprintf("%s LIMIT %d,%d", whereClause, limit, RecordsPerPage)))
+	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "billsheet.*", fmt.Sprintf("%s WHERE active.id = 1 %s LIMIT %d,%d", s.Stmt["CONSUMER_INNER_JOIN"], whereClause, 0, RecordsPerPage)))
 	if err != nil {
 		return nil, err
 	}
