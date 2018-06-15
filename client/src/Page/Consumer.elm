@@ -719,7 +719,7 @@ formRows ( editable, serviceCodes, dias, fundingSources, countyData ) =
         , onInput ( SetFormValue ( \v -> { editable | units = Form.toFloat v } ) )
         ]
         []
-    , Form.text "Other"
+    , Form.textarea "Other"
         [ value editable.other
         , onInput ( SetFormValue ( \v -> { editable | other = v } ) )
         ]
