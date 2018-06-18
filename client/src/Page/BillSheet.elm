@@ -429,7 +429,7 @@ update url msg model =
                             ( None, Cmd.none )
 
                         Just billsheet ->
-                            ( None
+                            ( Adding    -- Keep on Adding view in case server returns an error, i.e., trying to backdate a Service Date.
                             , { billsheet | specialist = model.user.id }
                                 |> Request.BillSheet.post url
                                 |> Http.toTask
@@ -441,7 +441,6 @@ update url msg model =
                 { model |
                     action = action
                     , disabled = True
-                    , subModel = { subModel | editing = if errors |> List.isEmpty then Nothing else model.subModel.editing }
                     , errors = errors
                 } ! [ subCmd ]
 
@@ -463,7 +462,9 @@ update url msg model =
                                         |> Just
             in
             { model |
-                viewLists = { oldViewLists | billsheets = billsheets }
+                action = None
+                , subModel = { subModel | editing = Nothing }
+                , viewLists = { oldViewLists | billsheets = billsheets }
             } ! []
 
         Posted ( Err err ) ->
@@ -478,7 +479,6 @@ update url msg model =
             in
             { model |
                 errors = (::) e model.errors
-                , subModel = { subModel | editing = Nothing }
             } ! []
 
         Put ->
@@ -497,7 +497,7 @@ update url msg model =
                             ( None, Cmd.none )
 
                         Just billsheet ->
-                            ( None
+                            ( Editing    -- Keep on Adding view in case server returns an error, i.e., trying to backdate a Service Date.
                             , Request.BillSheet.put url billsheet
                                 |> Http.toTask
                                 |> Task.attempt Putted
@@ -534,7 +534,8 @@ update url msg model =
                                         |> Just
             in
             { model |
-                viewLists = { oldViewLists | billsheets = billsheets }
+                action = None
+                , viewLists = { oldViewLists | billsheets = billsheets }
                 , subModel = { subModel | editing = Nothing }
             } ! []
 
@@ -550,7 +551,6 @@ update url msg model =
             in
             { model |
                 errors = (::) e model.errors
-                , subModel = { subModel | editing = Nothing }
             } ! []
 
         Query query ->
