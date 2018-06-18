@@ -23,38 +23,12 @@ func NewBillSheet(payload interface{}) *BillSheet {
 		Stmt: map[string]string{
 			"CONSUMER_INNER_JOIN": "INNER JOIN consumer ON consumer.id = billsheet.consumer INNER JOIN active ON consumer.active = active.id",
 			"DELETE":              "DELETE FROM billsheet WHERE id=?",
+			"GET_AUTH_LEVEL":      "SELECT authLevel FROM specialist WHERE id=%d",
 			"INSERT":              "INSERT billsheet SET specialist=?,consumer=?,hours=?,units=?,serviceDate=?,serviceCode=?,hold=?,contractType=?,recipientID=?,recordNumber=?,status=?,billedCode=?,billedAmount=?,county=?,confirmation=?,description=?",
 			"SELECT":              "SELECT %s FROM billsheet %s",
 			"UPDATE":              "UPDATE billsheet SET specialist=?,consumer=?,hours=?,units=?,serviceDate=?,serviceCode=?,hold=?,contractType=?,recipientID=?,recordNumber=?,status=?,billedCode=?,billedAmount=?,county=?,confirmation=?,description=? WHERE id=?",
 		},
 	}
-}
-
-func isLegalDate(serviceDate string) (bool, error) {
-	parts := strings.Split(serviceDate, "-")
-	year, err := strconv.Atoi(parts[0])
-	if err != nil {
-		return false, errors.New("Bad date: year is incorrect")
-	}
-	month, err := strconv.Atoi(parts[1])
-	if err != nil {
-		return false, errors.New("Bad date: month is incorrect")
-	}
-	day, err := strconv.Atoi(parts[2])
-	if err != nil {
-		return false, errors.New("Bad date: day is incorrect")
-	}
-	userEntered := time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
-	tyear, tmonth, tday := time.Now().Date()
-	today := time.Date(tyear, tmonth, tday, 0, 0, 0, 0, time.UTC)
-	// https://golang.org/pkg/time/#Time.Sub
-	// When the day before is selected, will appear as `-24h0m0s`.  -- Illegal!
-	// For the same day, will appear as `0s`.                       -- Legal!
-	// When the day after is selected, will appear as `-24h0m0s`.   -- Legal!
-	if userEntered.Sub(today) < 0 {
-		return false, errors.New("Bad date: Service Date cannot be in the past")
-	}
-	return true, nil
 }
 
 func updateConsumerUnits(id int, unitsToDecrement float64, db *mysql.DB) error {
@@ -174,7 +148,7 @@ func (s *BillSheet) CollectRows(rows *mysql.Rows, coll []*app.BillSheetItem) err
 
 func (s *BillSheet) Create(db *mysql.DB) (interface{}, error) {
 	payload := s.Data.(*app.BillSheetPayload)
-	if _, err := isLegalDate(payload.ServiceDate); err != nil {
+	if _, err := s.IsLegalDate(db, payload); err != nil {
 		return nil, err
 	}
 	// First, check if there is a previous hold placed by another IC.
@@ -217,6 +191,54 @@ func (s *BillSheet) Delete(db *mysql.DB) error {
 	id := s.Data.(int)
 	_, err = stmt.Exec(&id)
 	return err
+}
+
+func (s *BillSheet) GetAuthLevel(db *mysql.DB, specialist int) (int, error) {
+	rows, err := db.Query(fmt.Sprintf(s.Stmt["GET_AUTH_LEVEL"], specialist))
+	if err != nil {
+		return -1, err
+	}
+	var id int
+	for rows.Next() {
+		err = rows.Scan(&id)
+		if err != nil {
+			return -1, err
+		}
+	}
+	return id, nil
+}
+
+func (s *BillSheet) IsLegalDate(db *mysql.DB, payload *app.BillSheetPayload) (bool, error) {
+	// If admin, always pass as legal!
+	if id, err := s.GetAuthLevel(db, payload.Specialist); err != nil {
+		return false, err
+	} else if id == 1 {
+		return true, nil
+	}
+	parts := strings.Split(payload.ServiceDate, "-")
+	year, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return false, errors.New("Bad date: year is incorrect")
+	}
+	month, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return false, errors.New("Bad date: month is incorrect")
+	}
+	day, err := strconv.Atoi(parts[2])
+	if err != nil {
+		return false, errors.New("Bad date: day is incorrect")
+	}
+	userEntered := time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
+	tyear, tmonth, tday := time.Now().Date()
+	today := time.Date(tyear, tmonth, tday, 0, 0, 0, 0, time.UTC)
+	// https://golang.org/pkg/time/#Time.Sub
+	// When the day before is selected, will appear as `-24h0m0s`.  -- Illegal!
+	// For the same day, will appear as `0s`.                       -- Legal!
+	// When the day after is selected, will appear as `-24h0m0s`.   -- Legal!
+	if userEntered.Sub(today) < 0 {
+		return false, errors.New("Bad date: Service Date cannot be in the past")
+	}
+	return true, nil
 }
 
 func (s *BillSheet) List(db *mysql.DB) (interface{}, error) {
@@ -292,7 +314,7 @@ func (s *BillSheet) Page(db *mysql.DB) (interface{}, error) {
 
 func (s *BillSheet) Update(db *mysql.DB) (interface{}, error) {
 	payload := s.Data.(*app.BillSheetPayload)
-	if _, err := isLegalDate(payload.ServiceDate); err != nil {
+	if _, err := s.IsLegalDate(db, payload); err != nil {
 		return nil, err
 	}
 	hold := payload.Hold
