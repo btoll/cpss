@@ -1,6 +1,6 @@
 module Page.BillSheet exposing (Model, Msg, init, update, view)
 
-import Data.Search exposing (Query, ViewLists, fmtEquality)
+import Data.Search exposing (Query, ViewLists, fmtDates, fmtEquality)
 import Data.BillSheet exposing (BillSheet, BillSheetWithPager, new)
 import Data.Consumer exposing (Consumer)
 import Data.County exposing (County)
@@ -355,18 +355,61 @@ update url msg model =
                         {- Search Modal -}
                         ( False, Just query ) ->
                             let
+                                foldFn : String -> String -> String -> String
+                                foldFn k v acc =
+                                    case k of
+                                        "billsheet.serviceDate" ->
+                                            fmtDates v acc
+
+                                        _ ->
+                                            fmtEquality k v acc
+
+                                -- This function swaps out random key strings for key strings that are in a type!!
+                                --
+                                -- Make sure to remove date entries at each `case` stage! The `foldFn` should only be switching on
+                                -- "billsheet.serviceDate", which is the only date entry that should be in the dict!
+                                -- (Note that the key values are NOT type fields and MUST be replaced by an actual field in the
+                                -- BillSheet type!)
+                                maybeInsertDates : Query -> Query
+                                maybeInsertDates query =
+                                    case query |> Dict.get "serviceDateFrom" of
+                                        Nothing ->
+                                            query
+                                                |> Dict.remove "serviceDateTo"
+
+                                        Just dateFrom ->
+                                            case query |> Dict.get "serviceDateTo" of
+                                                Nothing ->
+                                                    query
+                                                        |> Dict.remove "serviceDateFrom"
+
+                                                Just dateTo ->
+                                                    query
+                                                    |> Dict.remove "serviceDateTo"
+                                                    |> Dict.remove "serviceDateFrom"
+                                                    |> Dict.insert
+                                                        "billsheet.serviceDate"
+                                                        ( "( billsheet.serviceDate between '"
+                                                        ++ dateFrom
+                                                        ++ "' and '"
+                                                        ++ dateTo
+                                                        ++ "')"
+                                                        )
+
                                 -- Since there's so much common functionality shared by the BillSheet and
                                 -- TimeEntry pages, we must always check to see which page is being viewed.
                                 -- The BillSheet is an admin-only page, and thus should not send a Specialist
                                 -- in the where clause.
+                                maybeInsertSpecialist : Query -> Query
                                 maybeInsertSpecialist query =
                                     if (==) model.user.authLevel 1
                                     then query
-                                    else Dict.insert "specialist" ( model.user.id |> toString ) query
+                                    else Dict.insert "billsheet.specialist" ( model.user.id |> toString ) query
 
                                 q =
                                     String.dropRight 5           -- Remove the trailing " AND ".
-                                        << Dict.foldl fmtEquality ""
+                                        << Dict.foldl foldFn ""
+                                        << maybeInsertDates
                                         << maybeInsertSpecialist
                                         <| query
                             in

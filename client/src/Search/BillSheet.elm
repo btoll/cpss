@@ -4,9 +4,9 @@ import Data.Search exposing (Query, ViewLists)
 import Data.User exposing (User)
 import Dict exposing (Dict)
 import Html exposing (Html, button, div, form, h3, text)
-import Html.Attributes exposing (id)
+import Html.Attributes exposing (autofocus, id, placeholder, value)
 import Html.Events exposing (onInput, onSubmit)
-import Util.Search exposing (getSelection, setSelection)
+import Util.Search exposing (getSelection, setSelection, getText, setText)
 import Views.Form as Form
 
 
@@ -14,6 +14,7 @@ import Views.Form as Form
 type Msg
     = Cancel
     | Select Form.Selection String
+    | SetFormValue ( String -> Query ) String
     | Submit
 
 
@@ -50,6 +51,9 @@ update query msg =
                         _ ->
                             Nothing
                 )
+
+        SetFormValue setFormValue s ->
+            ( True, s |> setFormValue |> Just )
 
         Submit ->
             ( False, query )
@@ -109,6 +113,20 @@ view user query viewLists =
                             |> (::) ( "-1", "-- Select a county --" )
                             |> List.map ( "billsheet.county" |> getSelection q |> Form.option )
                     )
+                , Form.text "Service Date From"
+                    [ True |> autofocus
+                    , ( "serviceDateFrom" |> setText q ) |> SetFormValue >> onInput
+                    , "serviceDateFrom" |> getText q |> value
+                    , "YYYY-MM-DD" |> placeholder
+                    ]
+                    []
+                , Form.text "Service Date To"
+                    [ True |> autofocus
+                    , ( "serviceDateTo" |> setText q ) |> SetFormValue >> onInput
+                    , "serviceDateTo" |> getText q |> value
+                    , "YYYY-MM-DD" |> placeholder
+                    ]
+                    []
                 , Form.submit ( q |> Dict.isEmpty ) Cancel
                 ]
 
@@ -142,6 +160,20 @@ view user query viewLists =
                             |> (::) ( "-1", "-- Select a county --" )
                             |> List.map ( "billsheet.county" |> getSelection q |> Form.option )
                     )
+                , Form.text "Service Date From"
+                    [ True |> autofocus
+                    , ( "serviceDateFrom" |> setText q ) |> SetFormValue >> onInput
+                    , "serviceDateFrom" |> getText q |> value
+                    , "YYYY-MM-DD" |> placeholder
+                    ]
+                    []
+                , Form.text "Service Date To"
+                    [ True |> autofocus
+                    , ( "serviceDateTo" |> setText q ) |> SetFormValue >> onInput
+                    , "serviceDateTo" |> getText q |> value
+                    , "YYYY-MM-DD" |> placeholder
+                    ]
+                    []
                 , Form.submit ( q |> Dict.isEmpty ) Cancel
                 ]
 

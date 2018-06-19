@@ -1,4 +1,4 @@
-module Data.Search exposing (SearchType(..), Query, ViewLists, fmtEquality, fmtFuzzyMatch)
+module Data.Search exposing (SearchType(..), Query, ViewLists, fmtDates, fmtEquality, fmtFuzzyMatch)
 
 
 import Data.BillSheet exposing (BillSheet, BillSheetWithPager)
@@ -23,6 +23,13 @@ type alias ViewLists =
     , specialists : Maybe ( List User )
     , status : Maybe ( List Status )
     }
+
+
+
+fmtDates : String -> String -> String
+fmtDates v acc =
+    v ++ " AND "
+        |> (++) acc
 
 
 fmtEquality : String -> String -> String -> String
