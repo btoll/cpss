@@ -674,7 +674,7 @@ drawView model =
     case model.action of
         None ->
             [ div [ "buttons" |> class ]
-                [ button [ Add |> onClick ] [ text "Add Bill Sheet" ]
+                [ button [ Add |> onClick ] [ ( if (==) model.user.authLevel 1 then "Add Bill Sheet" else "Add Time Entry" ) |> text ]
                 , button [ model.viewLists |> Search |> onClick ] [ text "Search" ]
                 , button [ hideClearTextButton |> hidden, ClearSearch |> onClick ] [ text "Clear Search" ]
                 ]
