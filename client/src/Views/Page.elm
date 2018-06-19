@@ -29,6 +29,7 @@ type ViewAction
     | Adding
     | ChangingPassword User
     | Editing
+    | PayHistory User
 
 
 
@@ -92,6 +93,10 @@ pageTitle action page =
 
         Editing ->
             " - Edit"
+                |> (++) page
+
+        PayHistory _ ->
+            " - Pay History"
                 |> (++) page
 
 

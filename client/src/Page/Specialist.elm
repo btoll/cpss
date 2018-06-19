@@ -1,13 +1,15 @@
 module Page.Specialist exposing (Model, Msg, init, update, view)
 
-import Data.Search exposing (Query, fmtFuzzyMatch)
 import Data.Pager exposing (Pager)
+import Data.PayHistory as DataPayHistory exposing (PayHistory)
+import Data.Search exposing (Query, fmtFuzzyMatch)
 import Data.User as User exposing (User, UserWithPager, new)
 import Dict exposing (Dict)
-import Html exposing (Html, Attribute, button, div, form, h1, input, label, section, text)
+import Html exposing (Html, Attribute, button, div, form, h1, h3, input, label, li, section, text, ul)
 import Html.Attributes exposing (autofocus, action, autofocus, checked, class, for, hidden, id, step, style, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Http
+import Request.PayHistory
 import Request.Session
 import Request.Specialist
 import Table exposing (defaultCustomizations)
@@ -34,6 +36,7 @@ type alias Model =
     , confirmPassword : String
     , showModal : ( Bool, Maybe Modal.Modal )
     , specialists : List User
+    , payHistory : List PayHistory
     , query : Maybe Query
     , pager : Pager
     }
@@ -51,6 +54,7 @@ init url =
     , confirmPassword = ""
     , showModal = ( True, Modal.Spinner |> Just )
     , specialists = []
+    , payHistory = []
     , query = Nothing
     , pager = Data.Pager.new
     } ! [ 0
@@ -83,6 +87,8 @@ type Msg
     | SetFormValue ( String -> User ) String
     | SetPasswordValue ( String -> Model ) String
     | SetTableState Table.State
+    | ShowPayHistory User
+    | ShowPayHistoryList ( Result Http.Error ( List PayHistory ) )
 
 
 update : String -> Msg -> Model -> ( Model, Cmd Msg )
@@ -449,9 +455,40 @@ update url msg model =
             { m | disabled = passwordsMatch } ! []
 
         SetTableState newState ->
-            { model | tableState = newState
+            { model |
+                tableState = newState
             } ! []
 
+        ShowPayHistory specialist ->
+            let
+                subCmd =
+                    Request.PayHistory.list url specialist.id
+                        |> Http.toTask
+                        |> Task.attempt ShowPayHistoryList
+            in
+            { model |
+                action = Views.Page.PayHistory specialist
+            } ! [ subCmd ]
+
+        ShowPayHistoryList ( Ok payhistory ) ->
+            { model |
+                payHistory = payhistory
+            } ! []
+
+        ShowPayHistoryList ( Err err) ->
+            let
+                e =
+                    case err of
+                        Http.BadStatus e ->
+                            e.body
+
+                        _ ->
+                            "nop"
+            in
+            { model |
+                editing = Nothing
+                , errors = (::) e model.errors
+            } ! []
 
 
 -- VIEW
@@ -475,6 +512,7 @@ drawView (
     , editing
     , tableState
     , specialists
+    , payHistory
     , query
     } as model ) =
     let
@@ -552,6 +590,33 @@ drawView (
                 ]
             ]
 
+        PayHistory specialist ->
+            let
+                fmtPayrate payrate =
+                    payrate
+                        |> toString
+                        |> (++) " $"
+            in
+            [ div []
+                [ h3 [] [
+                    ( specialist.firstname ++ " " ++ specialist.lastname ++ " (" ++ specialist.username ++ ")" )
+                    |> text
+                ]
+                , ul []
+                    ( payHistory
+                        |> List.map (
+                            \ph -> li [] [
+                                ph.payrate
+                                    |> fmtPayrate
+                                    |> (++) ph.changeDate
+                                    |> text
+                            ]
+                        )
+                    )
+                ]
+                , Form.submit True Cancel
+            ]
+
 
 formRows : ViewAction -> User -> List ( Html Msg )
 formRows action editable =
@@ -617,6 +682,7 @@ config =
         , customColumn ( viewButton Edit "Edit" )
         , customColumn ( viewButton Delete "Delete" )
         , customColumn ( viewButton ChangePassword "Change Password" )
+        , customColumn ( viewButton ShowPayHistory "Pay History" )
         ]
     , customizations = defaultCustomizations
     }

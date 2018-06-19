@@ -3,6 +3,7 @@ package sql
 import (
 	mysql "database/sql"
 	"fmt"
+	"time"
 
 	"github.com/btoll/cpss/server/app"
 	_ "github.com/go-sql-driver/mysql"
@@ -47,7 +48,11 @@ func cleanup(db *mysql.DB) error {
 }
 
 func connect() (*mysql.DB, error) {
-	return mysql.Open("mysql", ":@/?charset=utf8")
+func getToday() string {
+	today := time.Now()
+	year, month, day := today.Date()
+	// Pad two spaces with leading 0, if needed.
+	return fmt.Sprintf("%d-%02d-%02d", year, month, day)
 }
 
 func Create(s CRUD) (interface{}, error) {

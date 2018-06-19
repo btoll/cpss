@@ -17,12 +17,26 @@ func NewSpecialist(payload interface{}) *Specialist {
 	return &Specialist{
 		Data: payload,
 		Stmt: map[string]string{
-			"DELETE": "DELETE FROM specialist WHERE id=?",
-			"INSERT": "INSERT specialist SET username=?,password=?,firstname=?,lastname=?,email=?,payrate=?,authLevel=?",
-			"SELECT": "SELECT %s FROM specialist %s",
-			"UPDATE": "UPDATE specialist SET username=?,password=?,firstname=?,lastname=?,email=?,payrate=?,authLevel=? WHERE id=?",
+			"DELETE":             "DELETE FROM specialist WHERE id=?",
+			"INSERT":             "INSERT specialist SET username=?,password=?,firstname=?,lastname=?,email=?,payrate=?,authLevel=?",
+			"INSERT_PAY_HISTORY": "INSERT pay_history VALUES (NULL, ?, ?, ?)",
+			"SELECT":             "SELECT %s FROM specialist %s",
+			"UPDATE":             "UPDATE specialist SET username=?,password=?,firstname=?,lastname=?,email=?,payrate=?,authLevel=? WHERE id=?",
 		},
 	}
+}
+
+// Add an entry to the pay_history table with the initial payrate.
+func (s *Specialist) AddPayHistoryEntry(db *mysql.DB, id int64, payrate float64) error {
+	stmt, err := db.Prepare(s.Stmt["INSERT_PAY_HISTORY"])
+	if err != nil {
+		return err
+	}
+	_, err = stmt.Exec(id, getToday(), payrate)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *Specialist) CollectRows(rows *mysql.Rows, coll []*app.SpecialistItem) error {
@@ -68,6 +82,9 @@ func (s *Specialist) Create(db *mysql.DB) (interface{}, error) {
 	}
 	id, err := res.LastInsertId()
 	if err != nil {
+		return -1, err
+	}
+	if err = s.AddPayHistoryEntry(db, id, payload.Payrate); err != nil {
 		return -1, err
 	}
 	return &app.SpecialistMedia{
@@ -117,6 +134,22 @@ func (s *Specialist) Read(db *mysql.DB) (interface{}, error) {
 
 func (s *Specialist) Update(db *mysql.DB) (interface{}, error) {
 	payload := s.Data.(*app.SpecialistPayload)
+	row, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "payrate", fmt.Sprintf("WHERE id=%d", *payload.ID)))
+	if err != nil {
+		return nil, err
+	}
+	var payrate float64
+	for row.Next() {
+		err := row.Scan(&payrate)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if payrate != payload.Payrate {
+		if err = s.AddPayHistoryEntry(db, int64(*payload.ID), payload.Payrate); err != nil {
+			return nil, err
+		}
+	}
 	stmt, err := db.Prepare(s.Stmt["UPDATE"])
 	if err != nil {
 		return nil, err

@@ -10,5 +10,7 @@ cat db.sql \
     county.sql \
     city.sql \
     consumer.sql \
-    billsheet.sql | mysql -u btoll -p
+    billsheet.sql \
+    payHistory.sql \
+    | mysql -u btoll -p
 

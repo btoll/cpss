@@ -39,6 +39,8 @@ func main() {
 	app.MountDIAController(service, k)
 	l := NewFundingSourceController(service)
 	app.MountFundingSourceController(service, l)
+	m := NewPayHistoryController(service)
+	app.MountPayHistoryController(service, m)
 
 	// Start service
 	if err := service.ListenAndServe(":8080"); err != nil {
