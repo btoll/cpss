@@ -100,7 +100,7 @@ update url msg model =
         Delete city ->
             { model |
                 editing = Just city
-                , showModal = ( True , Modal.Delete |> Just )
+                , showModal = ( True , Nothing |> Modal.Delete Modal.Standard |> Just )
                 , errors = []
             } ! []
 
@@ -232,7 +232,7 @@ update url msg model =
             { model |
                 action = action
                 , disabled = True
-                , editing = if errors |> List.isEmpty then Nothing else model.editing
+--                , editing = if errors |> List.isEmpty then Nothing else model.editing
                 , errors = errors
             } ! [ subCmd ]
 

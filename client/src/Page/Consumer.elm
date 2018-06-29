@@ -1,8 +1,9 @@
 module Page.Consumer exposing (Model, Msg, init, update, view)
 
+import Bitwise
 import Data.Search exposing (Query, fmtFuzzyMatch)
 import Data.City exposing (City)
-import Data.Consumer exposing (Consumer, ConsumerWithPager, new)
+import Data.Consumer exposing (Consumer, ConsumerWithPager, new, newServiceCode)
 import Data.County exposing (County)
 import Data.DIA exposing (DIA)
 import Data.FundingSource exposing (FundingSource)
@@ -53,6 +54,11 @@ type alias CountyData
     = ( List County, List City )
 
 
+type UB     -- UnitsBlock
+    = SelectServiceCode
+    | SetUnits
+
+
 
 init : String -> ( Model, Cmd Msg )
 init url =
@@ -91,9 +97,11 @@ type FetchedData
 
 type Msg
     = Add
+    | AddUnitBlock Consumer
     | Cancel
     | ClearSearch
     | Delete Consumer
+    | DeleteUnitBlock Consumer Int
     | Deleted ( Result Http.Error Int )
     | Edit Consumer
     | Fetch FetchedData
@@ -108,6 +116,8 @@ type Msg
     | SetCheckboxValue ( Bool -> Consumer ) Bool
     | SetFormValue ( String -> Consumer ) String
     | SetTableState Table.State
+    | ShowUnits Consumer
+    | UnitBlock UB Int String
 
 
 update : String -> Msg -> Model -> ( Model, Cmd Msg )
@@ -119,6 +129,21 @@ update url msg model =
                 , disabled = True
                 , editing = Nothing
                 , errors = []
+            } ! []
+
+        AddUnitBlock editable ->
+            let
+                newEditable =
+                    { editable |
+                        serviceCodes =
+                            editable.serviceCodes
+                                |> List.reverse
+                                >> (::) newServiceCode
+                                >> List.reverse
+                    }
+            in
+            { model |
+                editing = newEditable |> Just
             } ! []
 
         Cancel ->
@@ -139,7 +164,15 @@ update url msg model =
         Delete consumer ->
             { model |
                 editing = Just consumer
-                , showModal = ( True , Modal.Delete |> Just )
+                , showModal = ( True , Nothing |> Modal.Delete Modal.Standard |> Just )
+                , errors = []
+            } ! []
+
+        -- TODO: There should really only be one `Delete` Msg type which would then case switch on the type!
+        DeleteUnitBlock consumer rownum ->
+            { model |
+--                editing = Just consumer
+                showModal = ( True , rownum |> Just |> Modal.Delete Modal.UnitBlock |> Just )
                 , errors = []
             } ! []
 
@@ -311,22 +344,132 @@ update url msg model =
 
         ModalMsg subMsg ->
             let
-                ( showModal, whichModal, query, cmd ) =
-                    case subMsg |> Modal.update model.query of
-                        {- Delete Modal -}
-                        ( False, Nothing ) ->
-                            ( False, Nothing, Nothing, Cmd.none )
+                pattern =
+                    model.showModal
+                        |> Tuple.second
+                        |> Maybe.withDefault ( Modal.Delete Modal.Standard Nothing )
 
-                        ( True, Nothing ) ->
-                            ( False, Nothing, Nothing
+                ( showModal, whichModal, query, editing, cmd ) =
+                    case ( subMsg |> Modal.update model.query, pattern ) of
+                        {- Delete Modal
+
+                             Matches:
+                                  ( ( Bool, Maybe Query ),
+                                      Modal.Delete Modal.DeleteType ( Maybe Int )
+                                  )
+                        -}
+                        ( ( False, Nothing ),
+                            Modal.Delete Modal.Standard Nothing
+                        ) ->
+                            ( False
+                            , Nothing
+                            , Nothing
+                            , model.editing
+                            , Cmd.none
+                            )
+
+                        ( ( True, Nothing ),
+                            Modal.Delete Modal.Standard Nothing
+                        ) ->
+                            ( False
+                            , Nothing
+                            , Nothing
+                            , model.editing
                             , Maybe.withDefault new model.editing
                                 |> Request.Consumer.delete url
                                 |> Http.toTask
                                 |> Task.attempt Deleted
                             )
 
-                        {- Search Modal -}
-                        ( False, Just query ) ->
+                        ( ( False, Nothing ),
+                            Modal.Delete Modal.UnitBlock ( Just rownum )
+                        ) ->
+                            ( False
+                            , Nothing
+                            , Nothing
+                            , model.editing
+                            , Cmd.none
+                            )
+
+                        ( ( True, Nothing ),
+                            Modal.Delete Modal.UnitBlock ( Just rownum )
+                        ) ->
+                            let
+                                oldEditing =
+                                    model.editing
+                                        |> Maybe.withDefault new
+
+                                serviceCodes =
+                                    oldEditing.serviceCodes
+
+                                last =
+                                    1 |> (-) ( serviceCodes |> List.length )
+
+                                markForDeletion oldServiceCode =
+                                    Data.Consumer.ServiceCode
+                                        -- Flip bits doing bitwise NOT (aka two's complement) and do the same operation
+                                        -- if the edit is canceled.
+                                        -- Note that this is fine b/c no unit block in the database will have an id of 0
+                                        -- (i.e., there will be no confusion when a new service code is added on the UI,
+                                        -- which gets an id of -1 (note that ~0 == -1)).
+                                        ( oldServiceCode.id |> Bitwise.complement )
+                                        oldServiceCode.serviceCode
+                                        oldServiceCode.units
+
+                                makeServiceCode serviceCodes =
+                                    serviceCodes
+                                        |> List.head
+                                        >> Maybe.withDefault newServiceCode
+                                        >> markForDeletion
+
+                                newServiceCodes =
+                                    if (==) 0 rownum then
+                                        -- Replace the head element with a new Service Code and join back together.
+                                        List.tail serviceCodes
+                                            |> Maybe.withDefault []
+                                            |> (::) ( serviceCodes |> makeServiceCode )
+                                    else if (==) last rownum then
+                                        -- Replace the last element with a new Service Code and join back together after having initially reversed the list.
+                                        serviceCodes
+                                            |> List.reverse
+                                            >> List.drop 1      -- This is the list element that will be replaced.
+                                            >> (::) (
+                                                serviceCodes
+                                                    |> List.reverse
+                                                    >> makeServiceCode
+                                                )
+                                            >> List.reverse
+                                    else
+                                        -- 1. Drop everything up to and including the selected element.
+                                        -- 2. Make new service code and add it to the front of the tail elements from step #1.
+                                        -- 3. Take all elements from the head of the list up to the selected element and append the new list from steps #2 and #3.
+                                        serviceCodes
+                                            |> List.drop ( (+) rownum 1 )
+                                            >> (::) (
+                                                serviceCodes
+                                                    |> List.drop rownum
+                                                    >> makeServiceCode
+                                                )
+                                            >> (++) (
+                                                serviceCodes
+                                                    |> List.take rownum
+                                                )
+                            in
+                            ( False
+                            , Nothing
+                            , Nothing
+                            , { oldEditing | serviceCodes = newServiceCodes } |> Just
+                            , Cmd.none
+                            )
+
+                        {- Search Modal
+
+                             Matches:
+                                  ( ( Bool, Maybe Query ),
+                                      Modal.Search Modal.SearchType ( Maybe User ) ( Maybe Query ) ( Maybe ViewLists )
+                                  )
+                        -}
+                        ( ( False, Just query ), _ ) ->
                             let
                                 q =
                                     String.dropRight 5   -- Remove the trailing " AND ".
@@ -336,21 +479,32 @@ update url msg model =
                             ( True
                             , Modal.Spinner |> Just
                             , query |> Just     -- We need to save the search query for paging!
+                            , model.editing
                             , Request.Consumer.page url q 0
                                 |> Http.send ( Consumers >> Fetch )
                             )
 
-                        ( True, Just query ) ->
+                        ( ( True, Just query ), _ ) ->
                             ( True
                             , Nothing
                                 |> Modal.Search Data.Search.Consumer Nothing model.query
                                 |> Just
                             , query |> Just
+                            , model.editing
+                            , Cmd.none
+                            )
+
+                        ( _, _ ) ->
+                            ( False
+                            , Nothing
+                            , Nothing
+                            , model.editing
                             , Cmd.none
                             )
             in
             { model |
-                query = query
+                editing = editing
+                , query = query
                 , showModal = ( showModal, whichModal )
             } ! [ cmd ]
 
@@ -401,7 +555,6 @@ update url msg model =
                 { model |
                     action = action
                     , disabled = True
-                    , editing = if errors |> List.isEmpty then Nothing else model.editing
                     , errors = errors
                 } ! [ subCmd ]
 
@@ -481,7 +634,12 @@ update url msg model =
                 { model |
                     consumers = consumers
                     , editing = Nothing
-                } ! []
+                -- TODO
+                -- Note that we need to redownload the consumers with each successful update b/c new service code (blocks) can/may have been added!
+                -- The service codes come down with the consumers.  This will probably become untenable since we're fetching everything when we really
+                -- just want the service codes (recall that a new service code will have an id of -1, and it's less expensive to send the new service
+                -- codes than to loop over the client-side cache of service codes and update the new service code.
+                } ! [ 0 |> Request.Consumer.page url "" |> Http.send ( Consumers >> Fetch ) ]
 
         Putted ( Err err ) ->
             let
@@ -504,10 +662,10 @@ update url msg model =
                 , errors = []
             } ! []
 
-        Select selectType consumer selection ->
+        Select selectType consumer selectionString ->
             let
                 selectionToInt =
-                    selection |> Form.toInt
+                    selectionString |> Form.toInt
 
                 newModel a =
                     { model |
@@ -518,7 +676,7 @@ update url msg model =
             case selectType of
                 Form.CountyID ->
                     ( { consumer | county = selectionToInt } |> newModel ) ! [
-                        selection |> Request.City.get url |> Http.send ( Cities >> Fetch )
+                        selectionString |> Request.City.get url |> Http.send ( Cities >> Fetch )
                     ]
 
                 Form.DIAID ->
@@ -527,14 +685,90 @@ update url msg model =
                 Form.FundingSourceID ->
                     ( { consumer | fundingSource = selectionToInt } |> newModel ) ! []
 
-                Form.ServiceCodeID ->
-                    ( { consumer | serviceCode = selectionToInt } |> newModel ) ! []
-
                 Form.ZipID ->
-                    ( { consumer | zip = selection } |> newModel ) ! []
+                    ( { consumer | zip = selectionString } |> newModel ) ! []
 
                 _ ->
                     model ! []
+
+        -- TODO: This could be DRYed out!
+        UnitBlock unitBlockType id inputString ->
+            let
+                oldEditing =
+                    model.editing
+                        |> Maybe.withDefault new
+
+                serviceCodes =
+                    oldEditing.serviceCodes
+
+                last =
+                    1 |> (-) ( serviceCodes |> List.length )
+
+                makeServiceCode fn serviceCodes =
+                    serviceCodes
+                        |> List.head
+                        >> Maybe.withDefault newServiceCode
+                        >> fn
+
+                newServiceCodes fn =
+                    if (==) id 0 then
+                        -- Replace the head element with a new Service Code and join back together.
+                        List.tail serviceCodes
+                            |> Maybe.withDefault []
+                            |> (::) ( serviceCodes |> makeServiceCode fn )
+                    else if (==) id last then
+                        -- Replace the last element with a new Service Code and join back together after having initially reversed the list.
+                        serviceCodes
+                            |> List.reverse
+                            >> List.drop 1      -- This is the list element that will be replaced.
+                            >> (::) (
+                                serviceCodes
+                                    |> List.reverse
+                                    >> makeServiceCode fn
+                                )
+                            >> List.reverse
+                    else
+                        -- 1. Drop everything up to and including the selected element.
+                        -- 2. Make new service code and add it to the front of the tail elements from step #1.
+                        -- 3. Take all elements from the head of the list up to the selected element and append the new list from steps #2 and #3.
+                        serviceCodes
+                            |> List.drop ( (+) id 1 )
+                            >> (::) (
+                                serviceCodes
+                                    |> List.drop id
+                                    >> makeServiceCode fn
+                                )
+                            >> (++) (
+                                serviceCodes
+                                    |> List.take id
+                                )
+            in
+            case unitBlockType of
+                SelectServiceCode ->
+                    let
+                        selectionToInt =
+                            inputString |> Form.toInt
+
+                        getNewServiceCode oldServiceCode =
+                            Data.Consumer.ServiceCode oldServiceCode.id selectionToInt oldServiceCode.units
+                    in
+                    { model |
+                        disabled = False
+                        , editing = { oldEditing | serviceCodes = getNewServiceCode |> newServiceCodes } |> Just
+                    } ! []
+
+                SetUnits ->
+                    let
+                        unitsToFloat =
+                            inputString |> Form.toFloat
+
+                        getNewServiceCode oldServiceCode =
+                            Data.Consumer.ServiceCode oldServiceCode.id oldServiceCode.serviceCode unitsToFloat
+                    in
+                    { model |
+                        disabled = False
+                        , editing = { oldEditing | serviceCodes = getNewServiceCode |> newServiceCodes } |> Just
+                    } ! []
 
         SetCheckboxValue setBoolValue b ->
             { model |
@@ -550,6 +784,17 @@ update url msg model =
 
         SetTableState newState ->
             { model | tableState = newState
+            } ! []
+
+        ShowUnits consumer ->
+--            let
+--                subCmd =
+--                    Request.PayHistory.list url specialist.id
+--                        |> Http.toTask
+--                        |> Task.attempt ShowPayHistoryList
+--            in
+            { model |
+                action = Views.Page.Units consumer
             } ! []
 
 
@@ -569,47 +814,28 @@ view model =
 
 
 drawView : Model -> List ( Html Msg )
-drawView (
-    { action
-    , countyData
-    , disabled
-    , editing
-    , tableState
-    , serviceCodes
-    , consumers
-    , dias
-    , fundingSources
-    , query
-    } as model ) =
+drawView model =
     let
-        editable : Consumer
-        editable = case editing of
-            Nothing ->
-                new
-
-            Just consumer ->
-                consumer
-
         showList =
-            case consumers |> List.length of
+            case model.consumers |> List.length of
                 0 ->
                     div [] []
                 _ ->
-                    consumers
-                        |> Table.view ( model |> config ) tableState
+                    model.consumers
+                        |> Table.view ( model |> config ) model.tableState
 
         showPager =
             model.pager |> Views.Pager.view NewPage
 
         hideClearTextButton =
-            case query of
+            case model.query of
                 Nothing ->
                     True
 
                 Just _ ->
                     False
     in
-    case action of
+    case model.action of
         None ->
             [ div [ "buttons" |> class ]
                 [ button [ Add |> onClick ] [ text "Add Consumer" ]
@@ -620,32 +846,82 @@ drawView (
             , showList
             , showPager
             , model.showModal
-                |> Modal.view Nothing query
+                |> Modal.view Nothing model.query
                 |> Html.map ModalMsg
             ]
 
         Adding ->
             [ form [ onSubmit Post ]
                 ( (++)
-                    ( ( editable, serviceCodes, dias, fundingSources, countyData ) |> formRows )
-                    [ Form.submit disabled Cancel ]
+                    ( ( model.editing, model.serviceCodes, model.dias, model.fundingSources, model.countyData ) |> formRows )
+                    [ Form.submit model.disabled Cancel ]
                 )
             ]
 
         Editing ->
             [ form [ onSubmit Put ]
                 ( (++)
-                    ( ( editable, serviceCodes, dias, fundingSources, countyData ) |> formRows )
-                    [ Form.submit disabled Cancel ]
+                    ( ( model.editing, model.serviceCodes, model.dias, model.fundingSources, model.countyData ) |> formRows )
+                    [ Form.submit model.disabled Cancel ]
                 )
+            , model.showModal
+                |> Modal.view Nothing model.query
+                |> Html.map ModalMsg
+            ]
+
+        Units consumer ->
+            [ div [] []
+                , Form.submit True Cancel
+
             ]
 
         _ ->
-            [ div [] [] ]
+            [ div [] []
+            ]
 
 
-formRows : ( Consumer, List ServiceCode, List DIA, List FundingSource, CountyData ) -> List ( Html Msg )
-formRows ( editable, serviceCodes, dias, fundingSources, countyData ) =
+unitsBlock : List ServiceCode -> Consumer -> List ( Html Msg )
+unitsBlock fetchedServiceCodes consumer =
+    let
+        -- Remember that new service codes are designated as having an id of -1, so
+        -- we need to check for id that are less than that.
+        --
+        -- Since extant service codes are marked for deletion by bitwise NOTing its
+        -- id, the highest "marked for deletion" id will be -2 (~1 == -2, since the
+        -- db ids start at 1).
+        shouldHide serviceCode =
+            if (<) serviceCode.id -1
+            then True
+            else False
+    in
+    consumer.serviceCodes
+        |> List.indexedMap ( \index serviceCode -> div [ "unitBlock" |> class, serviceCode |> shouldHide >> hidden ]
+                [ Form.select "Service Code"
+                    [ id "serviceCodeSelection"
+                    , index |> UnitBlock SelectServiceCode |> onInput
+                    ] (
+                        fetchedServiceCodes
+                            |> List.map ( \m -> ( m.id |> toString, m.name ) )
+                            |> (::) ( "-1", "-- Select a service code --" )
+                            |> List.map ( serviceCode.serviceCode |> toString |> Form.option )
+                    )
+                , Form.float "Units"
+                    [ serviceCode.units |> toString |> value
+                    , index |> UnitBlock SetUnits |> onInput
+                    ]
+                    []
+                -- Specify type "button" in a form or the button will assume the default behavior and submit the form when clicked!
+                , button [ "button" |> type_, index |> DeleteUnitBlock consumer |> onClick ] [ "X" |> text ]
+                ]
+            )
+
+
+formRows : ( Maybe Consumer, List ServiceCode, List DIA, List FundingSource, CountyData ) -> List ( Html Msg )
+formRows ( editing, serviceCodes, dias, fundingSources, countyData ) =
+    let
+        editable =
+            editing |> Maybe.withDefault new
+    in
     [ Form.text "First Name"
         [ value editable.firstname
         , onInput ( SetFormValue ( \v -> { editable | firstname = v } ) )
@@ -672,15 +948,10 @@ formRows ( editable, serviceCodes, dias, fundingSources, countyData ) =
                 |> (::) ( "-1", "-- Select a county --" )
                 |> List.map ( editable.county |> toString |> Form.option )
         )
-    , Form.select "Service Code"
-        [ id "serviceCodeSelection"
-        , editable |> Select Form.ServiceCodeID |> onInput
-        ] (
-            serviceCodes
-                |> List.map ( \m -> ( m.id |> toString, m.name ) )
-                |> (::) ( "-1", "-- Select a service code --" )
-                |> List.map ( editable.serviceCode |> toString |> Form.option )
-        )
+    , div [ "unitsBlock" |> id ] (
+         editable |> unitsBlock serviceCodes
+             |> (::) ( input [ editable |> AddUnitBlock |> onClick, type_ "button", value "Add Service Code" ] [] )
+    )
     , Form.select "Funding Source"
         [ id "fundingSourceSelection"
         , editable |> Select Form.FundingSourceID |> onInput
@@ -714,11 +985,6 @@ formRows ( editable, serviceCodes, dias, fundingSources, countyData ) =
                 |> (::) ( "-1", "-- Select a DIA --" )
                 |> List.map ( editable.dia |> toString |> Form.option )
         )
-    , Form.float "Units"
-        [ editable.units |> toString |> value
-        , onInput ( SetFormValue ( \v -> { editable | units = Form.toFloat v } ) )
-        ]
-        []
     , Form.textarea "Other"
         [ value editable.other
         , onInput ( SetFormValue ( \v -> { editable | other = v } ) )
@@ -747,15 +1013,6 @@ config model =
                 >> Maybe.withDefault { id = -1, name = "" }
                 >> .name
         )
-        , Table.stringColumn "Service Code" (
-            .serviceCode
-                >> ( \id ->
-                    model.serviceCodes |> List.filter ( \m -> m.id |> (==) id )
-                    )
-                >> List.head
-                >> Maybe.withDefault { id = -1, name = "" }
-                >> .name
-        )
         , Table.stringColumn "Funding Source" (
             .fundingSource
                 >> ( \id ->
@@ -777,10 +1034,10 @@ config model =
                 >> Maybe.withDefault { id = -1, name = "" }
                 >> .name
         )
-        , Table.floatColumn "Units" .units
         , Table.stringColumn "Other" .other
         , customColumn ( viewButton Edit "Edit" ) ""
         , customColumn ( viewButton Delete "Delete" ) ""
+--        , customColumn ( viewButton ShowUnits "Service Codes and Units" ) ""
         ]
     , customizations = defaultCustomizations
     }

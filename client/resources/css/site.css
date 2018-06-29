@@ -139,6 +139,33 @@ form > div:last-child {
 form > div:last-child input:last-child {
     margin-left: 10px;
 }
+form #unitsBlock {
+    background-color: #ffe;
+    border: 1px solid #000;
+    border-radius: 10px;
+    margin: 20px 30px;
+    padding: 20px 0 10px 20px;
+}
+form #unitsBlock > input {
+    margin-bottom: 10px;
+}
+
+form .unitBlock {
+    clear: left;
+    margin: 10px 0;
+}
+form .unitBlock div {
+    float: left;
+}
+form .unitBlock div + div {
+    margin-right: 20px;
+}
+form .unitBlock div + div label {
+    width: 50px;
+}
+form .unitBlock div + div input {
+    width: 40px;
+}
 /* Reset for the Image form. */
 #image form > div:last-child {
     margin-left: 0;

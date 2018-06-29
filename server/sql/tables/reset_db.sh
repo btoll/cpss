@@ -12,5 +12,6 @@ cat db.sql \
     consumer.sql \
     billsheet.sql \
     payHistory.sql \
+    unitBlock.sql \
     | mysql -u btoll -p
 

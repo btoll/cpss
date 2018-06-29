@@ -1,4 +1,4 @@
-module Views.Modal exposing (Modal(..), Msg, update, view)
+module Views.Modal exposing (DeleteType(..), Modal(..), Msg, update, view)
 
 import Data.Search exposing (SearchType(..), Query, ViewLists)
 import Data.User exposing (User, new)
@@ -11,8 +11,15 @@ import Modal.Spinner as Spinner
 
 
 
+type DeleteType
+    = Standard
+    | UnitBlock
+
+
 type Modal
-    = Delete
+    -- If we wanted to make Delete more scalable, the second arg could be ( Maybe Metadata) where Metadata
+    -- is a Dict String String or somesuch.
+    = Delete DeleteType ( Maybe Int )
     | Search SearchType ( Maybe User ) ( Maybe Query ) ( Maybe ViewLists )
     | Spinner
 
@@ -42,7 +49,7 @@ view user query modal =
                 view : Html Msg
                 view =
                     case modal of
-                        Delete ->
+                        Delete deleteType _ ->
                             Delete.view
                                 |> Html.map DeleteMsg
 

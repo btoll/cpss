@@ -86,10 +86,7 @@ var ConsumerPayload = Type("ConsumerPayload", func() {
 		Metadata("struct:tag:datastore", "county,noindex")
 		Metadata("struct:tag:json", "county")
 	})
-	Attribute("serviceCode", Integer, "Consumer serviceCode", func() {
-		Metadata("struct:tag:datastore", "serviceCode,noindex")
-		Metadata("struct:tag:json", "serviceCode")
-	})
+	Attribute("serviceCodes", ArrayOf("unitBlockItem"))
 	Attribute("fundingSource", Integer, "Consumer fundingSource", func() {
 		Metadata("struct:tag:datastore", "fundingSource,noindex")
 		Metadata("struct:tag:json", "fundingSource")
@@ -110,16 +107,12 @@ var ConsumerPayload = Type("ConsumerPayload", func() {
 		Metadata("struct:tag:datastore", "dia,noindex")
 		Metadata("struct:tag:json", "dia")
 	})
-	Attribute("units", Number, "Units units", func() {
-		Metadata("struct:tag:datastore", "units,noindex")
-		Metadata("struct:tag:json", "units")
-	})
 	Attribute("other", String, "Consumer other", func() {
 		Metadata("struct:tag:datastore", "other,noindex")
 		Metadata("struct:tag:json", "other")
 	})
 
-	Required("firstname", "lastname", "active", "county", "serviceCode", "fundingSource", "zip", "bsu", "recipientID", "dia", "units", "other")
+	Required("firstname", "lastname", "active", "county", "serviceCodes", "fundingSource", "zip", "bsu", "recipientID", "dia", "other")
 })
 
 var ConsumerQueryPayload = Type("ConsumerQueryPayload", func() {
@@ -139,17 +132,33 @@ var ConsumerItem = Type("consumerItem", func() {
 	Attribute("lastname")
 	Attribute("active")
 	Attribute("county")
-	Attribute("serviceCode")
+	Attribute("serviceCodes", ArrayOf("unitBlockItem"))
 	Attribute("fundingSource")
 	Attribute("zip")
 	Attribute("bsu")
 	Attribute("recipientID")
 	Attribute("dia")
-	Attribute("units")
 	Attribute("other")
 
-	Required("id", "firstname", "lastname", "active", "county", "serviceCode", "fundingSource", "zip", "bsu", "recipientID", "dia", "units", "other")
+	Required("id", "firstname", "lastname", "active", "county", "serviceCodes", "fundingSource", "zip", "bsu", "recipientID", "dia", "other")
+})
 
+var UnitBlockItem = Type("unitBlockItem", func() {
+	Attribute("id", Integer, "Units id", func() {
+		Metadata("struct:tag:datastore", "id,noindex")
+		Metadata("struct:tag:json", "id")
+	})
+	// This will map to a service code in the `service_code` table.
+	Attribute("serviceCode", Integer, "Consumer serviceCode", func() {
+		Metadata("struct:tag:datastore", "serviceCode,noindex")
+		Metadata("struct:tag:json", "serviceCode")
+	})
+	Attribute("units", Number, "Units units", func() {
+		Metadata("struct:tag:datastore", "units,noindex")
+		Metadata("struct:tag:json", "units")
+	})
+
+	Required("id", "serviceCode", "units")
 })
 
 var ConsumerMedia = MediaType("application/consumerapi.consumerentity", func() {
@@ -164,18 +173,17 @@ var ConsumerMedia = MediaType("application/consumerapi.consumerentity", func() {
 		Attribute("lastname")
 		Attribute("active")
 		Attribute("county")
-		Attribute("serviceCode")
+		Attribute("serviceCodes", ArrayOf("unitBlockItem"))
 		Attribute("fundingSource")
 		Attribute("zip")
 		Attribute("bsu")
 		Attribute("recipientID")
 		Attribute("dia")
-		Attribute("units")
 		Attribute("other")
 		Attribute("consumers", ArrayOf("consumerItem"))
 		Attribute("pager", Pager)
 
-		Required("id", "firstname", "lastname", "active", "county", "serviceCode", "fundingSource", "zip", "bsu", "recipientID", "dia", "units", "other", "consumers", "pager")
+		Required("id", "firstname", "lastname", "active", "county", "serviceCodes", "fundingSource", "zip", "bsu", "recipientID", "dia", "other", "consumers", "pager")
 	})
 
 	View("default", func() {
@@ -184,13 +192,12 @@ var ConsumerMedia = MediaType("application/consumerapi.consumerentity", func() {
 		Attribute("lastname")
 		Attribute("active")
 		Attribute("county")
-		Attribute("serviceCode")
+		Attribute("serviceCodes")
 		Attribute("fundingSource")
 		Attribute("zip")
 		Attribute("bsu")
 		Attribute("recipientID")
 		Attribute("dia")
-		Attribute("units")
 		Attribute("other")
 	})
 

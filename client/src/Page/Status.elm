@@ -87,7 +87,7 @@ update url msg model =
         Delete status ->
             { model |
                 editing = Just status
-                , showModal = ( True , Modal.Delete |> Just )
+                , showModal = ( True , Nothing |> Modal.Delete Modal.Standard |> Just )
                 , errors = []
             } ! []
 

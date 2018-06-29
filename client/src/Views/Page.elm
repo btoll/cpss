@@ -1,5 +1,6 @@
 module Views.Page exposing (ActivePage(..), ViewAction(..), frame, pageTitle)
 
+import Data.Consumer exposing (Consumer)
 import Data.User exposing (User)
 import Html exposing (Html, a, div, footer, li, main_, nav, p, text, ul)
 import Html.Attributes exposing (class, classList, id)
@@ -30,6 +31,7 @@ type ViewAction
     | ChangingPassword User
     | Editing
     | PayHistory User
+    | Units Consumer
 
 
 
@@ -99,6 +101,9 @@ pageTitle action page =
             " - Pay History"
                 |> (++) page
 
+        Units _ ->
+            " - Units"
+                |> (++) page
 
 
 siteLinks : Maybe User -> ActivePage -> List ( SiteLink a )

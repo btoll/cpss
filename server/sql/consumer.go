@@ -17,15 +17,103 @@ func NewConsumer(payload interface{}) *Consumer {
 	return &Consumer{
 		Data: payload,
 		Stmt: map[string]string{
-			"DELETE": "DELETE FROM consumer WHERE id=?",
-			"INSERT": "INSERT consumer SET firstname=?,lastname=?,active=?,county=?,serviceCode=?,fundingSource=?,zip=?,bsu=?,recipientID=?,dia=?,units=?,other=?",
-			"SELECT": "SELECT %s FROM consumer %s",
-			"UPDATE": "UPDATE consumer SET firstname=?,lastname=?,active=?,county=?,serviceCode=?,fundingSource=?,zip=?,bsu=?,recipientID=?,dia=?,units=?,other=? WHERE id=?",
+			"DELETE":               "DELETE FROM consumer WHERE id=?",
+			"DELETE_SERVICE_CODE":  "DELETE FROM unit_block WHERE id=?",
+			"INSERT":               "INSERT consumer SET firstname=?,lastname=?,active=?,county=?,fundingSource=?,zip=?,bsu=?,recipientID=?,dia=?,other=?",
+			"INSERT_SERVICE_CODES": "INSERT unit_block SET consumer=?,serviceCode=?,units=?",
+			"SELECT":               "SELECT %s FROM consumer %s",
+			"SELECT_SERVICE_CODES": "SELECT %s FROM consumer INNER JOIN unit_block ON unit_block.consumer = consumer.id INNER JOIN service_code ON service_code.id = unit_block.serviceCode %s",
+			"UPDATE":               "UPDATE consumer SET firstname=?,lastname=?,active=?,county=?,fundingSource=?,zip=?,bsu=?,recipientID=?,dia=?,other=? WHERE id=?",
+			"UPDATE_SERVICE_CODES": "UPDATE unit_block SET serviceCode=?,units=? WHERE id=?",
 		},
 	}
 }
 
-func (s *Consumer) CollectRows(rows *mysql.Rows, coll []*app.ConsumerItem) error {
+func (s *Consumer) GetServiceCodes(db *mysql.DB, id int) ([]*app.UnitBlockItem, error) {
+	whereClause := fmt.Sprintf("WHERE consumer.id = %d", id)
+	i := 0
+	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT_SERVICE_CODES"], "COUNT(*)", whereClause))
+	if err != nil {
+		return nil, err
+	}
+	var count int
+	for rows.Next() {
+		err = rows.Scan(&count)
+		if err != nil {
+			return nil, err
+		}
+	}
+	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT_SERVICE_CODES"], "unit_block.id, service_code.id, unit_block.units", whereClause))
+	if err != nil {
+		return nil, err
+	}
+	coll := make([]*app.UnitBlockItem, count)
+	for rows.Next() {
+		var id int
+		var serviceCode int
+		var units float64
+		err := rows.Scan(&id, &serviceCode, &units)
+		if err != nil {
+			return nil, err
+		}
+		coll[i] = &app.UnitBlockItem{
+			ID:          id,
+			ServiceCode: serviceCode,
+			Units:       units,
+		}
+		i++
+	}
+	return coll, nil
+}
+
+func (s *Consumer) SetServiceCodes(db *mysql.DB, consumer int, serviceCodes []*app.UnitBlockItem) ([]*app.UnitBlockItem, error) {
+	updateStmt, err := db.Prepare(s.Stmt["UPDATE_SERVICE_CODES"])
+	if err != nil {
+		return nil, err
+	}
+	insertStmt, err := db.Prepare(s.Stmt["INSERT_SERVICE_CODES"])
+	if err != nil {
+		return nil, err
+	}
+	deleteStmt, err := db.Prepare(s.Stmt["DELETE_SERVICE_CODE"])
+	if err != nil {
+		return nil, err
+	}
+	var serviceCode *app.UnitBlockItem
+	coll := []*app.UnitBlockItem{}
+	for i := 0; i < len(serviceCodes); i++ {
+		serviceCode = serviceCodes[i]
+		if serviceCode.ID == -1 {
+			res, err := insertStmt.Exec(consumer, serviceCode.ServiceCode, serviceCode.Units)
+			if err != nil {
+				return nil, err
+			}
+			id, err := res.LastInsertId()
+			if err != nil {
+				return nil, err
+			}
+			serviceCode.ID = int(id)
+			coll = append(coll, serviceCode)
+		} else if serviceCode.ID < -1 {
+			// For an explanation of why we bitwise NOT the id,
+			// see https://github.com/btoll/cpss/blob/master/client/src/Page/Consumer.elm.
+			_, err := deleteStmt.Exec(^serviceCode.ID)
+			if err != nil {
+				return nil, err
+			}
+			// Note we're not adding these to the returned collection!
+		} else {
+			_, err = updateStmt.Exec(serviceCode.ServiceCode, serviceCode.Units, serviceCode.ID)
+			if err != nil {
+				return nil, err
+			}
+			coll = append(coll, serviceCode)
+		}
+	}
+	return coll, nil
+}
+
+func (s *Consumer) CollectRows(db *mysql.DB, rows *mysql.Rows, coll []*app.ConsumerItem) error {
 	i := 0
 	for rows.Next() {
 		var id int
@@ -33,15 +121,18 @@ func (s *Consumer) CollectRows(rows *mysql.Rows, coll []*app.ConsumerItem) error
 		var lastname string
 		var active bool
 		var county int
-		var serviceCode int
 		var fundingSource int
 		var zip string
 		var bsu string
 		var recipientID string
 		var dia int
-		var units float64
 		var other string
-		err := rows.Scan(&id, &firstname, &lastname, &active, &county, &serviceCode, &fundingSource, &zip, &bsu, &recipientID, &dia, &units, &other)
+		err := rows.Scan(&id, &firstname, &lastname, &active, &county, &fundingSource, &zip, &bsu, &recipientID, &dia, &other)
+		if err != nil {
+			return err
+		}
+		// First, get the Service Codes (inner joining consumer, service_code and unit_block tables).
+		serviceCodes, err := s.GetServiceCodes(db, id)
 		if err != nil {
 			return err
 		}
@@ -51,13 +142,12 @@ func (s *Consumer) CollectRows(rows *mysql.Rows, coll []*app.ConsumerItem) error
 			Lastname:      lastname,
 			Active:        active,
 			County:        county,
-			ServiceCode:   serviceCode,
+			ServiceCodes:  serviceCodes,
 			FundingSource: fundingSource,
 			Zip:           zip,
 			Bsu:           bsu,
 			RecipientID:   recipientID,
 			Dia:           dia,
-			Units:         units,
 			Other:         other,
 		}
 		i++
@@ -71,11 +161,16 @@ func (s *Consumer) Create(db *mysql.DB) (interface{}, error) {
 	if err != nil {
 		return -1, err
 	}
-	res, err := stmt.Exec(payload.Firstname, payload.Lastname, payload.Active, payload.County, payload.ServiceCode, payload.FundingSource, payload.Zip, payload.Bsu, payload.RecipientID, payload.Dia, payload.Units, payload.Other)
+	res, err := stmt.Exec(payload.Firstname, payload.Lastname, payload.Active, payload.County, payload.FundingSource, payload.Zip, payload.Bsu, payload.RecipientID, payload.Dia, payload.Other)
 	if err != nil {
 		return -1, err
 	}
 	id, err := res.LastInsertId()
+	if err != nil {
+		return -1, err
+	}
+	// If setting the service codes fails, abort everything!
+	_, err = s.SetServiceCodes(db, int(id), payload.ServiceCodes)
 	if err != nil {
 		return -1, err
 	}
@@ -84,11 +179,16 @@ func (s *Consumer) Create(db *mysql.DB) (interface{}, error) {
 
 func (s *Consumer) Update(db *mysql.DB) (interface{}, error) {
 	payload := s.Data.(*app.ConsumerPayload)
+	// If setting the service codes fails, abort everything!
+	serviceCodes, err := s.SetServiceCodes(db, *payload.ID, payload.ServiceCodes)
+	if err != nil {
+		return -1, err
+	}
 	stmt, err := db.Prepare(s.Stmt["UPDATE"])
 	if err != nil {
 		return nil, err
 	}
-	_, err = stmt.Exec(payload.Firstname, payload.Lastname, payload.Active, payload.County, payload.ServiceCode, payload.FundingSource, payload.Zip, payload.Bsu, payload.RecipientID, payload.Dia, payload.Units, payload.Other, payload.ID)
+	_, err = stmt.Exec(payload.Firstname, payload.Lastname, payload.Active, payload.County, payload.FundingSource, payload.Zip, payload.Bsu, payload.RecipientID, payload.Dia, payload.Other, payload.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -98,13 +198,12 @@ func (s *Consumer) Update(db *mysql.DB) (interface{}, error) {
 		Lastname:      payload.Lastname,
 		Active:        payload.Active,
 		County:        payload.County,
-		ServiceCode:   payload.ServiceCode,
+		ServiceCodes:  serviceCodes,
 		FundingSource: payload.FundingSource,
 		Zip:           payload.Zip,
 		Bsu:           payload.Bsu,
 		RecipientID:   payload.RecipientID,
 		Dia:           payload.Dia,
-		Units:         payload.Units,
 		Other:         payload.Other,
 	}, nil
 }
@@ -136,7 +235,7 @@ func (s *Consumer) List(db *mysql.DB) (interface{}, error) {
 		return nil, err
 	}
 	coll := make([]*app.ConsumerItem, count)
-	err = s.CollectRows(rows, coll)
+	err = s.CollectRows(db, rows, coll)
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +279,7 @@ func (s *Consumer) Page(db *mysql.DB) (interface{}, error) {
 		},
 		Consumers: make([]*app.ConsumerItem, capacity),
 	}
-	err = s.CollectRows(rows, paging.Consumers)
+	err = s.CollectRows(db, rows, paging.Consumers)
 	if err != nil {
 		return nil, err
 	}

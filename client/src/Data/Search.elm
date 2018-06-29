@@ -12,7 +12,8 @@ import Dict exposing (Dict)
 
 
 
-type alias Query = Dict String String
+type alias Query
+    = Dict String String
 
 
 type alias ViewLists =

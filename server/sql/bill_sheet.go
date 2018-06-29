@@ -26,33 +26,11 @@ func NewBillSheet(payload interface{}) *BillSheet {
 			"GET_AUTH_LEVEL":      "SELECT authLevel FROM specialist WHERE id=%d",
 			"INSERT":              "INSERT billsheet SET specialist=?,consumer=?,hours=?,units=?,serviceDate=?,serviceCode=?,hold=?,contractType=?,recipientID=?,recordNumber=?,status=?,billedCode=?,billedAmount=?,county=?,confirmation=?,description=?",
 			"SELECT":              "SELECT %s FROM billsheet %s",
+			"SELECT_UNIT_BLOCK":   "SELECT %s FROM unit_block WHERE consumer=%d AND serviceCode=%d",
+			"UPDATE_UNIT_BLOCK":   "UPDATE unit_block SET units=? WHERE id=?",
 			"UPDATE":              "UPDATE billsheet SET specialist=?,consumer=?,hours=?,units=?,serviceDate=?,serviceCode=?,hold=?,contractType=?,recipientID=?,recordNumber=?,status=?,billedCode=?,billedAmount=?,county=?,confirmation=?,description=? WHERE id=?",
 		},
 	}
-}
-
-func updateConsumerUnits(id int, unitsToDecrement float64, db *mysql.DB) error {
-	rows, err := db.Query(fmt.Sprintf("SELECT units FROM consumer WHERE id=%d", id))
-	if err != nil {
-		return err
-	}
-	var currentUnits float64
-	for rows.Next() {
-		err := rows.Scan(&currentUnits)
-		if err != nil {
-			return err
-		}
-	}
-	stmt, err := db.Prepare("UPDATE consumer SET units=? WHERE id=?")
-	if err != nil {
-		return err
-	}
-	newUnits := currentUnits - unitsToDecrement
-	if newUnits < 0 {
-		newUnits = 0
-	}
-	_, err = stmt.Exec(newUnits, id)
-	return err
 }
 
 func updateHold(db *mysql.DB, id int) error {
@@ -163,7 +141,7 @@ func (s *BillSheet) Create(db *mysql.DB) (interface{}, error) {
 	}
 	// For now, don't update the billsheet table if the update on consumer fails!
 	// 4 units per hour!
-	err := updateConsumerUnits(payload.Consumer, *payload.Hours*4, db)
+	err := s.UpdateUnitBlock(db, payload, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -328,8 +306,20 @@ func (s *BillSheet) Update(db *mysql.DB) (interface{}, error) {
 		// should hold be checked as `true` for this particular entry!
 		hold = false
 	}
-	// For now, don't update the billsheet table if the update on consumer fails!
-	err := updateConsumerUnits(payload.Consumer, *payload.Units, db)
+
+	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "hours", fmt.Sprintf("WHERE id=%d", *payload.ID)))
+	if err != nil {
+		return nil, err
+	}
+	var hours float64
+	for rows.Next() {
+		err = rows.Scan(&hours)
+		if err != nil {
+			return nil, err
+		}
+	}
+	// For now, don't update the billsheet table if the update on unit_block fails!
+	err = s.UpdateUnitBlock(db, payload, hours)
 	if err != nil {
 		return nil, err
 	}
@@ -360,4 +350,51 @@ func (s *BillSheet) Update(db *mysql.DB) (interface{}, error) {
 		Confirmation: payload.Confirmation,
 		Description:  payload.Description,
 	}, nil
+}
+
+func (s *BillSheet) UpdateUnitBlock(db *mysql.DB, payload *app.BillSheetPayload, currentHours float64) error {
+	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT_UNIT_BLOCK"], "COUNT(*)", payload.Consumer, payload.ServiceCode))
+	if err != nil {
+		return err
+	}
+	var count int
+	for rows.Next() {
+		err = rows.Scan(&count)
+		if err != nil {
+			return err
+		}
+	}
+	if count == 0 {
+		return errors.New("This Consumer is not authorized for that Service Code!")
+	} else if count < 1 {
+		return errors.New("This Consumer has multiple entries for this Service Code, please see Leta!")
+	} else if count == 1 {
+		rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT_UNIT_BLOCK"], "id, units", payload.Consumer, payload.ServiceCode))
+		if err != nil {
+			return err
+		}
+		var id int
+		var currentUnits int
+		for rows.Next() {
+			err := rows.Scan(&id, &currentUnits)
+			if err != nil {
+				return err
+			}
+		}
+		stmt, err := db.Prepare(s.Stmt["UPDATE_UNIT_BLOCK"])
+		if err != nil {
+			return err
+		}
+		// New hours - current hours * 4 units per hour.
+		newUnits := currentUnits - ((int(*payload.Hours) - int(currentHours)) * 4)
+		// TODO: What happens if it's drawn down below zero?
+		if newUnits < 0 {
+			newUnits = 0
+		}
+		_, err = stmt.Exec(newUnits, id)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

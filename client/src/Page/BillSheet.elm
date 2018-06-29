@@ -212,7 +212,7 @@ update url msg model =
 
         Delete billsheet ->
             { model |
-                 showModal = ( True , Modal.Delete |> Just )
+                showModal = ( True , Nothing |> Modal.Delete Modal.Standard |> Just )
                 , subModel = { subModel | editing = billsheet |> Just }
                 , errors = []
             } ! []
