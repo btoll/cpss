@@ -677,9 +677,17 @@ config =
     { toId = .id >> toString
     , toMsg = SetTableState
     , columns =
-        [ Table.stringColumn "Username" .username
+        [ Table.stringColumn "Full Name" ( \m ->        -- "Cricket, Rickety"
+            (++)
+                ( .lastname m )
+                ( (++)
+                    ( ", ")
+                    ( .firstname m )
+                )
+        )
         , Table.stringColumn "First Name" .firstname
         , Table.stringColumn "Last Name" .lastname
+        , Table.stringColumn "Username" .username
         , Table.stringColumn "Email" .email
         , Table.floatColumn "Pay Rate" .payrate
         , Table.stringColumn "Auth Level" ( .authLevel >> toString >> ( \s -> if s |> (==) "1" then "Admin" else "User" ) )

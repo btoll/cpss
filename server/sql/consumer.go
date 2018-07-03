@@ -127,7 +127,8 @@ func (s *Consumer) CollectRows(db *mysql.DB, rows *mysql.Rows, coll []*app.Consu
 		var recipientID string
 		var dia int
 		var other string
-		err := rows.Scan(&id, &firstname, &lastname, &active, &county, &fundingSource, &zip, &bsu, &recipientID, &dia, &other)
+		var fullname string
+		err := rows.Scan(&id, &firstname, &lastname, &active, &county, &fundingSource, &zip, &bsu, &recipientID, &dia, &other, &fullname)
 		if err != nil {
 			return err
 		}
@@ -230,7 +231,7 @@ func (s *Consumer) List(db *mysql.DB) (interface{}, error) {
 			return nil, err
 		}
 	}
-	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*", ""))
+	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*, CONCAT(lastname,', ',firstname) AS fullname", "ORDER BY fullname ASC"))
 	if err != nil {
 		return nil, err
 	}
@@ -260,7 +261,7 @@ func (s *Consumer) Page(db *mysql.DB) (interface{}, error) {
 			return nil, err
 		}
 	}
-	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*", fmt.Sprintf("%s LIMIT %d,%d", whereClause, limit, RecordsPerPage)))
+	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*, CONCAT(lastname,', ',firstname) AS fullname", fmt.Sprintf("%s ORDER BY fullname ASC LIMIT %d,%d", whereClause, limit, RecordsPerPage)))
 	if err != nil {
 		return nil, err
 	}

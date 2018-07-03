@@ -280,7 +280,7 @@ tableColumns customColumn viewButton viewCheckbox editMsg deleteMsg viewLists =
                 )
             >> List.head
             >> Maybe.withDefault Data.Consumer.new
-            >> ( \m -> m.firstname ++ " " ++  m.lastname )
+            >> ( \m -> m.lastname ++ ", " ++  m.firstname )
     )
     , Table.stringColumn "Service Date" .serviceDate
     , Table.intColumn "Service Code" .serviceCode

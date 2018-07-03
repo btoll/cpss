@@ -308,7 +308,7 @@ tableColumns customColumn viewButton viewCheckbox editMsg deleteMsg viewLists =
                 )
             >> List.head
             >> Maybe.withDefault Data.Consumer.new
-            >> ( \m -> m.firstname ++ " " ++  m.lastname )
+            >> ( \m -> m.lastname ++ ", " ++  m.firstname )
     )
     , Table.stringColumn "Status" (
         .status
@@ -336,7 +336,7 @@ tableColumns customColumn viewButton viewCheckbox editMsg deleteMsg viewLists =
                 )
             >> List.head
             >> Maybe.withDefault Data.User.new
-            >> ( \m -> m.firstname ++ " " ++  m.lastname )
+            >> ( \m -> m.lastname ++ ", " ++  m.firstname )
     )
     , Table.stringColumn "Record Number" .recordNumber
     , customColumn "" ( viewButton editMsg "Edit" )

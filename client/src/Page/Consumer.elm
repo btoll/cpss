@@ -1001,7 +1001,15 @@ config model =
     { toId = .id >> toString
     , toMsg = SetTableState
     , columns =
-        [ Table.stringColumn "First Name" .firstname
+        [ Table.stringColumn "Full Name" ( \m ->        -- "Cricket, Rickety"
+            (++)
+                ( .lastname m )
+                ( (++)
+                    ( ", ")
+                    ( .firstname m )
+                )
+        )
+        , Table.stringColumn "First Name" .firstname
         , Table.stringColumn "Last Name" .lastname
         , customColumn viewCheckbox "Active"
         , Table.stringColumn "County" (
