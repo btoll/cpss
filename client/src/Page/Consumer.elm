@@ -420,20 +420,26 @@ update url msg model =
                                     serviceCodes
                                         |> List.head
                                         >> Maybe.withDefault newServiceCode
-                                        >> markForDeletion
+                                        -- If id == -1, it's new (server has no knowledge of it) so return an empty array. This effectively
+                                        -- prunes the serviceCode from the list.
+                                        >> ( \serviceCode ->
+                                            if (==) -1 serviceCode.id
+                                            then []
+                                            else [ serviceCode |> markForDeletion ]
+                                            )
 
                                 newServiceCodes =
                                     if (==) 0 rownum then
                                         -- Replace the head element with a new Service Code and join back together.
                                         List.tail serviceCodes
                                             |> Maybe.withDefault []
-                                            |> (::) ( serviceCodes |> makeServiceCode )
+                                            |> (++) ( serviceCodes |> makeServiceCode )
                                     else if (==) last rownum then
                                         -- Replace the last element with a new Service Code and join back together after having initially reversed the list.
                                         serviceCodes
                                             |> List.reverse
                                             >> List.drop 1      -- This is the list element that will be replaced.
-                                            >> (::) (
+                                            >> (++) (
                                                 serviceCodes
                                                     |> List.reverse
                                                     >> makeServiceCode
@@ -445,7 +451,7 @@ update url msg model =
                                         -- 3. Take all elements from the head of the list up to the selected element and append the new list from steps #2 and #3.
                                         serviceCodes
                                             |> List.drop ( (+) rownum 1 )
-                                            >> (::) (
+                                            >> (++) (
                                                 serviceCodes
                                                     |> List.drop rownum
                                                     >> makeServiceCode
@@ -503,7 +509,9 @@ update url msg model =
                             )
             in
             { model |
-                editing = editing
+                -- This only applies to Modal.UnitBlock delete modal. If objects don't equal than a unit block has been deleted.
+                disabled = (==) editing model.editing
+                , editing = editing
                 , query = query
                 , showModal = ( showModal, whichModal )
             } ! [ cmd ]
@@ -856,6 +864,9 @@ drawView model =
                     ( ( model.editing, model.serviceCodes, model.dias, model.fundingSources, model.countyData ) |> formRows )
                     [ Form.submit model.disabled Cancel ]
                 )
+            , model.showModal
+                |> Modal.view Nothing model.query
+                |> Html.map ModalMsg
             ]
 
         Editing ->
