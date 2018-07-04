@@ -143,14 +143,14 @@ form > div:last-child {
 form > div:last-child input:last-child {
     margin-left: 10px;
 }
-form #unitsBlock {
+#unitsBlock {
     background-color: #ffe;
     border: 1px solid #000;
     border-radius: 10px;
     margin: 20px 30px;
     padding: 20px 0 10px 20px;
 }
-form #unitsBlock > input {
+#unitsBlock > input {
     margin-bottom: 10px;
 }
 

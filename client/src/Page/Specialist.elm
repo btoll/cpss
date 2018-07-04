@@ -597,7 +597,7 @@ drawView (
                         |> toString
                         |> (++) " $"
             in
-            [ div []
+            [ div [ "unitsBlock" |> id ]
                 [ h3 [] [
                     ( specialist.firstname ++ " " ++ specialist.lastname ++ " (" ++ specialist.username ++ ")" )
                     |> text
