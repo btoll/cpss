@@ -57,11 +57,15 @@ main#login nav li.nav-item {        /* Hide the Login link on the login page :) 
     visibility: hidden;
 }
 main#login nav + div {
+    background: url(/resources/images/lighthouse.png) top center no-repeat;
     margin: 5%;
+    min-height: 600px;
+}
+main#login nav + div > div + div {
+    width: 25%;
 }
 main#login nav + div form {
     padding: 2% 0;
-    width: 25%;
 }
 section {
     background: #ccc;

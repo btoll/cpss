@@ -2,8 +2,8 @@ module Page.Login exposing (ExternalMsg(..), Model, Msg, init, update, view)
 
 import Data.Session as Session exposing (Session)
 import Data.User as User exposing (User)
-import Html exposing (Html, div, form, h1, text)
-import Html.Attributes exposing (autofocus, class, value)
+import Html exposing (Html, div, form, h1, p, text)
+import Html.Attributes exposing (autofocus, class, src, value)
 import Html.Events exposing (onInput, onSubmit)
 import Http
 import Request.Session
@@ -83,26 +83,33 @@ view model =
     in
     div []
         [ div [ cls |> class ] [ model.error |> text ]
-        , h1 [] [ "CPSS" |> text ]
-        , form [ onSubmit Authenticate ] [
-            Form.text "Username"
-                [ value model.username
-                , onInput ( SetFormValue ( \v -> { model | username = v } ) )
-                , autofocus True
-                ]
-                []
-            , Form.password "Password"
-                [ value model.password
-                , onInput ( SetFormValue ( \v -> { model | password = v } ) )
-                ]
-                []
-           , Form.submit
-               ( (||)
-                   ( model.username |> String.isEmpty )
-                   ( model.password |> String.isEmpty )
-               )
-               Cancel
+        , div []
+            [ h1 [] [ "Central Pennsylvania Supportive Services, Inc. (CPSS)" |> text ]
+            , form [ onSubmit Authenticate ] [
+                Form.text "Username"
+                    [ value model.username
+                    , onInput ( SetFormValue ( \v -> { model | username = v } ) )
+                    , autofocus True
+                    ]
+                    []
+                , Form.password "Password"
+                    [ value model.password
+                    , onInput ( SetFormValue ( \v -> { model | password = v } ) )
+                    ]
+                    []
+               , Form.submit
+                   ( (||)
+                       ( model.username |> String.isEmpty )
+                       ( model.password |> String.isEmpty )
+                   )
+                   Cancel
 
+            ]
+            , div []
+                [ p [] [ "Guiding People with Challenges to a Life of Independence" |> text ]
+                , p [] [ "Vocational and Living Skills for People with Disabilities" |> text ]
+                , p [] [ "Mission is to guide and support consumers with physical, mental and emotional challenges so they may enjoy a fulfilling life of independence and dignity" |> text ]
+                ]
         ]
     ]
 
