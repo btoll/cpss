@@ -2,6 +2,7 @@ package sql
 
 import (
 	mysql "database/sql"
+	"errors"
 	"fmt"
 	"math"
 
@@ -158,6 +159,21 @@ func (s *Consumer) CollectRows(db *mysql.DB, rows *mysql.Rows, coll []*app.Consu
 
 func (s *Consumer) Create(db *mysql.DB) (interface{}, error) {
 	payload := s.Data.(*app.ConsumerPayload)
+
+	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)", fmt.Sprintf("WHERE firstname='%s' AND lastname='%s'", payload.Firstname, payload.Lastname)))
+	if err != nil {
+		return nil, err
+	}
+	var count int
+	for rows.Next() {
+		err = rows.Scan(&count)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if count > 0 {
+		return nil, errors.New("There is already a consumer by that name!")
+	}
 	stmt, err := db.Prepare(s.Stmt["INSERT"])
 	if err != nil {
 		return -1, err

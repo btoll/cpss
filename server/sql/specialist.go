@@ -2,6 +2,7 @@ package sql
 
 import (
 	mysql "database/sql"
+	"errors"
 	"fmt"
 	"math"
 
@@ -72,6 +73,33 @@ func (s *Specialist) CollectRows(rows *mysql.Rows, coll []*app.SpecialistItem) e
 
 func (s *Specialist) Create(db *mysql.DB) (interface{}, error) {
 	payload := s.Data.(*app.SpecialistPayload)
+	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)", fmt.Sprintf("WHERE username='%s'", payload.Username)))
+	if err != nil {
+		return nil, err
+	}
+	var count int
+	for rows.Next() {
+		err = rows.Scan(&count)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if count > 0 {
+		return nil, errors.New("That username is already taken!")
+	}
+	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)", fmt.Sprintf("WHERE firstname='%s' AND lastname='%s'", payload.Firstname, payload.Lastname)))
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		err = rows.Scan(&count)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if count > 0 {
+		return nil, errors.New("There is already a Specialist by that name!")
+	}
 	stmt, err := db.Prepare(s.Stmt["INSERT"])
 	if err != nil {
 		return -1, err
