@@ -168,24 +168,20 @@ update url msg model =
                         Just serviceCode ->
                             Validate.ServiceCode.errors serviceCode
 
-                ( action, subCmd ) = if errors |> List.isEmpty then
+                subCmd = if errors |> List.isEmpty then
                     case model.editing of
                         Nothing ->
-                            ( None, Cmd.none )
+                            Cmd.none
 
                         Just serviceCode ->
-                            ( None
-                            , Request.ServiceCode.post url serviceCode
+                            Request.ServiceCode.post url serviceCode
                                 |> Http.toTask
                                 |> Task.attempt Posted
-                            )
                     else
-                        ( Adding, Cmd.none )
+                        Cmd.none
             in
                 { model |
-                    action = action
-                    , disabled = True
---                    , editing = if errors |> List.isEmpty then Nothing else model.editing
+                    disabled = True
                     , errors = errors
                 } ! [ subCmd ]
 
@@ -199,10 +195,13 @@ update url msg model =
                         Just newServiceCode ->
                             model.serviceCodes
                                 |> (::) { newServiceCode | id = serviceCode.id }
+                                |> List.sortBy .name
             in
                 { model |
-                    serviceCodes = sc
+                    action = None
                     , editing = Nothing
+                    , errors = []
+                    , serviceCodes = sc
                 } ! []
 
         Posted ( Err err ) ->
@@ -216,8 +215,7 @@ update url msg model =
                             "nop"
             in
             { model |
-                editing = Nothing
-                , errors = (::) e model.errors
+                errors = (::) e model.errors
             } ! []
 
         Put ->
@@ -230,27 +228,24 @@ update url msg model =
                         Just serviceCode ->
                             Validate.ServiceCode.errors serviceCode
 
-                ( action, subCmd ) = if errors |> List.isEmpty then
+                subCmd = if errors |> List.isEmpty then
                     case model.editing of
                         Nothing ->
-                            ( None, Cmd.none )
+                            Cmd.none
 
                         Just serviceCode ->
-                            ( None
-                            , Request.ServiceCode.put url serviceCode
+                            Request.ServiceCode.put url serviceCode
                                 |> Http.toTask
                                 |> Task.attempt Putted
-                            )
                     else
-                        ( Editing, Cmd.none )
+                        Cmd.none
             in
-                { model |
-                    action = action
-                    , disabled = True
-                    , errors = errors
-                } ! [ subCmd ]
+            { model |
+                disabled = True
+                , errors = errors
+            } ! [ subCmd ]
 
-        Putted ( Ok st ) ->
+        Putted ( Ok serviceCode ) ->
             let
                 serviceCodes =
                     case model.editing of
@@ -259,12 +254,17 @@ update url msg model =
 
                         Just newServiceCode ->
                             model.serviceCodes
-                                |> List.filter ( \m -> st.id /= m.id )
-                                |> (::) { newServiceCode | id = st.id }
+                                |> List.map ( \m ->
+                                        if serviceCode.id /= m.id
+                                        then m
+                                        else { newServiceCode | id = serviceCode.id }
+                                    )
             in
                 { model |
-                    serviceCodes = serviceCodes
+                    action = None
+                    , serviceCodes = serviceCodes
                     , editing = Nothing
+                    , errors = []
                 } ! []
 
         Putted ( Err err ) ->
@@ -278,8 +278,7 @@ update url msg model =
                             "nop"
             in
             { model |
-                editing = Nothing
-                , errors = (::) e model.errors
+                errors = (::) e model.errors
             } ! []
 
         SetTableState newState ->

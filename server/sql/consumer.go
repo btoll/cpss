@@ -159,7 +159,6 @@ func (s *Consumer) CollectRows(db *mysql.DB, rows *mysql.Rows, coll []*app.Consu
 
 func (s *Consumer) Create(db *mysql.DB) (interface{}, error) {
 	payload := s.Data.(*app.ConsumerPayload)
-
 	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)", fmt.Sprintf("WHERE firstname='%s' AND lastname='%s'", payload.Firstname, payload.Lastname)))
 	if err != nil {
 		return nil, err
@@ -172,7 +171,7 @@ func (s *Consumer) Create(db *mysql.DB) (interface{}, error) {
 		}
 	}
 	if count > 0 {
-		return nil, errors.New("There is already a consumer by that name!")
+		return nil, errors.New("There is already a Consumer by that name!")
 	}
 	stmt, err := db.Prepare(s.Stmt["INSERT"])
 	if err != nil {

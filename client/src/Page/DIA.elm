@@ -168,30 +168,26 @@ update url msg model =
                         Just dia ->
                             Validate.DIA.errors dia
 
-                ( action, subCmd ) = if errors |> List.isEmpty then
+                subCmd = if errors |> List.isEmpty then
                     case model.editing of
                         Nothing ->
-                            ( None, Cmd.none )
+                            Cmd.none
 
                         Just dia ->
-                            ( None
-                            , Request.DIA.post url dia
+                            Request.DIA.post url dia
                                 |> Http.toTask
                                 |> Task.attempt Posted
-                            )
                     else
-                        ( Adding, Cmd.none )
+                        Cmd.none
             in
                 { model |
-                    action = action
-                    , disabled = True
---                    , editing = if errors |> List.isEmpty then Nothing else model.editing
+                    disabled = True
                     , errors = errors
                 } ! [ subCmd ]
 
         Posted ( Ok dia ) ->
             let
-                sc =
+                d =
                     case model.editing of
                         Nothing ->
                             model.dias
@@ -199,10 +195,13 @@ update url msg model =
                         Just newDIA ->
                             model.dias
                                 |> (::) { newDIA | id = dia.id }
+                                |> List.sortBy .name
             in
                 { model |
-                    dias = sc
+                    action = None
+                    , dias = d
                     , editing = Nothing
+                    , errors = []
                 } ! []
 
         Posted ( Err err ) ->
@@ -216,8 +215,7 @@ update url msg model =
                             "nop"
             in
             { model |
-                editing = Nothing
-                , errors = (::) e model.errors
+                errors = (::) e model.errors
             } ! []
 
         Put ->
@@ -230,27 +228,24 @@ update url msg model =
                         Just dia ->
                             Validate.DIA.errors dia
 
-                ( action, subCmd ) = if errors |> List.isEmpty then
+                subCmd = if errors |> List.isEmpty then
                     case model.editing of
                         Nothing ->
-                            ( None, Cmd.none )
+                            Cmd.none
 
                         Just dia ->
-                            ( None
-                            , Request.DIA.put url dia
+                            Request.DIA.put url dia
                                 |> Http.toTask
                                 |> Task.attempt Putted
-                            )
                     else
-                        ( Editing, Cmd.none )
+                        Cmd.none
             in
                 { model |
-                    action = action
-                    , disabled = True
+                    disabled = True
                     , errors = errors
                 } ! [ subCmd ]
 
-        Putted ( Ok st ) ->
+        Putted ( Ok dia ) ->
             let
                 dias =
                     case model.editing of
@@ -259,12 +254,17 @@ update url msg model =
 
                         Just newDIA ->
                             model.dias
-                                |> List.filter ( \m -> st.id /= m.id )
-                                |> (::) { newDIA | id = st.id }
+                                |> List.map ( \m ->
+                                        if dia.id /= m.id
+                                        then m
+                                        else { newDIA | id = dia.id }
+                                    )
             in
                 { model |
-                    dias = dias
+                    action = None
+                    , dias = dias
                     , editing = Nothing
+                    , errors = []
                 } ! []
 
         Putted ( Err err ) ->
@@ -278,8 +278,7 @@ update url msg model =
                             "nop"
             in
             { model |
-                editing = Nothing
-                , errors = (::) e model.errors
+                errors = (::) e model.errors
             } ! []
 
         SetTableState newState ->

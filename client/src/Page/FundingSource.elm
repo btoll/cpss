@@ -168,30 +168,26 @@ update url msg model =
                         Just fundingSource ->
                             Validate.FundingSource.errors fundingSource
 
-                ( action, subCmd ) = if errors |> List.isEmpty then
+                subCmd = if errors |> List.isEmpty then
                     case model.editing of
                         Nothing ->
-                            ( None, Cmd.none )
+                            Cmd.none
 
                         Just fundingSource ->
-                            ( None
-                            , Request.FundingSource.post url fundingSource
+                            Request.FundingSource.post url fundingSource
                                 |> Http.toTask
                                 |> Task.attempt Posted
-                            )
                     else
-                        ( Adding, Cmd.none )
+                        Cmd.none
             in
                 { model |
-                    action = action
-                    , disabled = True
---                    , editing = if errors |> List.isEmpty then Nothing else model.editing
+                    disabled = True
                     , errors = errors
                 } ! [ subCmd ]
 
         Posted ( Ok fundingSource ) ->
             let
-                sc =
+                fundingSources =
                     case model.editing of
                         Nothing ->
                             model.fundingSources
@@ -199,10 +195,13 @@ update url msg model =
                         Just newFundingSource ->
                             model.fundingSources
                                 |> (::) { newFundingSource | id = fundingSource.id }
+                                |> List.sortBy .name
             in
                 { model |
-                    fundingSources = sc
+                    action = None
+                    , fundingSources = fundingSources
                     , editing = Nothing
+                    , errors = []
                 } ! []
 
         Posted ( Err err ) ->
@@ -216,8 +215,7 @@ update url msg model =
                             "nop"
             in
             { model |
-                editing = Nothing
-                , errors = (::) e model.errors
+                errors = (::) e model.errors
             } ! []
 
         Put ->
@@ -230,27 +228,24 @@ update url msg model =
                         Just fundingSource ->
                             Validate.FundingSource.errors fundingSource
 
-                ( action, subCmd ) = if errors |> List.isEmpty then
+                subCmd = if errors |> List.isEmpty then
                     case model.editing of
                         Nothing ->
-                            ( None, Cmd.none )
+                            Cmd.none
 
                         Just fundingSource ->
-                            ( None
-                            , Request.FundingSource.put url fundingSource
+                            Request.FundingSource.put url fundingSource
                                 |> Http.toTask
                                 |> Task.attempt Putted
-                            )
                     else
-                        ( Editing, Cmd.none )
+                        Cmd.none
             in
                 { model |
-                    action = action
-                    , disabled = True
+                    disabled = True
                     , errors = errors
                 } ! [ subCmd ]
 
-        Putted ( Ok st ) ->
+        Putted ( Ok fundingSource ) ->
             let
                 fundingSources =
                     case model.editing of
@@ -259,12 +254,17 @@ update url msg model =
 
                         Just newFundingSource ->
                             model.fundingSources
-                                |> List.filter ( \m -> st.id /= m.id )
-                                |> (::) { newFundingSource | id = st.id }
+                                |> List.map ( \m ->
+                                        if fundingSource.id /= m.id
+                                        then m
+                                        else { newFundingSource | id = fundingSource.id }
+                                    )
             in
                 { model |
-                    fundingSources = fundingSources
+                    action = None
+                    , fundingSources = fundingSources
                     , editing = Nothing
+                    , errors = []
                 } ! []
 
         Putted ( Err err ) ->
@@ -278,8 +278,7 @@ update url msg model =
                             "nop"
             in
             { model |
-                editing = Nothing
-                , errors = (::) e model.errors
+                errors = (::) e model.errors
             } ! []
 
         SetTableState newState ->

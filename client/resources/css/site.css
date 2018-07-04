@@ -168,7 +168,7 @@ form .unitBlock div + div label {
     width: 50px;
 }
 form .unitBlock div + div input {
-    width: 40px;
+    width: 50px;
 }
 /* Reset for the Image form. */
 #image form > div:last-child {

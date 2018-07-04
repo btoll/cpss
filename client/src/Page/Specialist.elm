@@ -294,31 +294,32 @@ update url msg model =
                         Just specialist ->
                             Validate.Specialist.errors specialist
 
-                ( action, subCmd ) = if errors |> List.isEmpty then
+                subCmd = if errors |> List.isEmpty then
                     case model.editing of
                         Nothing ->
-                            ( None, Cmd.none )
+                            Cmd.none
 
                         Just specialist ->
-                            ( None
-                            , Request.Specialist.post url specialist
+                            Request.Specialist.post url specialist
                                 |> Http.toTask
                                 |> Task.attempt Posted
-                            )
                     else
-                        ( Adding, Cmd.none )
+                        Cmd.none
             in
                 { model |
-                    action = action
-                    , disabled = True
---                    , editing = if errors |> List.isEmpty then Nothing else model.editing
+                    disabled = True
                     , errors = errors
                 } ! [ subCmd ]
 
         Posted ( Ok specialist ) ->
             { model |
-                specialists = model.specialists |> (::) specialist
+                action = None
                 , editing = Nothing
+                , errors = []
+                , specialists =
+                    model.specialists
+                        |> (::) specialist
+                        |> List.sortBy .lastname
             } ! []
 
         Posted ( Err err ) ->
@@ -332,8 +333,7 @@ update url msg model =
                             "nop"
             in
             { model |
-                editing = Nothing
-                , errors = (::) e model.errors
+                errors = (::) e model.errors
             } ! []
 
         Put action ->
@@ -348,23 +348,20 @@ update url msg model =
                                 Just specialist ->
                                     Validate.Specialist.errors specialist
 
-                        ( action, subCmd ) = if errors |> List.isEmpty then
+                        subCmd = if errors |> List.isEmpty then
                             case model.editing of
                                 Nothing ->
-                                    ( None, Cmd.none )
+                                    Cmd.none
 
                                 Just specialist ->
-                                    ( None
-                                    , Request.Specialist.put url specialist
+                                    Request.Specialist.put url specialist
                                         |> Http.toTask
                                         |> Task.attempt Putted
-                                    )
                             else
-                                ( Adding, Cmd.none )
+                                Cmd.none
                     in
                         { model |
-                            action = action
-                            , disabled = True
+                            disabled = True
                             , errors = errors
                         } ! [ subCmd ]
 
@@ -377,8 +374,7 @@ update url msg model =
                                     |> Task.attempt Hashed
                     in
                         { model |
-                            action = None
-                            , disabled = True
+                            disabled = True
                             , newPassword = ""
                             , confirmPassword = ""
                         } ! [ subCmd ]
@@ -395,15 +391,20 @@ update url msg model =
 
                         Just newSpecialist ->
                             model.specialists
-                                |> List.filter ( \m -> specialist.id /= m.id )
-                                |> (::)
-                                    { newSpecialist |
-                                        id = specialist.id
-                                        , password = specialist.password
-                                    }
+                                -- Keep sort order.
+                                |> List.map ( \m ->
+                                        if specialist.id /= m.id
+                                        then m
+                                        else { newSpecialist |
+                                            id = specialist.id
+                                            , password = specialist.password
+                                        }
+                                    )
             in
                 { model |
-                    specialists = specialists
+                    action = None
+                    , errors = []
+                    , specialists = specialists
                     , editing = Nothing
                 } ! []
 
@@ -418,8 +419,7 @@ update url msg model =
                             "nop"
             in
             { model |
-                editing = Nothing
-                , errors = (::) e model.errors
+                errors = (::) e model.errors
             } ! []
 
         Search ->

@@ -7,7 +7,7 @@ GOA_DESIGN		= design/*
 TARGET			= cpss
 WATCHER			= entr
 
-.PHONY: build clean deploy generate hooks serve watch
+.PHONY: build clean deploy generate hooks reset-db serve watch
 
 $(GENERATED): $(GOA_DESIGN)
 	@echo [make] Generating Goa code, please be patient...
@@ -36,8 +36,13 @@ generate: $(GENERATED)
 hooks:
 	@echo [make] Installing git hook...
 	@cd ../.git/hooks && \
-	echo make generate >> post-merge && \
-		chmod 755 post-merge
+		echo make generate >> post-merge && \
+			chmod 755 post-merge
+
+reset-db:
+	@echo [make] Resetting db...
+	@cd sql/tables && \
+		sh reset_db.sh
 
 serve: $(TARGET)
 	./$(TARGET)

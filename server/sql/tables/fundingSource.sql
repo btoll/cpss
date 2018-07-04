@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS funding_source(
 
 LOCK TABLES `funding_source` WRITE;
 /*!40000 ALTER TABLE `funding_source` DISABLE KEYS */;
-INSERT INTO `funding_source` VALUES (1,'A'),(2,'B');
+INSERT INTO `funding_source` VALUES (1,'Base'),(2,'P/FDS Waiver'),(3,'Consolidated Waiver '),(6,'OVR');
 /*!40000 ALTER TABLE `funding_source` ENABLE KEYS */;
 UNLOCK TABLES;
 

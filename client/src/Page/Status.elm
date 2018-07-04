@@ -170,24 +170,20 @@ update url msg model =
                         Just status ->
                             Validate.Status.errors status
 
-                ( action, subCmd ) = if errors |> List.isEmpty then
+                subCmd = if errors |> List.isEmpty then
                     case model.editing of
                         Nothing ->
-                            ( None, Cmd.none )
+                            Cmd.none
 
                         Just status ->
-                            ( None
-                            , Request.Status.post url status
+                            Request.Status.post url status
                                 |> Http.toTask
                                 |> Task.attempt Posted
-                            )
                     else
-                        ( Adding, Cmd.none )
+                        Cmd.none
             in
                 { model |
-                    action = action
-                    , disabled = True
-                    , editing = if errors |> List.isEmpty then Nothing else model.editing
+                    disabled = True
                     , errors = errors
                 } ! [ subCmd ]
 
@@ -201,10 +197,13 @@ update url msg model =
                         Just newstatus ->
                             model.status
                                 |> (::) { newstatus | id = status.id }
+                                |> List.sortBy .name
             in
                 { model |
-                    status = st
+                    action = None
                     , editing = Nothing
+                    , errors = []
+                    , status = st
                 } ! []
 
         Posted ( Err err ) ->
@@ -218,8 +217,8 @@ update url msg model =
                             "nop"
             in
             { model |
-                editing = Nothing
---                , errors = (::) ( Validate.Status.ServerError, e ) model.errors
+--                errors = (::) ( Validate.Status.ServerError, e ) model.errors
+                errors = (::) e model.errors
             } ! []
 
         Put ->
@@ -232,23 +231,20 @@ update url msg model =
                         Just status ->
                             Validate.Status.errors status
 
-                ( action, subCmd ) = if errors |> List.isEmpty then
+                subCmd = if errors |> List.isEmpty then
                     case model.editing of
                         Nothing ->
-                            ( None, Cmd.none )
+                            Cmd.none
 
                         Just status ->
-                            ( None
-                            , Request.Status.put url status
+                            Request.Status.put url status
                                 |> Http.toTask
                                 |> Task.attempt Putted
-                            )
                     else
-                        ( Editing, Cmd.none )
+                        Cmd.none
             in
                 { model |
-                    action = action
-                    , disabled = True
+                    disabled = True
                     , errors = errors
                 } ! [ subCmd ]
 
@@ -261,12 +257,17 @@ update url msg model =
 
                         Just newStatus ->
                             model.status
-                                |> List.filter ( \m -> st.id /= m.id )
-                                |> (::) { newStatus | id = st.id }
+                                |> List.map ( \m ->
+                                        if st.id /= m.id
+                                        then m
+                                        else { newStatus | id = st.id }
+                                    )
             in
                 { model |
-                    status = status
+                    action = None
+                    , status = status
                     , editing = Nothing
+                    , errors = []
                 } ! []
 
         Putted ( Err err ) ->
@@ -280,8 +281,8 @@ update url msg model =
                             "nop"
             in
             { model |
-                editing = Nothing
---                , errors = (::) ( Validate.Status.ServerError, e ) model.errors
+--                errors = (::) ( Validate.Status.ServerError, e ) model.errors
+                errors = (::) e model.errors
             } ! []
 
         SetTableState newState ->

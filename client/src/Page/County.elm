@@ -215,24 +215,20 @@ update url msg model =
                         Just city ->
                             Validate.City.errors city
 
-                ( action, subCmd ) = if errors |> List.isEmpty then
+                subCmd = if errors |> List.isEmpty then
                     case model.editing of
                         Nothing ->
-                            ( None, Cmd.none )
+                            Cmd.none
 
                         Just city ->
-                            ( None
-                            , Request.City.post url city
+                            Request.City.post url city
                                 |> Http.toTask
                                 |> Task.attempt Posted
-                            )
                     else
-                        ( Adding, Cmd.none )
+                        Cmd.none
             in
             { model |
-                action = action
-                , disabled = True
---                , editing = if errors |> List.isEmpty then Nothing else model.editing
+                disabled = True
                 , errors = errors
             } ! [ subCmd ]
 
@@ -246,10 +242,13 @@ update url msg model =
                         Just newCity ->
                             model.cities
                                 |> (::) { newCity | id = city.id }
+                                |> List.sortBy .name
             in
             { model |
-                cities = cities
+                action = None
+                , cities = cities
                 , editing = Nothing
+                , errors = []
             } ! []
 
         Posted ( Err err ) ->
@@ -263,8 +262,7 @@ update url msg model =
                             "nop"
             in
             { model |
-                editing = Nothing
-                , errors = (::) e model.errors
+                errors = (::) e model.errors
             } ! []
 
         Put ->
@@ -277,23 +275,20 @@ update url msg model =
                         Just city ->
                             Validate.City.errors city
 
-                ( action, subCmd ) = if errors |> List.isEmpty then
+                subCmd = if errors |> List.isEmpty then
                     case model.editing of
                         Nothing ->
-                            ( None, Cmd.none )
+                            Cmd.none
 
                         Just city ->
-                            ( None
-                            , Request.City.put url city
+                            Request.City.put url city
                                 |> Http.toTask
                                 |> Task.attempt Putted
-                            )
                     else
-                        ( Editing, Cmd.none )
+                        Cmd.none
             in
             { model |
-                action = action
-                , disabled = True
+                disabled = True
                 , errors = errors
             } ! [ subCmd ]
 
@@ -306,12 +301,17 @@ update url msg model =
 
                         Just newCity ->
                             model.cities
-                                |> List.filter ( \m -> city.id /= m.id )
-                                |> (::) { newCity | id = city.id }
+                                |> List.map ( \m ->
+                                        if city.id /= m.id
+                                        then m
+                                        else { newCity | id = city.id }
+                                    )
             in
             { model |
-                cities = cities
+                action = None
+                , cities = cities
                 , editing = Nothing
+                , errors = []
             } ! []
 
         Putted ( Err err ) ->
@@ -325,8 +325,7 @@ update url msg model =
                             "nop"
             in
             { model |
-                editing = Nothing
-                , errors = (::) e model.errors
+                errors = (::) e model.errors
             } ! []
 
         SelectCounty city countyID ->

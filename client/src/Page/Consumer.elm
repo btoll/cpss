@@ -546,23 +546,20 @@ update url msg model =
                         Just consumer ->
                             Validate.Consumer.errors consumer
 
-                ( action, subCmd ) = if errors |> List.isEmpty then
+                subCmd = if errors |> List.isEmpty then
                     case model.editing of
                         Nothing ->
-                            ( None, Cmd.none )
+                            Cmd.none
 
                         Just consumer ->
-                            ( None
-                            , Request.Consumer.post url consumer
+                            Request.Consumer.post url consumer
                                 |> Http.toTask
                                 |> Task.attempt Posted
-                            )
                     else
-                        ( Adding, Cmd.none )
+                        Cmd.none
             in
                 { model |
-                    action = action
-                    , disabled = True
+                    disabled = True
                     , errors = errors
                 } ! [ subCmd ]
 
@@ -576,10 +573,13 @@ update url msg model =
                         Just newConsumer ->
                             model.consumers
                                 |> (::) { newConsumer | id = consumer.id }
+                                |> List.sortBy .lastname
             in
             { model |
-                consumers = consumers
+                action = None
+                , consumers = consumers
                 , editing = Nothing
+                , errors = []
             } ! []
 
         Posted ( Err err ) ->
@@ -593,8 +593,7 @@ update url msg model =
                             "nop"
             in
             { model |
-                editing = Nothing
-                , errors = (::) e model.errors
+                errors = (::) e model.errors
             } ! []
 
         Put ->
@@ -607,23 +606,20 @@ update url msg model =
                         Just consumer ->
                             Validate.Consumer.errors consumer
 
-                ( action, subCmd ) = if errors |> List.isEmpty then
+                subCmd = if errors |> List.isEmpty then
                     case model.editing of
                         Nothing ->
-                            ( None, Cmd.none )
+                            Cmd.none
 
                         Just consumer ->
-                            ( None
-                            , Request.Consumer.put url consumer
+                            Request.Consumer.put url consumer
                                 |> Http.toTask
                                 |> Task.attempt Putted
-                            )
                     else
-                        ( Editing, Cmd.none )
+                        Cmd.none
             in
             { model |
-                action = action
-                , disabled = True
+                disabled = True
                 , errors = errors
             } ! [ subCmd ]
 
@@ -636,12 +632,18 @@ update url msg model =
 
                         Just newConsumer ->
                             model.consumers
-                                |> List.filter ( \m -> consumer.id /= m.id )
-                                |> (::) { newConsumer | id = consumer.id }
+                                -- Keep sort order.
+                                |> List.map ( \m ->
+                                        if consumer.id /= m.id
+                                        then m
+                                        else { newConsumer | id = consumer.id }
+                                    )
             in
                 { model |
-                    consumers = consumers
+                    action = None
+                    , consumers = consumers
                     , editing = Nothing
+                    , errors = []
                 -- TODO
                 -- Note that we need to redownload the consumers with each successful update b/c new service code (blocks) can/may have been added!
                 -- The service codes come down with the consumers.  This will probably become untenable since we're fetching everything when we really
@@ -660,8 +662,7 @@ update url msg model =
                             "nop"
             in
             { model |
-                editing = Nothing
-                , errors = (::) e model.errors
+                errors = (::) e model.errors
             } ! []
 
         Search ->
