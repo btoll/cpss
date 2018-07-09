@@ -18,6 +18,12 @@ type Msg
 
 
 
+defaultQuery : Dict String String
+defaultQuery =
+    [ ( "active", "1" )] |> Dict.fromList
+
+
+
 update : Maybe Query -> Msg -> ( Bool, Maybe Query )
 update query msg =
     case msg of
@@ -40,7 +46,7 @@ view query =
     let
         q =
             query
-                |> Maybe.withDefault Dict.empty
+                |> Maybe.withDefault defaultQuery
     in
     form [ onSubmit Submit ]
         [ h3 [] [ "Consumer Search" |> text ]
