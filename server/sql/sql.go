@@ -156,10 +156,11 @@ func VerifyPassword(username, password string) (interface{}, error) {
 	var saltedHash string
 	var firstname string
 	var lastname string
+	var active bool
 	var email string
 	var payrate float64
 	var authLevel int
-	err = row.Scan(&id, &username, &saltedHash, &firstname, &lastname, &email, &payrate, &authLevel)
+	err = row.Scan(&id, &username, &saltedHash, &firstname, &lastname, &active, &email, &payrate, &authLevel)
 	if err != nil {
 		return nil, err
 	}
@@ -173,6 +174,7 @@ func VerifyPassword(username, password string) (interface{}, error) {
 		Password:  saltedHash,
 		Firstname: firstname,
 		Lastname:  lastname,
+		Active:    active,
 		Email:     email,
 		Payrate:   payrate,
 		AuthLevel: authLevel,

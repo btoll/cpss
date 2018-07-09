@@ -26,6 +26,7 @@ type alias User =
     , password : String
     , firstname : String
     , lastname : String
+    , active : Bool
     , email : String
     , payrate : Float
     , authLevel : Int
@@ -45,6 +46,7 @@ new =
     , password = ""
     , firstname = ""
     , lastname = ""
+    , active = True
     , email = ""
     , payrate = 0.00
     , authLevel = -1
@@ -59,6 +61,7 @@ decoder =
         |> optional "password" string ""
         |> optional "firstname" string ""
         |> optional "lastname" string ""
+        |> optional "active" bool True
         |> optional "email" string ""
         |> optional "payrate" float 0.00
         |> optional "authLevel" int 1
@@ -92,6 +95,7 @@ encoder user =
         , ( "password", Encode.string user.password )
         , ( "firstname", Encode.string user.firstname )
         , ( "lastname", Encode.string user.lastname )
+        , ( "active", Encode.bool user.active )
         , ( "email", Encode.string user.email )
         , ( "payrate", Encode.float user.payrate )
         , ( "authLevel", Encode.int user.authLevel )

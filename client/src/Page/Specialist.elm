@@ -7,7 +7,7 @@ import Data.User as User exposing (User, UserWithPager, new)
 import Dict exposing (Dict)
 import Html exposing (Html, Attribute, button, div, form, h1, h3, input, label, li, section, text, ul)
 import Html.Attributes exposing (autofocus, action, autofocus, checked, class, for, hidden, id, step, style, type_, value)
-import Html.Events exposing (onClick, onInput, onSubmit)
+import Html.Events exposing (onCheck, onClick, onInput, onSubmit)
 import Http
 import Request.PayHistory
 import Request.Session
@@ -84,6 +84,7 @@ type Msg
     | Put ViewAction
     | Putted ( Result Http.Error User )
     | Search
+    | SetCheckboxValue ( Bool -> User ) Bool
     | SetFormValue ( String -> User ) String
     | SetPasswordValue ( String -> Model ) String
     | SetTableState Table.State
@@ -428,6 +429,12 @@ update url msg model =
                 , errors = []
             } ! []
 
+        SetCheckboxValue setBoolValue b ->
+            { model |
+                editing = setBoolValue b |> Just
+                , disabled = False
+            } ! []
+
         SetFormValue setFormValue s ->
             { model |
                 editing = s |> setFormValue |> Just
@@ -646,6 +653,11 @@ formRows action editable =
         , onInput ( SetFormValue (\v -> { editable | lastname = v } ) )
         ]
         []
+    , Form.checkbox "Active"
+        [ checked editable.active
+        , onCheck ( SetCheckboxValue ( \v -> { editable | active = v } ) )
+        ]
+        []
     , Form.text "Email"
         [ value editable.email
         , onInput ( SetFormValue (\v -> { editable | email = v } ) )
@@ -687,23 +699,24 @@ config =
         )
         , Table.stringColumn "First Name" .firstname
         , Table.stringColumn "Last Name" .lastname
+        , customColumn viewCheckbox "Active"
         , Table.stringColumn "Username" .username
         , Table.stringColumn "Email" .email
         , Table.floatColumn "Pay Rate" .payrate
         , Table.stringColumn "Auth Level" ( .authLevel >> toString >> ( \s -> if s |> (==) "1" then "Admin" else "User" ) )
-        , customColumn ( viewButton Edit "Edit" )
-        , customColumn ( viewButton Delete "Delete" )
-        , customColumn ( viewButton ChangePassword "Change Password" )
-        , customColumn ( viewButton ShowPayHistory "Pay History" )
+        , customColumn ( viewButton Edit "Edit" ) ""
+        , customColumn ( viewButton Delete "Delete" ) ""
+        , customColumn ( viewButton ChangePassword "Change Password" ) ""
+        , customColumn ( viewButton ShowPayHistory "Pay History" ) ""
         ]
     , customizations = defaultCustomizations
     }
 
 
-customColumn : ( User -> Table.HtmlDetails Msg ) -> Table.Column User Msg
-customColumn viewElement =
+customColumn : ( User -> Table.HtmlDetails Msg ) -> String -> Table.Column User Msg
+customColumn viewElement header =
     Table.veryCustomColumn
-        { name = ""
+        { name = header
         , viewData = viewElement
         , sorter = Table.unsortable
         }
@@ -714,5 +727,12 @@ viewButton msg name specialist =
     Table.HtmlDetails []
         [ button [ onClick <| msg <| specialist ] [ text name ]
         ]
+
+
+viewCheckbox : User -> Table.HtmlDetails Msg
+viewCheckbox { active } =
+  Table.HtmlDetails []
+    [ input [ checked active, Html.Attributes.disabled True, type_ "checkbox" ] []
+    ]
 
 

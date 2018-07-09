@@ -52,6 +52,10 @@ var SessionPayload = Type("SessionPayload", func() {
 		Metadata("struct:tag:datastore", "lastname,noindex")
 		Metadata("struct:tag:json", "lastname")
 	})
+	Attribute("active", Boolean, "Session active", func() {
+		Metadata("struct:tag:datastore", "active,noindex")
+		Metadata("struct:tag:json", "active")
+	})
 	Attribute("email", String, "Session email", func() {
 		Metadata("struct:tag:datastore", "email,noindex")
 		Metadata("struct:tag:json", "email")
@@ -80,11 +84,12 @@ var SessionMedia = MediaType("application/sessionapi.sessionentity", func() {
 		Attribute("password")
 		Attribute("firstname")
 		Attribute("lastname")
+		Attribute("active")
 		Attribute("email")
 		Attribute("payrate", Number)
 		Attribute("authLevel", Integer)
 
-		Required("id", "username", "password", "firstname", "lastname", "email", "payrate", "authLevel")
+		Required("id", "username", "password", "firstname", "lastname", "active", "email", "payrate", "authLevel")
 	})
 
 	View("default", func() {
@@ -93,6 +98,7 @@ var SessionMedia = MediaType("application/sessionapi.sessionentity", func() {
 		Attribute("password")
 		Attribute("firstname")
 		Attribute("lastname")
+		Attribute("active")
 		Attribute("email")
 		Attribute("payrate")
 		Attribute("authLevel")

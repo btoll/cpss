@@ -92,6 +92,10 @@ var SpecialistPayload = Type("SpecialistPayload", func() {
 		Metadata("struct:tag:datastore", "lastname,noindex")
 		Metadata("struct:tag:json", "lastname")
 	})
+	Attribute("active", Boolean, "Specialist active", func() {
+		Metadata("struct:tag:datastore", "active,noindex")
+		Metadata("struct:tag:json", "active")
+	})
 	Attribute("email", String, "Specialist email", func() {
 		Metadata("struct:tag:datastore", "email,noindex")
 		Metadata("struct:tag:json", "email")
@@ -105,7 +109,7 @@ var SpecialistPayload = Type("SpecialistPayload", func() {
 		Metadata("struct:tag:json", "authLevel")
 	})
 
-	Required("username", "password", "firstname", "lastname", "email", "payrate", "authLevel")
+	Required("username", "password", "firstname", "lastname", "active", "email", "payrate", "authLevel")
 })
 
 var SpecialistQueryPayload = Type("SpecialistQueryPayload", func() {
@@ -125,11 +129,12 @@ var SpecialistItem = Type("specialistItem", func() {
 	Attribute("password")
 	Attribute("firstname")
 	Attribute("lastname")
+	Attribute("active")
 	Attribute("email")
 	Attribute("payrate")
 	Attribute("authLevel")
 
-	Required("id", "username", "password", "firstname", "lastname", "email", "payrate", "authLevel")
+	Required("id", "username", "password", "firstname", "lastname", "active", "email", "payrate", "authLevel")
 
 })
 
@@ -145,13 +150,14 @@ var SpecialistMedia = MediaType("application/specialistapi.specialistentity", fu
 		Attribute("password")
 		Attribute("firstname")
 		Attribute("lastname")
+		Attribute("active")
 		Attribute("email")
 		Attribute("payrate")
 		Attribute("authLevel")
 		Attribute("users", ArrayOf("specialistItem"))
 		Attribute("pager", Pager)
 
-		Required("id", "username", "password", "firstname", "lastname", "email", "payrate", "authLevel", "users", "pager")
+		Required("id", "username", "password", "firstname", "lastname", "active", "email", "payrate", "authLevel", "users", "pager")
 	})
 
 	View("default", func() {
@@ -160,6 +166,7 @@ var SpecialistMedia = MediaType("application/specialistapi.specialistentity", fu
 		Attribute("password")
 		Attribute("firstname")
 		Attribute("lastname")
+		Attribute("active")
 		Attribute("email")
 		Attribute("payrate")
 		Attribute("authLevel")

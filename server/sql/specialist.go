@@ -19,10 +19,10 @@ func NewSpecialist(payload interface{}) *Specialist {
 		Data: payload,
 		Stmt: map[string]string{
 			"DELETE":             "DELETE FROM specialist WHERE id=?",
-			"INSERT":             "INSERT specialist SET username=?,password=?,firstname=?,lastname=?,email=?,payrate=?,authLevel=?",
+			"INSERT":             "INSERT specialist SET username=?,password=?,firstname=?,lastname=?,active=?,email=?,payrate=?,authLevel=?",
 			"INSERT_PAY_HISTORY": "INSERT pay_history VALUES (NULL, ?, ?, ?)",
 			"SELECT":             "SELECT %s FROM specialist %s",
-			"UPDATE":             "UPDATE specialist SET username=?,password=?,firstname=?,lastname=?,email=?,payrate=?,authLevel=? WHERE id=?",
+			"UPDATE":             "UPDATE specialist SET username=?,password=?,firstname=?,lastname=?,active=?,email=?,payrate=?,authLevel=? WHERE id=?",
 		},
 	}
 }
@@ -48,11 +48,12 @@ func (s *Specialist) CollectRows(rows *mysql.Rows, coll []*app.SpecialistItem) e
 		var password string
 		var firstname string
 		var lastname string
+		var active bool
 		var email string
 		var payrate float64
 		var authLevel int
 		var fullname string
-		err := rows.Scan(&id, &username, &password, &firstname, &lastname, &email, &payrate, &authLevel, &fullname)
+		err := rows.Scan(&id, &username, &password, &firstname, &lastname, &active, &email, &payrate, &authLevel, &fullname)
 		if err != nil {
 			return err
 		}
@@ -62,6 +63,7 @@ func (s *Specialist) CollectRows(rows *mysql.Rows, coll []*app.SpecialistItem) e
 			Password:  password,
 			Firstname: firstname,
 			Lastname:  lastname,
+			Active:    active,
 			Email:     email,
 			Payrate:   payrate,
 			AuthLevel: authLevel,
@@ -105,7 +107,7 @@ func (s *Specialist) Create(db *mysql.DB) (interface{}, error) {
 		return -1, err
 	}
 	saltedHash := SaltAndHash(payload.Password)
-	res, err := stmt.Exec(payload.Username, saltedHash, payload.Firstname, payload.Lastname, payload.Email, payload.Payrate, payload.AuthLevel)
+	res, err := stmt.Exec(payload.Username, saltedHash, payload.Firstname, payload.Lastname, payload.Active, payload.Email, payload.Payrate, payload.AuthLevel)
 	if err != nil {
 		return -1, err
 	}
@@ -122,6 +124,7 @@ func (s *Specialist) Create(db *mysql.DB) (interface{}, error) {
 		Password:  string(saltedHash),
 		Firstname: payload.Firstname,
 		Lastname:  payload.Lastname,
+		Active:    payload.Active,
 		Email:     payload.Email,
 		Payrate:   payload.Payrate,
 		AuthLevel: payload.AuthLevel,
@@ -140,10 +143,11 @@ func (s *Specialist) Read(db *mysql.DB) (interface{}, error) {
 		var password string
 		var firstname string
 		var lastname string
+		var active bool
 		var email string
 		var payrate float64
 		var authLevel int
-		err := row.Scan(&id, &username, &password, &firstname, &lastname, &email, &payrate, &authLevel)
+		err := row.Scan(&id, &username, &password, &firstname, &lastname, &active, &email, &payrate, &authLevel)
 		if err != nil {
 			return nil, err
 		}
@@ -153,6 +157,7 @@ func (s *Specialist) Read(db *mysql.DB) (interface{}, error) {
 			Password:  password,
 			Firstname: firstname,
 			Lastname:  lastname,
+			Active:    active,
 			Email:     email,
 			Payrate:   payrate,
 			AuthLevel: authLevel,
@@ -183,7 +188,7 @@ func (s *Specialist) Update(db *mysql.DB) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, err = stmt.Exec(payload.Username, payload.Password, payload.Firstname, payload.Lastname, payload.Email, payload.Payrate, payload.AuthLevel, payload.ID)
+	_, err = stmt.Exec(payload.Username, payload.Password, payload.Firstname, payload.Lastname, payload.Active, payload.Email, payload.Payrate, payload.AuthLevel, payload.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -193,6 +198,7 @@ func (s *Specialist) Update(db *mysql.DB) (interface{}, error) {
 		Password:  payload.Password,
 		Firstname: payload.Firstname,
 		Lastname:  payload.Lastname,
+		Active:    payload.Active,
 		Email:     payload.Email,
 		Payrate:   payload.Payrate,
 		AuthLevel: payload.AuthLevel,
@@ -221,7 +227,8 @@ func (s *Specialist) List(db *mysql.DB) (interface{}, error) {
 			return nil, err
 		}
 	}
-	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*, CONCAT(lastname,', ',firstname) AS fullname", "ORDER BY fullname ASC"))
+	// Default to only displaying active Specialists.
+	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*, CONCAT(lastname,', ',firstname) AS fullname", "WHERE active=1 ORDER BY fullname ASC"))
 	if err != nil {
 		return nil, err
 	}
@@ -236,7 +243,8 @@ func (s *Specialist) List(db *mysql.DB) (interface{}, error) {
 func (s *Specialist) Page(db *mysql.DB) (interface{}, error) {
 	query := s.Data.(*PageQuery)
 	limit := query.Page * RecordsPerPage
-	whereClause := ""
+	// Default to only displaying active Consumers.
+	whereClause := "WHERE active=1"
 	if query.WhereClause != "" {
 		whereClause = fmt.Sprintf("WHERE %s", query.WhereClause)
 	}
