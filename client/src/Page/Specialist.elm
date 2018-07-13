@@ -12,6 +12,7 @@ import Http
 import Request.PayHistory
 import Request.Session
 import Request.Specialist
+import Search.Specialist
 import Table exposing (defaultCustomizations)
 import Task exposing (Task)
 import Validate.Specialist
@@ -58,7 +59,8 @@ init url =
     , query = Nothing
     , pager = Data.Pager.new
     } ! [ 0
-            |> Request.Specialist.page url ""
+            |> Request.Specialist.page url
+                ( String.dropRight 5 << Dict.foldl fmtFuzzyMatch "" <| Search.Specialist.defaultQuery )
             |> Http.send FetchedSpecialists
         ]
 

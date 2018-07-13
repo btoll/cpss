@@ -1,4 +1,4 @@
-module Search.Consumer exposing (Msg, update, view)
+module Search.Consumer exposing (Msg, defaultQuery, update, view)
 
 import Data.Search exposing (Query)
 import Dict exposing (Dict)

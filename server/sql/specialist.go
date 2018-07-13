@@ -227,8 +227,7 @@ func (s *Specialist) List(db *mysql.DB) (interface{}, error) {
 			return nil, err
 		}
 	}
-	// Default to only displaying active Specialists.
-	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*, CONCAT(lastname,', ',firstname) AS fullname", "WHERE active=1 ORDER BY fullname ASC"))
+	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*, CONCAT(lastname,', ',firstname) AS fullname", "ORDER BY fullname ASC"))
 	if err != nil {
 		return nil, err
 	}
@@ -243,9 +242,10 @@ func (s *Specialist) List(db *mysql.DB) (interface{}, error) {
 func (s *Specialist) Page(db *mysql.DB) (interface{}, error) {
 	query := s.Data.(*PageQuery)
 	limit := query.Page * RecordsPerPage
-	// Default to only displaying active Consumers.
-	whereClause := "WHERE active=1"
-	if query.WhereClause != "" {
+	var whereClause string
+	if query.WhereClause == "" {
+		whereClause = ""
+	} else {
 		whereClause = fmt.Sprintf("WHERE %s", query.WhereClause)
 	}
 	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)", whereClause))

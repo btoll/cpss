@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS `specialist` (
   `active` tinyint DEFAULT 1,
   `email` varchar(100) DEFAULT NULL,
   `payrate` float DEFAULT 0.0,
-  `authLevel` int DEFAULT 1,
+  `authLevel` int DEFAULT 2,
   PRIMARY KEY (`id`),
   KEY `ID` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 ;

@@ -20,6 +20,7 @@ import Request.County
 import Request.DIA
 import Request.FundingSource
 import Request.ServiceCode
+import Search.Consumer
 import Table exposing (defaultCustomizations)
 import Task exposing (Task)
 import Validate.Consumer
@@ -79,8 +80,12 @@ init url =
     , Request.FundingSource.list url |> Http.send ( FundingSources >> Fetch )
     , Request.ServiceCode.list url |> Http.send ( ServiceCodes >> Fetch )
     , Request.County.list url |> Http.send ( Counties >> Fetch )
-    , 0 |> Request.Consumer.page url "" |> Http.send ( Consumers >> Fetch )
+    , 0
+        |> Request.Consumer.page url
+            ( String.dropRight 5 << Dict.foldl fmtFuzzyMatch "" <| Search.Consumer.defaultQuery )
+        |> Http.send ( Consumers >> Fetch )
     ]
+
 
 
 -- UPDATE

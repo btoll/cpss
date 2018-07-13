@@ -1,4 +1,4 @@
-module Search.Specialist exposing (Msg, update, view)
+module Search.Specialist exposing (Msg, defaultQuery, update, view)
 
 import Data.Search exposing (Query)
 import Dict exposing (Dict)
