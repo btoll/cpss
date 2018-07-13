@@ -4,6 +4,7 @@ module Page.BillSheet.TimeEntry exposing (Model, Msg, formRows, init, tableColum
 import Data.BillSheet exposing (BillSheet, new)
 import Data.Consumer exposing (Consumer)
 import Data.Search exposing (ViewLists)
+import Data.ServiceCode exposing (ServiceCode)
 import Data.Status exposing (Status)
 import Data.User exposing (User)
 import Date exposing (Date, Day(..), day, dayOfWeek, month, year)
@@ -272,6 +273,7 @@ tableColumns customColumn viewButton viewCheckbox editMsg deleteMsg viewLists =
     let
         consumers = Maybe.withDefault [] viewLists.consumers
         counties = Maybe.withDefault [] viewLists.counties
+        serviceCodes = Maybe.withDefault [] viewLists.serviceCodes
     in
     [ Table.stringColumn "Consumer" (
         .consumer
@@ -283,7 +285,15 @@ tableColumns customColumn viewButton viewCheckbox editMsg deleteMsg viewLists =
             >> ( \m -> m.lastname ++ ", " ++  m.firstname )
     )
     , Table.stringColumn "Service Date" .serviceDate
-    , Table.intColumn "Service Code" .serviceCode
+    , Table.stringColumn "ServiceCode" (
+        .serviceCode
+            >> ( \id ->
+                serviceCodes |> List.filter ( \m -> m.id |> (==) id )
+                )
+            >> List.head
+            >> Maybe.withDefault Data.ServiceCode.new
+            >> .name
+    )
     , customColumn "Hold" viewCheckbox
     , Table.floatColumn "Hours" .hours
     , Table.stringColumn "Description" .description

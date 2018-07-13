@@ -4,6 +4,7 @@ module Page.BillSheet.BillSheet exposing (Model, Msg, formRows, init, tableColum
 import Data.BillSheet exposing (BillSheet, new)
 import Data.Consumer exposing (Consumer)
 import Data.Search exposing (ViewLists)
+import Data.ServiceCode exposing (ServiceCode)
 import Data.Status exposing (Status)
 import Data.User exposing (User)
 import Date exposing (Date, Day(..), day, dayOfWeek, month, year)
@@ -292,12 +293,21 @@ tableColumns customColumn viewButton viewCheckbox editMsg deleteMsg viewLists =
     let
         consumers = Maybe.withDefault [] viewLists.consumers
         counties = Maybe.withDefault [] viewLists.counties
+        serviceCodes = Maybe.withDefault [] viewLists.serviceCodes
         specialists = Maybe.withDefault [] viewLists.specialists
         status = Maybe.withDefault [] viewLists.status
     in
     [ Table.stringColumn "Recipient ID" .recipientID
     , Table.stringColumn "Service Date" .serviceDate
-    , Table.intColumn "Service Code" .serviceCode
+    , Table.stringColumn "ServiceCode" (
+        .serviceCode
+            >> ( \id ->
+                serviceCodes |> List.filter ( \m -> m.id |> (==) id )
+                )
+            >> List.head
+            >> Maybe.withDefault Data.ServiceCode.new
+            >> .name
+    )
     , customColumn "Hold" viewCheckbox
     , Table.floatColumn "Units" .units
     , Table.floatColumn "Billed Amount" .billedAmount

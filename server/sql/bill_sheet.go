@@ -264,7 +264,7 @@ func (s *BillSheet) Page(db *mysql.DB) (interface{}, error) {
 			return nil, err
 		}
 	}
-	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "billsheet.*", fmt.Sprintf("%s WHERE active.id = 1 %s LIMIT %d,%d", s.Stmt["CONSUMER_INNER_JOIN"], whereClause, limit, RecordsPerPage)))
+	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "billsheet.*", fmt.Sprintf("%s WHERE active.id = 1 %s ORDER BY billsheet.serviceDate DESC LIMIT %d,%d", s.Stmt["CONSUMER_INNER_JOIN"], whereClause, limit, RecordsPerPage)))
 	if err != nil {
 		return nil, err
 	}

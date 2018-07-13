@@ -86,6 +86,15 @@ view user query viewLists =
                             |> (::) ( "-1", "-- Select a consumer --" )
                             |> List.map ( "billsheet.consumer" |> getSelection q |> Form.option )
                     )
+                , Form.select "Service Code"
+                    [ "serviceCodeSelection" |> id
+                    , Select Form.ServiceCodeID |> onInput
+                    ] (
+                        serviceCodes
+                            |> List.map ( \m -> ( m.id |> toString, m.name ) )
+                            |> (::) ( "-1", "-- Select a service code --" )
+                            |> List.map ( "billsheet.serviceCode" |> getSelection q |> Form.option )
+                    )
                 , Form.select "Status"
                     [ "statusSelection" |> id
                     , Select Form.StatusID |> onInput
