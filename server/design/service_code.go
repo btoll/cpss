@@ -58,8 +58,16 @@ var ServiceCodePayload = Type("ServiceCodePayload", func() {
 		Metadata("struct:tag:datastore", "name,noindex")
 		Metadata("struct:tag:json", "name")
 	})
+	Attribute("unitRate", Number, "Service code unit rate", func() {
+		Metadata("struct:tag:datastore", "unitRate,noindex")
+		Metadata("struct:tag:json", "unitRate")
+	})
+	Attribute("description", String, "Service code description", func() {
+		Metadata("struct:tag:datastore", "description,noindex")
+		Metadata("struct:tag:json", "description")
+	})
 
-	Required("name")
+	Required("name", "unitRate", "description")
 })
 
 var ServiceCodeMedia = MediaType("application/servicecodeapi.servicecodeentity", func() {
@@ -71,13 +79,17 @@ var ServiceCodeMedia = MediaType("application/servicecodeapi.servicecodeentity",
 	Attributes(func() {
 		Attribute("id")
 		Attribute("name")
+		Attribute("unitRate")
+		Attribute("description")
 
-		Required("id", "name")
+		Required("id", "name", "unitRate", "description")
 	})
 
 	View("default", func() {
 		Attribute("id")
 		Attribute("name")
+		Attribute("unitRate")
+		Attribute("description")
 	})
 
 	View("tiny", func() {

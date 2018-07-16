@@ -370,6 +370,16 @@ formRows editable =
         , autofocus True
         ]
         []
+    , Form.float "Unit Rate"
+        [ editable.unitRate |> toString |> value
+        , onInput ( SetFormValue ( \v -> { editable | unitRate = v |> Form.toFloat } ) )
+        ]
+        []
+    , Form.textarea "Description"
+        [ value editable.description
+        , onInput ( SetFormValue ( \v -> { editable | description = v } ) )
+        ]
+        []
     ]
 -- TABLE CONFIGURATION
 
@@ -383,6 +393,8 @@ config =
     , toMsg = SetTableState
     , columns =
         [ Table.stringColumn "Service Code" .name
+        , Table.floatColumn "Unit Rate" .unitRate
+        , Table.stringColumn "Description" .description
         , customColumn ( viewButton Edit "Edit" )
         , customColumn ( viewButton Delete "Delete" )
         ]

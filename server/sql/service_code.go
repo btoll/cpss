@@ -17,9 +17,9 @@ func NewServiceCode(payload interface{}) *ServiceCode {
 		Data: payload,
 		Stmt: map[string]string{
 			"DELETE": "DELETE FROM service_code WHERE id=?",
-			"INSERT": "INSERT service_code SET name=?",
+			"INSERT": "INSERT service_code SET name=?,unitRate=?,description=?",
 			"SELECT": "SELECT %s FROM service_code ORDER BY name",
-			"UPDATE": "UPDATE service_code SET name=? WHERE id=?",
+			"UPDATE": "UPDATE service_code SET name=?,unitRate=?,description=? WHERE id=?",
 		},
 	}
 }
@@ -39,8 +39,10 @@ func (s *ServiceCode) Create(db *mysql.DB) (interface{}, error) {
 		return -1, err
 	}
 	return &app.ServiceCodeMedia{
-		ID:   int(id),
-		Name: payload.Name,
+		ID:          int(id),
+		Name:        payload.Name,
+		UnitRate:    payload.UnitRate,
+		Description: payload.Description,
 	}, nil
 }
 
@@ -51,13 +53,15 @@ func (s *ServiceCode) Update(db *mysql.DB) (interface{}, error) {
 		return nil, err
 	}
 
-	_, err = stmt.Exec(payload.Name, payload.ID)
+	_, err = stmt.Exec(payload.Name, payload.UnitRate, payload.Description, payload.ID)
 	if err != nil {
 		return nil, err
 	}
 	return &app.ServiceCodeMedia{
-		ID:   *payload.ID,
-		Name: payload.Name,
+		ID:          *payload.ID,
+		Name:        payload.Name,
+		UnitRate:    payload.UnitRate,
+		Description: payload.Description,
 	}, nil
 }
 
@@ -92,13 +96,17 @@ func (s *ServiceCode) List(db *mysql.DB) (interface{}, error) {
 	for rows.Next() {
 		var id int
 		var name string
-		err = rows.Scan(&id, &name)
+		var unitRate float64
+		var description string
+		err = rows.Scan(&id, &name, &unitRate, &description)
 		if err != nil {
 			return nil, err
 		}
 		coll[i] = &app.ServiceCodeMedia{
-			ID:   id,
-			Name: name,
+			ID:          id,
+			Name:        name,
+			UnitRate:    unitRate,
+			Description: description,
 		}
 		i++
 	}

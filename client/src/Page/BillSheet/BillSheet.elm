@@ -231,11 +231,12 @@ formRows viewLists model =
         , onInput ( SetFormValue (\v -> { editable | units = Form.toFloat v } ) )
         ]
         []
-    , Form.float "Billed Amount"
-        [ editable.billedAmount |> toString |> value
-        , onInput ( SetFormValue (\v -> { editable | billedAmount = Form.toFloat v } ) )
-        ]
-        []
+--    , Form.float "Billed Amount"
+--        [ editable.billedAmount |> toString |> value
+--        , onInput ( SetFormValue (\v -> { editable | billedAmount = Form.toFloat v } ) )
+--        , True |> Html.Attributes.disabled
+--        ]
+--        []
     , Form.select "Consumer"
         [ id "consumerSelection"
         , editable |> Select Form.ConsumerID |> onInput
@@ -277,11 +278,6 @@ formRows viewLists model =
                 |> (::) ( "-1", "-- Select a specialist --" )
                 |> List.map ( editable.specialist |> toString |> Form.option )
         )
-    , Form.text "Record Number"
-        [ value editable.recordNumber
-        , onInput ( SetFormValue (\v -> { editable | recordNumber = v } ) )
-        ]
-        []
     ]
 
 
@@ -348,7 +344,6 @@ tableColumns customColumn viewButton viewCheckbox editMsg deleteMsg viewLists =
             >> Maybe.withDefault Data.User.new
             >> ( \m -> m.lastname ++ ", " ++  m.firstname )
     )
-    , Table.stringColumn "Record Number" .recordNumber
     , customColumn "" ( viewButton editMsg "Edit" )
     , customColumn "" ( viewButton deleteMsg "Delete" )
     ]

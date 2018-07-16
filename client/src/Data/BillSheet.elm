@@ -29,7 +29,6 @@ type alias BillSheet =
     , hold : Bool
     , contractType : String
     , recipientID : String
-    , recordNumber : String
     , status : Int
     , billedCode : String
     , billedAmount : Float
@@ -57,7 +56,6 @@ new =
     , hold = False
     , contractType = ""
     , recipientID = ""
-    , recordNumber = ""
     , status = 1            -- Default to `Billed` status.
     , billedCode = ""
     , billedAmount = 0.0
@@ -80,7 +78,6 @@ decoder =
         |> optional "hold" bool False
         |> optional "contractType" string ""
         |> optional "recipientID" string ""
-        |> optional "recordNumber" string ""
         |> optional "status" int -1
         |> optional "billedCode" string ""
         |> optional "billedAmount" float 0.0
@@ -114,7 +111,6 @@ encoder billsheet =
         , ( "hold", Encode.bool billsheet.hold )
         , ( "contractType", Encode.string billsheet.contractType )
         , ( "recipientID", Encode.string billsheet.recipientID )
-        , ( "recordNumber", Encode.string billsheet.recordNumber )
         , ( "status", Encode.int billsheet.status )
         , ( "billedCode", Encode.string billsheet.billedCode )
         , ( "billedAmount", Encode.float billsheet.billedAmount )
