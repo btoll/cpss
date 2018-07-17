@@ -22,7 +22,6 @@ type alias BillSheet =
     { id : Int
     , specialist : Int
     , consumer : Int
-    , hours : Float
     , units : Float
     , serviceDate : String
     , serviceCode : Int
@@ -49,7 +48,6 @@ new =
     { id = -1
     , specialist = -1
     , consumer = -1
-    , hours = 0.0
     , units = 0.0
     , serviceDate = ""
     , serviceCode = -1
@@ -71,7 +69,6 @@ decoder =
         |> required "id" int
         |> optional "specialist" int -1
         |> optional "consumer" int -1
-        |> optional "hours" float 0.0
         |> optional "units" float 0.0
         |> optional "serviceDate" string ""
         |> optional "serviceCode" int -1
@@ -104,7 +101,6 @@ encoder billsheet =
         [ ( "id", Encode.int billsheet.id )
         , ( "specialist", Encode.int billsheet.specialist )
         , ( "consumer", Encode.int billsheet.consumer )
-        , ( "hours", Encode.float billsheet.hours )
         , ( "units", Encode.float billsheet.units )
         , ( "serviceDate", Encode.string billsheet.serviceDate )
         , ( "serviceCode", Encode.int billsheet.serviceCode )

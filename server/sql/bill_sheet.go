@@ -25,11 +25,11 @@ func NewBillSheet(payload interface{}) *BillSheet {
 			"DELETE":              "DELETE FROM billsheet WHERE id=?",
 			"GET_AUTH_LEVEL":      "SELECT authLevel FROM specialist WHERE id=%d",
 			"GET_UNIT_RATE":       "SELECT unitRate FROM service_code WHERE id=%d",
-			"INSERT":              "INSERT billsheet SET specialist=?,consumer=?,hours=?,units=?,serviceDate=?,serviceCode=?,hold=?,contractType=?,recipientID=?,status=?,billedCode=?,billedAmount=?,county=?,confirmation=?,description=?",
+			"INSERT":              "INSERT billsheet SET specialist=?,consumer=?,units=?,serviceDate=?,serviceCode=?,hold=?,contractType=?,recipientID=?,status=?,billedCode=?,billedAmount=?,county=?,confirmation=?,description=?",
 			"SELECT":              "SELECT %s FROM billsheet %s",
 			"SELECT_UNIT_BLOCK":   "SELECT %s FROM unit_block WHERE consumer=%d AND serviceCode=%d",
 			"UPDATE_UNIT_BLOCK":   "UPDATE unit_block SET units=? WHERE id=?",
-			"UPDATE":              "UPDATE billsheet SET specialist=?,consumer=?,hours=?,units=?,serviceDate=?,serviceCode=?,hold=?,contractType=?,recipientID=?,status=?,billedCode=?,billedAmount=?,county=?,confirmation=?,description=? WHERE id=?",
+			"UPDATE":              "UPDATE billsheet SET specialist=?,consumer=?,units=?,serviceDate=?,serviceCode=?,hold=?,contractType=?,recipientID=?,status=?,billedCode=?,billedAmount=?,county=?,confirmation=?,description=? WHERE id=?",
 		},
 	}
 }
@@ -83,7 +83,6 @@ func (s *BillSheet) CollectRows(rows *mysql.Rows, coll []*app.BillSheetItem) err
 		var id int
 		var specialist int
 		var consumer int
-		var hours float64
 		var units float64
 		var serviceDate string
 		var serviceCode int
@@ -96,7 +95,7 @@ func (s *BillSheet) CollectRows(rows *mysql.Rows, coll []*app.BillSheetItem) err
 		var county int
 		var confirmation string
 		var description string
-		err := rows.Scan(&id, &specialist, &consumer, &hours, &units, &serviceDate, &serviceCode, &hold, &contractType, &recipientID, &status, &billedCode, &billedAmount, &county, &confirmation, &description)
+		err := rows.Scan(&id, &specialist, &consumer, &units, &serviceDate, &serviceCode, &hold, &contractType, &recipientID, &status, &billedCode, &billedAmount, &county, &confirmation, &description)
 		if err != nil {
 			return err
 		}
@@ -104,7 +103,6 @@ func (s *BillSheet) CollectRows(rows *mysql.Rows, coll []*app.BillSheetItem) err
 			ID:           id,
 			Specialist:   specialist,
 			Consumer:     consumer,
-			Hours:        &hours,
 			Units:        &units,
 			ServiceDate:  serviceDate,
 			ServiceCode:  serviceCode,
@@ -143,21 +141,9 @@ func (s *BillSheet) Create(db *mysql.DB) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	// For now, don't update the billsheet table if the auth level lookup fails!
-	var hours float64
-	var units float64
-	if id, err := s.GetAuthLevel(db, payload.Specialist); err != nil {
-		return nil, err
-	} else if id == 1 {
-		units = *payload.Units
-		hours = units / 4.0
-	} else {
-		hours = *payload.Hours
-		units = hours * 4.0
-	}
 	// For now, don't update the billsheet table if the update on consumer fails!
 	// 4 units per hour!
-	err = s.UpdateUnitBlock(db, payload, hours)
+	err = s.UpdateUnitBlock(db, payload, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +151,7 @@ func (s *BillSheet) Create(db *mysql.DB) (interface{}, error) {
 	if err != nil {
 		return -1, err
 	}
-	res, err := stmt.Exec(payload.Specialist, payload.Consumer, hours, units, payload.ServiceDate, payload.ServiceCode, payload.Hold, payload.ContractType, payload.RecipientID, payload.Status, payload.BilledCode, unitRate*units, payload.County, payload.Confirmation, payload.Description)
+	res, err := stmt.Exec(payload.Specialist, payload.Consumer, payload.Units, payload.ServiceDate, payload.ServiceCode, payload.Hold, payload.ContractType, payload.RecipientID, payload.Status, payload.BilledCode, unitRate*(*payload.Units), payload.County, payload.Confirmation, payload.Description)
 	if err != nil {
 		return -1, err
 	}
@@ -337,20 +323,22 @@ func (s *BillSheet) Update(db *mysql.DB) (interface{}, error) {
 		// should hold be checked as `true` for this particular entry!
 		hold = false
 	}
-
-	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "hours", fmt.Sprintf("WHERE id=%d", *payload.ID)))
+	// For now, don't update the billsheet table if the unit rate lookup fails!
+	unitRate, err := s.GetUnitRate(db, payload.ServiceCode)
 	if err != nil {
 		return nil, err
 	}
-	var hours float64
+	// We need to know the current number of units for this record so we can adjust the unit block accordingly!
+	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "units", fmt.Sprintf("WHERE id=%d", *payload.ID)))
+	var units float64
 	for rows.Next() {
-		err = rows.Scan(&hours)
+		err = rows.Scan(&units)
 		if err != nil {
 			return nil, err
 		}
 	}
 	// For now, don't update the billsheet table if the update on unit_block fails!
-	err = s.UpdateUnitBlock(db, payload, hours)
+	err = s.UpdateUnitBlock(db, payload, units)
 	if err != nil {
 		return nil, err
 	}
@@ -358,7 +346,7 @@ func (s *BillSheet) Update(db *mysql.DB) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, err = stmt.Exec(payload.Specialist, payload.Consumer, payload.Hours, payload.Units, payload.ServiceDate, payload.ServiceCode, hold, payload.ContractType, payload.RecipientID, payload.Status, payload.BilledCode, payload.BilledAmount, payload.County, payload.Confirmation, payload.Description, payload.ID)
+	_, err = stmt.Exec(payload.Specialist, payload.Consumer, payload.Units, payload.ServiceDate, payload.ServiceCode, hold, payload.ContractType, payload.RecipientID, payload.Status, payload.BilledCode, unitRate*(*payload.Units), payload.County, payload.Confirmation, payload.Description, payload.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -366,7 +354,6 @@ func (s *BillSheet) Update(db *mysql.DB) (interface{}, error) {
 		ID:           *payload.ID,
 		Specialist:   payload.Specialist,
 		Consumer:     payload.Consumer,
-		Hours:        payload.Hours,
 		Units:        payload.Units,
 		ServiceDate:  payload.ServiceDate,
 		ServiceCode:  payload.ServiceCode,
@@ -382,7 +369,7 @@ func (s *BillSheet) Update(db *mysql.DB) (interface{}, error) {
 	}, nil
 }
 
-func (s *BillSheet) UpdateUnitBlock(db *mysql.DB, payload *app.BillSheetPayload, currentHours float64) error {
+func (s *BillSheet) UpdateUnitBlock(db *mysql.DB, payload *app.BillSheetPayload, currentRecordUnits float64) error {
 	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT_UNIT_BLOCK"], "COUNT(*)", payload.Consumer, payload.ServiceCode))
 	if err != nil {
 		return err
@@ -404,9 +391,9 @@ func (s *BillSheet) UpdateUnitBlock(db *mysql.DB, payload *app.BillSheetPayload,
 			return err
 		}
 		var id int
-		var currentUnits float64
+		var currentBlockUnits float64
 		for rows.Next() {
-			err := rows.Scan(&id, &currentUnits)
+			err := rows.Scan(&id, &currentBlockUnits)
 			if err != nil {
 				return err
 			}
@@ -416,7 +403,8 @@ func (s *BillSheet) UpdateUnitBlock(db *mysql.DB, payload *app.BillSheetPayload,
 			return err
 		}
 		// New hours - current hours * 4 units per hour.
-		newUnits := currentUnits - (currentHours * 4.0)
+		//		newUnits := currentUnits - (currentHours * 4.0)
+		newUnits := currentBlockUnits + (currentRecordUnits - *payload.Units)
 		// TODO: What happens if it's drawn down below zero?
 		if newUnits < 0 {
 			newUnits = 0

@@ -233,8 +233,9 @@ formRows viewLists model =
         ]
         []
     , Form.float "Hours"
-        [ editable.hours |> toString |> value
-        , onInput ( SetFormValue (\v -> { editable | hours = Form.toFloat v } ) )
+        -- Recall that everything is now in units, so conversion to hours is done here!
+        [ 4.0 |> (/) editable.units |> toString |> value
+        , onInput ( SetFormValue (\v -> { editable | units = 4.0 |> (*) ( v |> Form.toFloat ) } ) )
         ,  "0.25" |> Html.Attributes.step
         ]
         []
@@ -295,7 +296,10 @@ tableColumns customColumn viewButton viewCheckbox editMsg deleteMsg viewLists =
             >> .name
     )
     , customColumn "Hold" viewCheckbox
-    , Table.floatColumn "Hours" .hours
+    , Table.floatColumn "Hours" ( \m ->
+        -- Recall that everything is now in units, so conversion to hours is done here!
+        4.0 |> (/) m.units
+    )
     , Table.stringColumn "Description" .description
     , Table.stringColumn "County" (
         .county
