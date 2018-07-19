@@ -1,4 +1,4 @@
-cat db.sql full_dump.sql | mysql -u btoll -p
+cat db.sql ../migration/full_dump.sql | mysql -u btoll -p
 
 # Order matters!
 #cat db.sql \

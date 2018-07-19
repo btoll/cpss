@@ -20,4 +20,5 @@ server/cpss
 *.swp
 notes
 full_dump.sql
+app*.sql
 
