@@ -201,13 +201,7 @@ formRows viewLists model =
         specialists = Maybe.withDefault [] viewLists.specialists
         status = Maybe.withDefault [] viewLists.status
     in
-    [ Form.text "Recipient ID"
-        [ value editable.recipientID
-        , onInput ( SetFormValue ( \v -> { editable | recipientID = v } ) )
-        , autofocus True
-        ]
-        []
-    , div []
+    [ div []
         [ label [] [ text "Service Date" ]
         , DatePicker.view focusedDate ( model.date |> settings ) model.datePicker
             |> Html.map DatePicker
@@ -293,7 +287,15 @@ tableColumns customColumn viewButton viewCheckbox editMsg deleteMsg viewLists =
         specialists = Maybe.withDefault [] viewLists.specialists
         status = Maybe.withDefault [] viewLists.status
     in
-    [ Table.stringColumn "Recipient ID" .recipientID
+    [ Table.stringColumn "Recipient ID" (
+        .consumer
+            >> ( \id ->
+                consumers |> List.filter ( \m -> m.id |> (==) id )
+                )
+            >> List.head
+            >> Maybe.withDefault Data.Consumer.new
+            >> ( \m -> m.recipientID )
+    )
     , Table.stringColumn "Service Date" .serviceDate
     , Table.stringColumn "ServiceCode" (
         .serviceCode
