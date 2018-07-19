@@ -12,14 +12,14 @@ var _ = API("cpss", func() {
 	Scheme("http")
 	BasePath("/cpss")
 	TermsOfService("cpss tos")
-	License(func() { // API Licensing information
-		Name("Private (no license offered)")
-		URL("http://google.com")
-	})
-	Docs(func() {
-		Description("doc description")
-		URL("http://google.com")
-	})
+	//	License(func() { // API Licensing information
+	//		Name("Private (no license offered)")
+	//		URL("http://google.com")
+	//	})
+	//	Docs(func() {
+	//		Description("doc description")
+	//		URL("http://google.com")
+	//	})
 
 	// Add CORS
 	// https://github.com/goadesign/goa-cellar/commit/1ce01fda44482340624ef907b4f40b124a3f59c3

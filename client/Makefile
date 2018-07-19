@@ -26,7 +26,8 @@ clean:
 	rm -f $(TARGET)
 
 deploy: production
-	rsync -avze ssh --progress --exclude-from="exclude-from.rsync" . onf:/var/www/www.benjamintoll.com/cpss
+	echo "Deploying to cpss..."
+	@rsync -avze ssh --progress --exclude-from="exclude-from.rsync" . cpss:/var/www/html
 
 dev: clean $(TARGET) $(NATIVE)
 	$(call concat, dev)

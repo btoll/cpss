@@ -28,7 +28,8 @@ clean:
 deploy:
 	@echo [make] Cross-compiling to 64-bit amd architecture...
 	@GOARCH=amd64 go build -o $(TARGET)
-	@rsync -avze ssh --progress cpss chomsky:/var/www/public/cpss/
+	echo "Deploying to cpss..."
+	@rsync -avze ssh --progress cpss cpss:/var/www/html/cpss/
 	@echo [make] Successfully deployed!
 
 generate: $(GENERATED)

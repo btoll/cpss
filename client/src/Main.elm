@@ -74,7 +74,7 @@ init flags location =
     let
         url =
             if ( Maybe.withDefault "dev" flags.env ) == "production"
-            then "http://96.31.87.245/cpss"
+            then "https://www.cpss.biz:8080/cpss"
             else "http://localhost:8080/cpss"
     in
     setRoute ( Route.fromLocation location )
