@@ -1020,10 +1020,10 @@ config model =
     , columns =
         [ Table.stringColumn "Full Name" ( \m ->        -- "Cricket, Rickety"
             (++)
-                ( .lastname m )
+                m.lastname
                 ( (++)
                     ( ", ")
-                    ( .firstname m )
+                    m.firstname
                 )
         )
         , Table.stringColumn "First Name" .firstname
@@ -1058,6 +1058,14 @@ config model =
                 >> List.head
                 >> Maybe.withDefault { id = -1, name = "" }
                 >> .name
+        )
+        , Table.floatColumn "Total Units" (
+            List.foldl
+                ( \serviceCode acc ->
+                    serviceCode.units |> (+) acc
+                )
+                0.0
+            << .serviceCodes
         )
         , Table.stringColumn "Other" .other
         , customColumn ( viewButton Edit "Edit" ) ""

@@ -1,5 +1,5 @@
 module Data.Consumer exposing
-    (Consumer
+    ( Consumer
     , ConsumerWithPager
     , ServiceCode
     , decoder

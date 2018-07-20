@@ -1,5 +1,5 @@
 module Data.User exposing
-    (User
+    ( User
     , UserWithPager
     , authEncoder
     , decoder
