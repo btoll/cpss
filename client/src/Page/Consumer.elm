@@ -74,7 +74,7 @@ init url =
     , consumers = []
     , dias = []
     , fundingSources = []
-    , query = Nothing
+    , query = Search.Consumer.defaultQuery |> Just
     , pager = Data.Pager.new
     } ! [ Request.DIA.list url |> Http.send ( Dias >> Fetch )
     , Request.FundingSource.list url |> Http.send ( FundingSources >> Fetch )

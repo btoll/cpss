@@ -56,7 +56,7 @@ init url =
     , showModal = ( True, Modal.Spinner |> Just )
     , specialists = []
     , payHistory = []
-    , query = Nothing
+    , query = Search.Specialist.defaultQuery |> Just
     , pager = Data.Pager.new
     } ! [ 0
             |> Request.Specialist.page url
