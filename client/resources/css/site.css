@@ -57,15 +57,20 @@ main#login nav li.nav-item {        /* Hide the Login link on the login page :) 
     visibility: hidden;
 }
 main#login nav + div {
-    background: url(/resources/images/lighthouse.png) top center no-repeat;
-    margin: 5%;
-    min-height: 600px;
+    align-items: center;
+    display: flex;
+    justify-content: center;
 }
 main#login nav + div > div + div {
     width: 25%;
 }
 main#login nav + div form {
     padding: 2% 0;
+}
+main#home section div.buttons + div {
+    background: #fff url(/resources/images/lighthouse.png) top right no-repeat;
+    min-height: 600px;
+    padding: 20px;
 }
 section {
     background: #ccc;
@@ -153,7 +158,6 @@ form > div:last-child input:last-child {
 #unitsBlock > input {
     margin-bottom: 10px;
 }
-
 form .unitBlock {
     clear: left;
     margin: 10px 0;

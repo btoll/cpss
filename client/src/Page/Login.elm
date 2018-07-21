@@ -103,13 +103,7 @@ view model =
                        ( model.password |> String.isEmpty )
                    )
                    Cancel
-
             ]
-            , div []
-                [ p [] [ "Guiding People with Challenges to a Life of Independence" |> text ]
-                , p [] [ "Vocational and Living Skills for People with Disabilities" |> text ]
-                , p [] [ "Mission is to guide and support consumers with physical, mental and emotional challenges so they may enjoy a fulfilling life of independence and dignity" |> text ]
-                ]
         ]
     ]
 
