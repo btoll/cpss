@@ -228,10 +228,16 @@ update url msg model =
                     case subMsg |> Modal.update model.query of
                         {- Delete Modal -}
                         ( False, Nothing ) ->
-                            ( False, Nothing, Nothing, Cmd.none )
+                            ( False
+                            , Nothing
+                            , model.query
+                            , Cmd.none
+                            )
 
                         ( True, Nothing ) ->
-                            ( False, Nothing, Nothing
+                            ( False
+                            , Nothing
+                            , model.query
                             , Maybe.withDefault new model.editing
                                 |> Request.Specialist.delete url
                                 |> Http.toTask

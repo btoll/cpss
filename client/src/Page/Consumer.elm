@@ -368,7 +368,7 @@ update url msg model =
                         ) ->
                             ( False
                             , Nothing
-                            , Nothing
+                            , model.query
                             , model.editing
                             , Cmd.none
                             )
@@ -378,7 +378,7 @@ update url msg model =
                         ) ->
                             ( False
                             , Nothing
-                            , Nothing
+                            , model.query
                             , model.editing
                             , Maybe.withDefault new model.editing
                                 |> Request.Consumer.delete url
@@ -391,7 +391,7 @@ update url msg model =
                         ) ->
                             ( False
                             , Nothing
-                            , Nothing
+                            , model.query
                             , model.editing
                             , Cmd.none
                             )
@@ -468,7 +468,7 @@ update url msg model =
                             in
                             ( False
                             , Nothing
-                            , Nothing
+                            , model.query
                             , { oldEditing | serviceCodes = newServiceCodes } |> Just
                             , Cmd.none
                             )
@@ -489,7 +489,7 @@ update url msg model =
                             in
                             ( True
                             , Modal.Spinner |> Just
-                            , query |> Just     -- We need to save the search query for paging!
+                            , query |> Just
                             , model.editing
                             , Request.Consumer.page url q 0
                                 |> Http.send ( Consumers >> Fetch )
@@ -508,7 +508,7 @@ update url msg model =
                         ( _, _ ) ->
                             ( False
                             , Nothing
-                            , Nothing
+                            , model.query
                             , model.editing
                             , Cmd.none
                             )
@@ -654,7 +654,18 @@ update url msg model =
                 -- The service codes come down with the consumers.  This will probably become untenable since we're fetching everything when we really
                 -- just want the service codes (recall that a new service code will have an id of -1, and it's less expensive to send the new service
                 -- codes than to loop over the client-side cache of service codes and update the new service code.
-                } ! [ 0 |> Request.Consumer.page url "" |> Http.send ( Consumers >> Fetch ) ]
+                } ! [
+                        0
+                            |> Request.Consumer.page
+                                url
+                                (
+                                    model.query
+                                        |> Maybe.withDefault Dict.empty
+                                        |> Dict.foldl fmtFuzzyMatch ""
+                                        |> String.dropRight 5   -- Remove the trailing " AND ".
+                                )
+                            |> Http.send ( Consumers >> Fetch )
+                    ]
 
         Putted ( Err err ) ->
             let
