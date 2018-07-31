@@ -18,7 +18,7 @@ func NewServiceCode(payload interface{}) *ServiceCode {
 		Stmt: map[string]string{
 			"DELETE": "DELETE FROM service_code WHERE id=?",
 			"INSERT": "INSERT service_code SET name=?,unitRate=?,description=?",
-			"SELECT": "SELECT %s FROM service_code ORDER BY name",
+			"SELECT": "SELECT %s FROM service_code ORDER BY name DESC",
 			"UPDATE": "UPDATE service_code SET name=?,unitRate=?,description=? WHERE id=?",
 		},
 	}
