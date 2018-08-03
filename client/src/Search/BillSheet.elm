@@ -1,4 +1,4 @@
-module Search.BillSheet exposing (Msg, update, view)
+module Search.BillSheet exposing (Msg, defaultQuery, update, view)
 
 import Data.Search exposing (Query, ViewLists)
 import Data.User exposing (User)
@@ -16,6 +16,22 @@ type Msg
     | Select Form.Selection String
     | SetFormValue ( String -> Query ) String
     | Submit
+
+
+
+defaultQuery : User -> ( String, Maybe ( Dict String String ) )
+defaultQuery user =
+    if (==) 1 user.authLevel
+    then
+        (
+            ""
+            ,  Nothing
+        )
+    else
+        (
+            (++) "specialist=" ( user.id |> toString )
+            , [ ( "specialist", ( user.id |> toString ) ) ] |> Dict.fromList |> Just
+        )
 
 
 

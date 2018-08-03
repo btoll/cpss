@@ -25,6 +25,7 @@ import Request.County
 import Request.Specialist
 import Request.ServiceCode
 import Request.Status
+import Search.BillSheet
 import Table exposing (defaultCustomizations)
 import Task exposing (Task)
 import Validate.BillSheet
@@ -66,8 +67,17 @@ init url session =
         user =
             Maybe.withDefault Data.User.new session.user
 
+        authLevel =
+            user.authLevel
+
+        userID =
+            user.id |> toString
+
+        ( whereClause, defaultQuery ) =
+            user |> Search.BillSheet.defaultQuery
+
         ( subModel, cmd ) =
-            case user.authLevel of
+            case authLevel of
                 1 ->
                     let
                         ( model, subCmd ) =
@@ -81,7 +91,7 @@ init url session =
                         , Request.ServiceCode.list url |> Http.send ( ServiceCodes >> Fetch )
                         , Request.Specialist.list url |> Http.send ( Specialists >> Fetch )
                         , Request.Status.list url |> Http.send ( Statuses >> Fetch )
-                        , 0 |> Request.BillSheet.page url "" |> Http.send ( BillSheets >> Fetch )
+                        , 0 |> Request.BillSheet.page url whereClause |> Http.send ( BillSheets >> Fetch )
                         ]
                     )
 
@@ -96,7 +106,7 @@ init url session =
                         , Request.Consumer.list url |> Http.send ( Consumers >> Fetch )
                         , Request.County.list url |> Http.send ( Counties >> Fetch )
                         , Request.ServiceCode.list url |> Http.send ( ServiceCodes >> Fetch )
-                        , 0 |> Request.BillSheet.page url ( (++) "specialist=" ( user.id |> toString ) ) |> Http.send ( BillSheets >> Fetch )
+                        , 0 |> Request.BillSheet.page url whereClause |> Http.send ( BillSheets >> Fetch )
                         ]
                     )
     in
@@ -113,7 +123,7 @@ init url session =
         , specialists = Nothing
         , status = Nothing
         }
-    , query = Nothing
+    , query = defaultQuery
     , pagerState = Data.Pager.new
     , subModel = subModel
     , user = user
@@ -198,13 +208,11 @@ update url msg model =
 
         ClearSearch ->
             let
-                whereClause =
-                    if (==) model.user.authLevel 1
-                    then ""
-                    else (++) "specialist=" ( model.user.id |> toString )
+                ( whereClause, defaultQuery ) =
+                    model.user |> Search.BillSheet.defaultQuery
             in
             { model |
-                query = Nothing
+                query = defaultQuery
             } ! [ 0
                     |> Request.BillSheet.page url whereClause
                     >> Http.send ( BillSheets >> Fetch )
