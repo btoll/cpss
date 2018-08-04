@@ -208,3 +208,71 @@ update consumer join appConsumer ac on ac.ConsumerID = consumer.id set consumer.
 update consumer join appConsumer ac on ac.ConsumerID = consumer.id set consumer.dia=1 where consumer.id in ( select ConsumerID from appConsumer where DiaCode in ("F79","F-79") );
 update consumer join appConsumer ac on ac.ConsumerID = consumer.id set consumer.dia=6 where consumer.id in ( select ConsumerID from appConsumer where DiaCode="F72" );
 
+update consumer set fundingSource=-1 WHERE id in (select ConsumerID from appConsumer where BillingType="");
+update consumer set fundingSource=1 where id in (select ConsumerID from appConsumer where BillingType in ("Base", "Base Funded"));
+update consumer set fundingSource=2 where id in (select ConsumerID from appConsumer where BillingType in ("P/FDS W","P/FDS","P/FDS Waiver","PFDS Waiver"," PDF Wavier","PF/DSW","PF/DF"));
+update consumer set fundingSource=3 where id in (select ConsumerID from appConsumer where BillingType in ("Consolidated Waiver","Consolidated Wavier","Consolidated Waver","Consolidated W","Waiver","Consol. Waiver","C/W","Con W","Consoliidate Waiver","Cons. Wavier"));
+update consumer set fundingSource=7 WHERE id in (select ConsumerID from appConsumer where BillingType="B");
+update consumer set fundingSource=8 WHERE id in (select ConsumerID from appConsumer where BillingType="W");
+update consumer set fundingSource=9 WHERE id in (select ConsumerID from appConsumer where BillingType="079");
+update consumer set fundingSource=10 where id in (select ConsumerID from appConsumer where BillingType="Admin");
+update consumer set fundingSource=11 where id in (select ConsumerID from appConsumer where BillingType="NO");
+update consumer set fundingSource=12 where id in (select ConsumerID from appConsumer where BillingType="X");
+update consumer set fundingSource=13 where id in (select ConsumerID from appConsumer where BillingType="103");
+update consumer set fundingSource=14 where id in (select ConsumerID from appConsumer where BillingType="105");
+update consumer set fundingSource=15 where id in (select ConsumerID from appConsumer where BillingType="PATH");
+update consumer set fundingSource=16 where id in (select ConsumerID from appConsumer where BillingType="104");
+update consumer set fundingSource=17 where id in (select ConsumerID from appConsumer where BillingType="PATH ILR");
+update consumer set fundingSource=29 where id in (select ConsumerID from appConsumer where BillingType in ("7060", "W-7060"));
+update consumer set fundingSource=30 where id in (select ConsumerID from appConsumer where BillingType in ("079F", "079-F"));
+update consumer set fundingSource=31 where id in (select ConsumerID from appConsumer where BillingType in ("EI 7235", "EI-7235"));
+update consumer set fundingSource=32 WHERE id in (select ConsumerID from appConsumer where BillingType="7235");
+
+--MariaDB [cpss]> select id from consumer where fundingSource=-1;
+--+-----+
+--| id  |
+--+-----+
+--| 310 |
+--| 387 |
+--| 391 |
+--| 392 |
+--| 411 |
+--| 431 |
+--| 432 |
+--| 433 |
+--| 435 |
+--| 436 |
+--| 439 |
+--| 444 |
+--| 445 |
+--| 446 |
+--| 447 |
+--| 448 |
+--| 451 |
+--| 464 |
+--| 466 |
+--| 467 |
+--| 468 |
+--| 473 |
+--| 482 |
+--| 483 |
+--| 485 |
+--| 486 |
+--| 487 |
+--| 493 |
+--| 494 |
+--| 504 |
+--| 510 |
+--| 512 |
+--| 514 |
+--| 515 |
+--| 518 |
+--| 519 |
+--| 524 |
+--| 525 |
+--| 535 |
+--| 539 |
+--| 540 |
+--+-----+
+--41 rows in set (0.00 sec)
+

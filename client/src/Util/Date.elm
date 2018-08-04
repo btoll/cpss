@@ -112,40 +112,41 @@ simple date =
 -- Using the month string, i.e., "Feb" gives me the expected date.
 unsafeFromString : String -> Date
 unsafeFromString stringDate =
-    let
-        parts =
-            stringDate
-                |> String.split "-"
-
-        year =
-            parts
-                |> List.head
-                |> Maybe.withDefault ""
-
-        month =
-            parts
-                |> List.drop 1
-                |> List.head
-                |> Maybe.withDefault ""
-
-        m =
-            fromMonthInt
-                |> Dict.get month
-                |> Maybe.withDefault ""
-
-        day =
-            parts
-                |> List.drop 2
-                |> List.head
-                |> Maybe.withDefault ""
-
-        sd =
-            [ year
-            , m
-            , day
-            ] |> String.join "-"
-    in
-    case sd |> Date.fromString of
+--    let
+--        parts =
+--            stringDate
+--                |> String.split "-"
+--
+--        year =
+--            parts
+--                |> List.head
+--                |> Maybe.withDefault ""
+--
+--        month =
+--            parts
+--                |> List.drop 1
+--                |> List.head
+--                |> Maybe.withDefault ""
+--
+--        m =
+--            fromMonthInt
+--                |> Dict.get month
+--                |> Maybe.withDefault ""
+--
+--        day =
+--            parts
+--                |> List.drop 2
+--                |> List.head
+--                |> Maybe.withDefault ""
+--
+--        sd =
+--            [ year
+--            , m
+--            , day
+--            ] |> String.join "-"
+--    in
+--    case sd |> Date.fromString of
+    case stringDate |> Date.fromString of
         Err err ->
             Debug.crash "unsafeFromString"
 
