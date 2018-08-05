@@ -9,7 +9,6 @@ CREATE TABLE IF NOT EXISTS `billsheet` (
   `units` float DEFAULT 0.0,
   `serviceDate` date DEFAULT NULL,
   `serviceCode` int DEFAULT -1,
-  `hold` tinyint DEFAULT 0,
   `contractType` varchar(100) DEFAULT NULL,
   `status` smallint DEFAULT -1,
   `billedCode` varchar(100) DEFAULT NULL,

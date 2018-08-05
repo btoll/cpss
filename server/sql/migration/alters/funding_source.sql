@@ -52,4 +52,3 @@ UNLOCK TABLES;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
 -- Dump completed on 2018-08-04 15:46:51
-insert funding_source values ;

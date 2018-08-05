@@ -25,56 +25,13 @@ func NewBillSheet(payload interface{}) *BillSheet {
 			"DELETE":              "DELETE FROM billsheet WHERE id=?",
 			"GET_AUTH_LEVEL":      "SELECT authLevel FROM specialist WHERE id=%d",
 			"GET_UNIT_RATE":       "SELECT unitRate FROM service_code WHERE id=%d",
-			"INSERT":              "INSERT billsheet SET specialist=?,consumer=?,units=?,serviceDate=?,serviceCode=?,hold=?,contractType=?,status=?,billedCode=?,billedAmount=?,county=?,confirmation=?,description=?",
+			"INSERT":              "INSERT billsheet SET specialist=?,consumer=?,units=?,serviceDate=?,serviceCode=?,contractType=?,status=?,billedCode=?,billedAmount=?,county=?,confirmation=?,description=?",
 			"SELECT":              "SELECT %s FROM billsheet %s",
 			"SELECT_UNIT_BLOCK":   "SELECT %s FROM unit_block WHERE consumer=%d AND serviceCode=%d",
 			"UPDATE_UNIT_BLOCK":   "UPDATE unit_block SET units=? WHERE id=?",
-			"UPDATE":              "UPDATE billsheet SET specialist=?,consumer=?,units=?,serviceDate=?,serviceCode=?,hold=?,contractType=?,status=?,billedCode=?,billedAmount=?,county=?,confirmation=?,description=? WHERE id=?",
+			"UPDATE":              "UPDATE billsheet SET specialist=?,consumer=?,units=?,serviceDate=?,serviceCode=?,contractType=?,status=?,billedCode=?,billedAmount=?,county=?,confirmation=?,description=? WHERE id=?",
 		},
 	}
-}
-
-func updateHold(db *mysql.DB, id int) error {
-	// There is already a prior entry for this consumer with the same ServiceDate and ServiceCode, so we need to remove the hold.
-	stmt, err := db.Prepare("UPDATE billsheet SET hold=? WHERE id=?")
-	if err != nil {
-		return err
-	}
-	_, err = stmt.Exec(0, id)
-	if err != nil {
-		return err
-	}
-	fmt.Printf("Removed hold from billsheet, record #%d\n", id)
-	return nil
-}
-
-/**
- * This method checks for a prior hold marked by an IC.
- * A hold means that an IC created a Time Entry that same day for the same consumer for the same service code.
- * Leta needs to know when this happens so she doesn't submit the time for billing when it's not yet complete.
- * We search the records for consumer AND serviceDate AND serviceCode, but the UI needs to know when a record
- * has been marked as a hold so Leta knows.
- *
- * It returns the record ID if there is one match so we can then flip the hold bit to false.
- * Else it returns the number of matches.
- */
-func (s *BillSheet) CheckForHold(db *mysql.DB, payload *app.BillSheetPayload) (int, int) {
-	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "id, COUNT(*)", fmt.Sprintf("WHERE consumer=%d AND serviceDate='%s' AND serviceCode=%d", payload.Consumer, payload.ServiceDate, payload.ServiceCode)))
-	if err != nil {
-		return -1, -1
-	}
-	var id int
-	var count int
-	for rows.Next() {
-		err = rows.Scan(&id, &count)
-		if err != nil {
-			return -1, -1
-		}
-	}
-	if count == 1 {
-		return count, id
-	}
-	return count, -1
 }
 
 func (s *BillSheet) CollectRows(rows *mysql.Rows, coll []*app.BillSheetItem) error {
@@ -86,7 +43,6 @@ func (s *BillSheet) CollectRows(rows *mysql.Rows, coll []*app.BillSheetItem) err
 		var units float64
 		var serviceDate string
 		var serviceCode int
-		var hold bool
 		var contractType string
 		var status int
 		var billedCode string
@@ -94,7 +50,7 @@ func (s *BillSheet) CollectRows(rows *mysql.Rows, coll []*app.BillSheetItem) err
 		var county int
 		var confirmation string
 		var description string
-		err := rows.Scan(&id, &specialist, &consumer, &units, &serviceDate, &serviceCode, &hold, &contractType, &status, &billedCode, &billedAmount, &county, &confirmation, &description)
+		err := rows.Scan(&id, &specialist, &consumer, &units, &serviceDate, &serviceCode, &contractType, &status, &billedCode, &billedAmount, &county, &confirmation, &description)
 		if err != nil {
 			return err
 		}
@@ -105,7 +61,6 @@ func (s *BillSheet) CollectRows(rows *mysql.Rows, coll []*app.BillSheetItem) err
 			Units:        &units,
 			ServiceDate:  serviceDate,
 			ServiceCode:  serviceCode,
-			Hold:         hold,
 			ContractType: &contractType,
 			Status:       &status,
 			BilledCode:   &billedCode,
@@ -124,16 +79,6 @@ func (s *BillSheet) Create(db *mysql.DB) (interface{}, error) {
 	if _, err := s.IsLegalDate(db, payload); err != nil {
 		return nil, err
 	}
-	// First, check if there is a previous hold placed by another IC.
-	count, id := s.CheckForHold(db, payload)
-	if count > 1 {
-		return nil, fmt.Errorf("Consumer already has two entries on %s with code %d, aborting.  Please see Leta.", payload.ServiceDate, payload.ServiceCode)
-	} else if count != 0 {
-		err := updateHold(db, id)
-		if err != nil {
-			return nil, err
-		}
-	}
 	// For now, don't update the billsheet table if the unit rate lookup fails!
 	unitRate, err := s.GetUnitRate(db, payload.ServiceCode)
 	if err != nil {
@@ -149,7 +94,7 @@ func (s *BillSheet) Create(db *mysql.DB) (interface{}, error) {
 	if err != nil {
 		return -1, err
 	}
-	res, err := stmt.Exec(payload.Specialist, payload.Consumer, payload.Units, payload.ServiceDate, payload.ServiceCode, payload.Hold, payload.ContractType, payload.Status, payload.BilledCode, unitRate*(*payload.Units), payload.County, payload.Confirmation, payload.Description)
+	res, err := stmt.Exec(payload.Specialist, payload.Consumer, payload.Units, payload.ServiceDate, payload.ServiceCode, payload.ContractType, payload.Status, payload.BilledCode, unitRate*(*payload.Units), payload.County, payload.Confirmation, payload.Description)
 	if err != nil {
 		return -1, err
 	}
@@ -310,17 +255,6 @@ func (s *BillSheet) Update(db *mysql.DB) (interface{}, error) {
 	if _, err := s.IsLegalDate(db, payload); err != nil {
 		return nil, err
 	}
-	hold := payload.Hold
-	// First, check if there is a previous hold placed by another IC.
-	count, _ := s.CheckForHold(db, payload)
-	if count > 2 {
-		// We shouldn't ever get here!!
-		return nil, fmt.Errorf("Consumer has multiple entries on %s with code %d, aborting.  Please see Leta.", payload.ServiceDate, payload.ServiceCode)
-	} else if count == 2 {
-		// If there is a match that means that there are already two matching entries for the hold criteria, so under no circumstances
-		// should hold be checked as `true` for this particular entry!
-		hold = false
-	}
 	// For now, don't update the billsheet table if the unit rate lookup fails!
 	unitRate, err := s.GetUnitRate(db, payload.ServiceCode)
 	if err != nil {
@@ -344,7 +278,7 @@ func (s *BillSheet) Update(db *mysql.DB) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, err = stmt.Exec(payload.Specialist, payload.Consumer, payload.Units, payload.ServiceDate, payload.ServiceCode, hold, payload.ContractType, payload.Status, payload.BilledCode, unitRate*(*payload.Units), payload.County, payload.Confirmation, payload.Description, payload.ID)
+	_, err = stmt.Exec(payload.Specialist, payload.Consumer, payload.Units, payload.ServiceDate, payload.ServiceCode, payload.ContractType, payload.Status, payload.BilledCode, unitRate*(*payload.Units), payload.County, payload.Confirmation, payload.Description, payload.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -355,7 +289,6 @@ func (s *BillSheet) Update(db *mysql.DB) (interface{}, error) {
 		Units:        payload.Units,
 		ServiceDate:  payload.ServiceDate,
 		ServiceCode:  payload.ServiceCode,
-		Hold:         payload.Hold,
 		ContractType: payload.ContractType,
 		Status:       payload.Status,
 		BilledCode:   payload.BilledCode,

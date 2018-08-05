@@ -90,10 +90,6 @@ var BillSheetPayload = Type("BillSheetPayload", func() {
 		Metadata("struct:tag:datastore", "serviceCode,noindex")
 		Metadata("struct:tag:json", "serviceCode")
 	})
-	Attribute("hold", Boolean, "BillSheet hold", func() {
-		Metadata("struct:tag:datastore", "hold,noindex")
-		Metadata("struct:tag:json", "hold")
-	})
 	Attribute("contractType", String, "BillSheet contractType", func() {
 		Metadata("struct:tag:datastore", "contractType,noindex")
 		Metadata("struct:tag:json", "contractType")
@@ -123,7 +119,7 @@ var BillSheetPayload = Type("BillSheetPayload", func() {
 		Metadata("struct:tag:json", "description")
 	})
 
-	Required("specialist", "consumer", "serviceDate", "serviceCode", "hold", "county")
+	Required("specialist", "consumer", "serviceDate", "serviceCode", "county")
 })
 
 var BillSheetQueryPayload = Type("BillSheetQueryPayload", func() {
@@ -144,7 +140,6 @@ var BillSheetItem = Type("billSheetItem", func() {
 	Attribute("units")
 	Attribute("serviceDate")
 	Attribute("serviceCode")
-	Attribute("hold")
 	Attribute("contractType")
 	Attribute("status")
 	Attribute("billedCode")
@@ -153,7 +148,7 @@ var BillSheetItem = Type("billSheetItem", func() {
 	Attribute("confirmation")
 	Attribute("description")
 
-	Required("id", "specialist", "consumer", "serviceDate", "serviceCode", "hold", "county")
+	Required("id", "specialist", "consumer", "serviceDate", "serviceCode", "county")
 })
 
 var BillSheetMedia = MediaType("application/billsheetapi.billsheetentity", func() {
@@ -169,7 +164,6 @@ var BillSheetMedia = MediaType("application/billsheetapi.billsheetentity", func(
 		Attribute("units")
 		Attribute("serviceDate")
 		Attribute("serviceCode")
-		Attribute("hold")
 		Attribute("contractType")
 		Attribute("status")
 		Attribute("billedCode")
@@ -180,7 +174,7 @@ var BillSheetMedia = MediaType("application/billsheetapi.billsheetentity", func(
 		Attribute("billsheets", ArrayOf("billSheetItem"))
 		Attribute("pager", Pager)
 
-		Required("id", "specialist", "consumer", "serviceDate", "serviceCode", "hold", "county")
+		Required("id", "specialist", "consumer", "serviceDate", "serviceCode", "county")
 	})
 
 	View("default", func() {
@@ -190,7 +184,6 @@ var BillSheetMedia = MediaType("application/billsheetapi.billsheetentity", func(
 		Attribute("units")
 		Attribute("serviceDate")
 		Attribute("serviceCode")
-		Attribute("hold")
 		Attribute("contractType")
 		Attribute("status")
 		Attribute("billedCode")

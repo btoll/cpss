@@ -753,7 +753,7 @@ config model =
     Table.customConfig
     { toId = .id >> toString
     , toMsg = SetTableState
-    , columns = model.viewLists |> tableColumns customColumn viewButton viewCheckbox Edit Delete
+    , columns = model.viewLists |> tableColumns customColumn viewButton Edit Delete
     , customizations = defaultCustomizations
     }
 
@@ -772,12 +772,5 @@ viewButton msg name billsheet =
     Table.HtmlDetails []
         [ button [ onClick <| msg <| billsheet ] [ text name ]
         ]
-
-
-viewCheckbox : BillSheet -> Table.HtmlDetails Msg
-viewCheckbox { hold } =
-  Table.HtmlDetails []
-    [ input [ checked hold, Html.Attributes.disabled True, type_ "checkbox" ] []
-    ]
 
 

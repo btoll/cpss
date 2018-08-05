@@ -82,7 +82,6 @@ init date =
 type Msg
     = DatePicker DatePicker.Msg
     | Select Form.Selection BillSheet String
-    | SetCheckboxValue ( Bool -> BillSheet ) Bool
     | SetFormValue ( String -> BillSheet ) String
     | SetTableState Table.State
 
@@ -157,12 +156,6 @@ update msg model =
                 _ ->
                     model ! []
 
-        SetCheckboxValue setBoolValue b ->
-            { model |
-                editing = setBoolValue b |> Just
-                , disabled = False
-            } ! []
-
         SetFormValue setFormValue s ->
             { model |
                 editing = Just ( setFormValue s )
@@ -227,11 +220,6 @@ formRows viewLists model =
                 |> (::) ( "-1", "-- Select a service code --" )
                 |> List.map ( editable.serviceCode |> toString |> Form.option )
         )
-    , Form.checkbox "Hold"
-        [ checked editable.hold
-        , onCheck ( SetCheckboxValue ( \v -> { editable | hold = v } ) )
-        ]
-        []
     , Form.float "Hours"
         -- Recall that everything is now in units, so conversion to hours is done here!
         [ 4.0 |> (/) editable.units |> toString |> value
@@ -270,7 +258,7 @@ formRows viewLists model =
 -- TABLE CONFIGURATION
 
 
-tableColumns customColumn viewButton viewCheckbox editMsg deleteMsg viewLists =
+tableColumns customColumn viewButton editMsg deleteMsg viewLists =
     let
         consumers = Maybe.withDefault [] viewLists.consumers
         counties = Maybe.withDefault [] viewLists.counties
@@ -295,7 +283,6 @@ tableColumns customColumn viewButton viewCheckbox editMsg deleteMsg viewLists =
             >> Maybe.withDefault Data.ServiceCode.new
             >> .name
     )
-    , customColumn "Hold" viewCheckbox
     , Table.floatColumn "Hours" ( \m ->
         -- Recall that everything is now in units, so conversion to hours is done here!
         4.0 |> (/) m.units
