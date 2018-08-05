@@ -13,14 +13,12 @@ CREATE TABLE IF NOT EXISTS `billsheet` (
   `status` smallint DEFAULT -1,
   `billedCode` varchar(100) DEFAULT NULL,
   `billedAmount` float DEFAULT 0.0,
-  `county` int DEFAULT -1,
   `confirmation` varchar(100) DEFAULT NULL,
   `description` tinyblob DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `ID` (`id`),
   CONSTRAINT `fkspecialist` FOREIGN KEY (`specialist`) REFERENCES `specialist` (`id`),
-  CONSTRAINT `fkconsumer` FOREIGN KEY (`consumer`) REFERENCES `consumer` (`id`),
+  CONSTRAINT `fkconsumer` FOREIGN KEY (`consumer`) REFERENCES `consumer` (`id`)
   /*CONSTRAINT `fkservicecode` FOREIGN KEY (`serviceCode`) REFERENCES `service_code` (`id`),*/
-  CONSTRAINT `fkcounty` FOREIGN KEY (`county`) REFERENCES `county` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 ;
 

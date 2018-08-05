@@ -141,9 +141,6 @@ update msg model =
                 Form.ConsumerID ->
                     ( { consumer | consumer = selectionToInt } |> newModel ) ! []
 
-                Form.CountyID ->
-                    ( { consumer | county = selectionToInt } |> newModel ) ! []
-
                 Form.ServiceCodeID ->
                     ( { consumer | serviceCode = selectionToInt } |> newModel ) ! []
 
@@ -192,7 +189,6 @@ formRows viewLists model =
                     model.date
 
         consumers = Maybe.withDefault [] viewLists.consumers
-        counties = Maybe.withDefault [] viewLists.counties
         serviceCodes = Maybe.withDefault [] viewLists.serviceCodes
     in
     [ Form.select "Consumer"
@@ -213,7 +209,6 @@ formRows viewLists model =
     , Form.select "Service Code"
         [ id "serviceCodeSelection"
         , editable |> Select Form.ServiceCodeID |> onInput
---        , True |> multiple
         ] (
             serviceCodes
                 |> List.map ( \m -> ( m.id |> toString, m.name ) )
@@ -227,28 +222,19 @@ formRows viewLists model =
         ,  "0.25" |> Html.Attributes.step
         ]
         []
-    , Form.text "Description"
-        [ value editable.description
-        , onInput ( SetFormValue ( \v -> { editable | description = v } ) )
-        ]
-        []
-    , Form.select "County"
-        [ id "countySelection"
-        , editable |> Select Form.CountyID |> onInput
-        ] (
-            counties
-                |> List.map ( \m -> ( m.id |> toString, m.name ) )
-                |> (::) ( "-1", "-- Select a county--" )
-                |> List.map ( editable.county |> toString |> Form.option )
-        )
-    , Form.text "Contract Type"
-        [ value editable.contractType
-        , True |> Html.Attributes.disabled
-        ]
-        []
+--    , Form.text "Contract Type"
+--        [ value editable.contractType
+--        , True |> Html.Attributes.disabled
+--        ]
+--        []
     , Form.text "Billed Code"
         [ value editable.billedCode
         , onInput ( SetFormValue ( \v -> { editable | billedCode = v } ) )
+        ]
+        []
+    , Form.textarea "Description"
+        [ value editable.description
+        , onInput ( SetFormValue ( \v -> { editable | description = v } ) )
         ]
         []
     ]
@@ -261,7 +247,6 @@ formRows viewLists model =
 tableColumns customColumn viewButton editMsg deleteMsg viewLists =
     let
         consumers = Maybe.withDefault [] viewLists.consumers
-        counties = Maybe.withDefault [] viewLists.counties
         serviceCodes = Maybe.withDefault [] viewLists.serviceCodes
     in
     [ Table.stringColumn "Consumer" (
@@ -288,15 +273,6 @@ tableColumns customColumn viewButton editMsg deleteMsg viewLists =
         4.0 |> (/) m.units
     )
     , Table.stringColumn "Description" .description
-    , Table.stringColumn "County" (
-        .county
-            >> ( \id ->
-                counties |> List.filter ( \m -> m.id |> (==) id )
-                )
-            >> List.head
-            >> Maybe.withDefault { id = -1, name = "" }
-            >> .name
-    )
     , Table.stringColumn "Contract Type" .contractType
     , Table.stringColumn "Billed Code" .billedCode
     , customColumn "" ( viewButton editMsg "Edit" )

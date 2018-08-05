@@ -29,7 +29,6 @@ type alias BillSheet =
     , status : Int
     , billedCode : String
     , billedAmount : Float
-    , county : Int
     , confirmation : String
     , description : String
     }
@@ -53,7 +52,6 @@ new =
     , status = 1            -- Default to `Billed` status.
     , billedCode = ""
     , billedAmount = 0.0
-    , county = -1
     , confirmation = ""
     , description = ""
     }
@@ -72,7 +70,6 @@ decoder =
         |> optional "status" int -1
         |> optional "billedCode" string ""
         |> optional "billedAmount" float 0.0
-        |> optional "county" int -1
         |> optional "confirmation" string ""
         |> optional "description" string ""
 
@@ -102,7 +99,6 @@ encoder billsheet =
         , ( "status", Encode.int billsheet.status )
         , ( "billedCode", Encode.string billsheet.billedCode )
         , ( "billedAmount", Encode.float billsheet.billedAmount )
-        , ( "county", Encode.int billsheet.county )
         , ( "confirmation", Encode.string billsheet.confirmation )
         , ( "description", Encode.string billsheet.description )
         ]

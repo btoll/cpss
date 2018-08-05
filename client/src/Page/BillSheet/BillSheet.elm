@@ -139,9 +139,6 @@ update msg model =
                 Form.ConsumerID ->
                     ( { consumer | consumer = selectionToInt } |> newModel ) ! []
 
-                Form.CountyID ->
-                    ( { consumer | county = selectionToInt } |> newModel ) ! []
-
                 Form.ServiceCodeID ->
                     ( { consumer | serviceCode = selectionToInt } |> newModel ) ! []
 
@@ -189,12 +186,29 @@ formRows viewLists model =
                     model.date
 
         consumers = Maybe.withDefault [] viewLists.consumers
-        counties = Maybe.withDefault [] viewLists.counties
         serviceCodes = Maybe.withDefault [] viewLists.serviceCodes
         specialists = Maybe.withDefault [] viewLists.specialists
         status = Maybe.withDefault [] viewLists.status
     in
-    [ div []
+    [ Form.select "Specialist"
+        [ id "specialistSelection"
+        , editable |> Select Form.SpecialistID |> onInput
+        ] (
+            specialists
+                |> List.map ( \m -> ( m.id |> toString, m.lastname ++ ", " ++ m.firstname ) )
+                |> (::) ( "-1", "-- Select a specialist --" )
+                |> List.map ( editable.specialist |> toString |> Form.option )
+        )
+    , Form.select "Consumer"
+        [ id "consumerSelection"
+        , editable |> Select Form.ConsumerID |> onInput
+        ] (
+            consumers
+                |> List.map ( \m -> ( m.id |> toString, m.lastname ++ ", " ++ m.firstname ) )
+                |> (::) ( "-1", "-- Select a consumer --" )
+                |> List.map ( editable.consumer |> toString |> Form.option )
+        )
+    , div []
         [ label [] [ text "Service Date" ]
         , DatePicker.view focusedDate ( model.date |> settings ) model.datePicker
             |> Html.map DatePicker
@@ -219,15 +233,6 @@ formRows viewLists model =
 --        , True |> Html.Attributes.disabled
 --        ]
 --        []
-    , Form.select "Consumer"
-        [ id "consumerSelection"
-        , editable |> Select Form.ConsumerID |> onInput
-        ] (
-            consumers
-                |> List.map ( \m -> ( m.id |> toString, m.lastname ++ ", " ++ m.firstname ) )
-                |> (::) ( "-1", "-- Select a consumer --" )
-                |> List.map ( editable.consumer |> toString |> Form.option )
-        )
     , Form.select "Status"
         [ id "statusSelection"
         , editable |> Select Form.StatusID |> onInput
@@ -242,24 +247,6 @@ formRows viewLists model =
         , onInput ( SetFormValue (\v -> { editable | confirmation = v } ) )
         ]
         []
-    , Form.select "County"
-        [ id "countySelection"
-        , editable |> Select Form.CountyID |> onInput
-        ] (
-            counties
-                |> List.map ( \m -> ( m.id |> toString, m.name ) )
-                |> (::) ( "-1", "-- Select a county --" )
-                |> List.map ( editable.county |> toString |> Form.option )
-        )
-    , Form.select "Specialist"
-        [ id "specialistSelection"
-        , editable |> Select Form.SpecialistID |> onInput
-        ] (
-            specialists
-                |> List.map ( \m -> ( m.id |> toString, m.lastname ++ ", " ++ m.firstname ) )
-                |> (::) ( "-1", "-- Select a specialist --" )
-                |> List.map ( editable.specialist |> toString |> Form.option )
-        )
     ]
 
 
@@ -270,7 +257,6 @@ formRows viewLists model =
 tableColumns customColumn viewButton editMsg deleteMsg viewLists =
     let
         consumers = Maybe.withDefault [] viewLists.consumers
-        counties = Maybe.withDefault [] viewLists.counties
         serviceCodes = Maybe.withDefault [] viewLists.serviceCodes
         specialists = Maybe.withDefault [] viewLists.specialists
         status = Maybe.withDefault [] viewLists.status
@@ -315,15 +301,6 @@ tableColumns customColumn viewButton editMsg deleteMsg viewLists =
             >> .name
     )
     , Table.stringColumn "Confirmation" .confirmation
-    , Table.stringColumn "County" (
-        .county
-            >> ( \id ->
-                counties |> List.filter ( \m -> m.id |> (==) id )
-                )
-            >> List.head
-            >> Maybe.withDefault { id = -1, name = "" }
-            >> .name
-    )
     , Table.stringColumn "Specialist" (
         .specialist
             >> ( \id ->

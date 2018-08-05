@@ -106,10 +106,6 @@ var BillSheetPayload = Type("BillSheetPayload", func() {
 		Metadata("struct:tag:datastore", "billedAmount,noindex")
 		Metadata("struct:tag:json", "billedAmount")
 	})
-	Attribute("county", Integer, "BillSheet county", func() {
-		Metadata("struct:tag:datastore", "county,noindex")
-		Metadata("struct:tag:json", "county")
-	})
 	Attribute("confirmation", String, "BillSheet confirmation", func() {
 		Metadata("struct:tag:datastore", "confirmation,noindex")
 		Metadata("struct:tag:json", "confirmation")
@@ -119,7 +115,7 @@ var BillSheetPayload = Type("BillSheetPayload", func() {
 		Metadata("struct:tag:json", "description")
 	})
 
-	Required("specialist", "consumer", "serviceDate", "serviceCode", "county")
+	Required("specialist", "consumer", "serviceDate", "serviceCode")
 })
 
 var BillSheetQueryPayload = Type("BillSheetQueryPayload", func() {
@@ -144,11 +140,10 @@ var BillSheetItem = Type("billSheetItem", func() {
 	Attribute("status")
 	Attribute("billedCode")
 	Attribute("billedAmount")
-	Attribute("county")
 	Attribute("confirmation")
 	Attribute("description")
 
-	Required("id", "specialist", "consumer", "serviceDate", "serviceCode", "county")
+	Required("id", "specialist", "consumer", "serviceDate", "serviceCode")
 })
 
 var BillSheetMedia = MediaType("application/billsheetapi.billsheetentity", func() {
@@ -168,13 +163,12 @@ var BillSheetMedia = MediaType("application/billsheetapi.billsheetentity", func(
 		Attribute("status")
 		Attribute("billedCode")
 		Attribute("billedAmount")
-		Attribute("county")
 		Attribute("confirmation")
 		Attribute("description")
 		Attribute("billsheets", ArrayOf("billSheetItem"))
 		Attribute("pager", Pager)
 
-		Required("id", "specialist", "consumer", "serviceDate", "serviceCode", "county")
+		Required("id", "specialist", "consumer", "serviceDate", "serviceCode")
 	})
 
 	View("default", func() {
@@ -188,7 +182,6 @@ var BillSheetMedia = MediaType("application/billsheetapi.billsheetentity", func(
 		Attribute("status")
 		Attribute("billedCode")
 		Attribute("billedAmount")
-		Attribute("county")
 		Attribute("confirmation")
 		Attribute("description")
 	})

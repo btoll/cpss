@@ -13,7 +13,6 @@ errors model =
 --    , isZero model.units "Units cannot be zero."
 --    , isZero model.billedAmount "Billed Amount cannot be zero."
     , isSelected model.consumer "Please select a Consumer."
-    , isSelected model.county "Please select a County."
     , isSelected model.specialist "Please select a Specialist."
     ]
         |> fold

@@ -3,7 +3,6 @@ module Page.BillSheet exposing (Model, Msg, init, update, view)
 import Data.Search exposing (Query, ViewLists, fmtDates, fmtEquality)
 import Data.BillSheet exposing (BillSheet, BillSheetWithPager, new)
 import Data.Consumer exposing (Consumer)
-import Data.County exposing (County)
 import Data.Pager exposing (Pager)
 import Data.ServiceCode exposing (ServiceCode)
 import Data.Session exposing (Session)
@@ -21,7 +20,6 @@ import Page.BillSheet.BillSheet
 import Page.BillSheet.TimeEntry
 import Request.BillSheet
 import Request.Consumer
-import Request.County
 import Request.Specialist
 import Request.ServiceCode
 import Request.Status
@@ -87,7 +85,6 @@ init url session =
                         model
                         , [ Cmd.map BillSheetBillSheetMsg subCmd
                         , Request.Consumer.list url |> Http.send ( Consumers >> Fetch )
-                        , Request.County.list url |> Http.send ( Counties >> Fetch )
                         , Request.ServiceCode.list url |> Http.send ( ServiceCodes >> Fetch )
                         , Request.Specialist.list url |> Http.send ( Specialists >> Fetch )
                         , Request.Status.list url |> Http.send ( Statuses >> Fetch )
@@ -104,7 +101,6 @@ init url session =
                         model
                         , [ Cmd.map BillSheetTimeEntryMsg subCmd
                         , Request.Consumer.list url |> Http.send ( Consumers >> Fetch )
-                        , Request.County.list url |> Http.send ( Counties >> Fetch )
                         , Request.ServiceCode.list url |> Http.send ( ServiceCodes >> Fetch )
                         , 0 |> Request.BillSheet.page url whereClause |> Http.send ( BillSheets >> Fetch )
                         ]
@@ -136,7 +132,6 @@ init url session =
 type FetchedData
     = BillSheets ( Result Http.Error BillSheetWithPager )
     | Consumers ( Result Http.Error ( List Consumer ) )
-    | Counties ( Result Http.Error ( List County ) )
     | ServiceCodes ( Result Http.Error ( List ServiceCode ) )
     | Specialists ( Result Http.Error ( List User ) )
     | Statuses ( Result Http.Error ( List Status ) )
@@ -293,18 +288,6 @@ update url msg model =
                 Consumers ( Err err ) ->
                     { model |
                         viewLists = { oldViewLists | consumers = Nothing }
-                        , tableState = Table.initialSort "ID"
-                    } ! []
-
-                Counties ( Ok counties ) ->
-                    { model |
-                        viewLists = { oldViewLists | counties = counties |> Just }
-                        , tableState = Table.initialSort "ID"
-                    } ! []
-
-                Counties ( Err err ) ->
-                    { model |
-                        viewLists = { oldViewLists | counties = Nothing }
                         , tableState = Table.initialSort "ID"
                     } ! []
 
