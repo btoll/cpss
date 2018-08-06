@@ -72,6 +72,14 @@ main#home section div.buttons + div {
     min-height: 600px;
     padding: 20px;
 }
+main#home section div.buttons + div > div {     /* Text on Home page under CPSS header. */
+    background-color: antiquewhite;
+    border: 1px solid #969696;
+    border-radius: 10px;
+    font-weight: bold;
+    padding: 5px 20px;
+    width: 40%;
+}
 section {
     background: #ccc;
     border: 1px dotted #000;
@@ -164,6 +172,7 @@ form .unitBlock {
 }
 form .unitBlock div {
     float: left;
+    margin: 5px 0;
 }
 form .unitBlock div + div {
     margin-right: 20px;
@@ -174,8 +183,24 @@ form .unitBlock div + div label {
 form .unitBlock div + div input {
     width: 50px;
 }
+div.unitBlock button {
+    padding: 4px;
+}
 /* Reset for the Image form. */
 #image form > div:last-child {
     margin-left: 0;
 }
-
+button,
+input[type="button"],
+input[type="submit"] {
+    background-color: #ccc;
+    border: 2px solid #969696;
+    border-radius: 5px;
+    color: brown;
+    font-weight: bold;
+    padding: 10px;
+}
+button:hover {
+    background-color: #aaa;
+    border-color: inherit;
+}
