@@ -196,7 +196,7 @@ formRows viewLists model =
         ] (
             specialists
                 |> List.map ( \m -> ( m.id |> toString, m.lastname ++ ", " ++ m.firstname ) )
-                |> (::) ( "-1", "-- Select a specialist --" )
+                |> (::) ( "-1", "-- Select a Specialist --" )
                 |> List.map ( editable.specialist |> toString |> Form.option )
         )
     , Form.select "Consumer"
@@ -205,7 +205,7 @@ formRows viewLists model =
         ] (
             consumers
                 |> List.map ( \m -> ( m.id |> toString, m.lastname ++ ", " ++ m.firstname ) )
-                |> (::) ( "-1", "-- Select a consumer --" )
+                |> (::) ( "-1", "-- Select a Consumer --" )
                 |> List.map ( editable.consumer |> toString |> Form.option )
         )
     , div []
@@ -219,7 +219,7 @@ formRows viewLists model =
         ] (
             serviceCodes
                 |> List.map ( \m -> ( m.id |> toString, m.name ) )
-                |> (::) ( "-1", "-- Select a service code --" )
+                |> (::) ( "-1", "-- Select a Service Code --" )
                 |> List.map ( editable.serviceCode |> toString |> Form.option )
         )
     , Form.float "Units"
@@ -239,7 +239,7 @@ formRows viewLists model =
         ] (
             status
                 |> List.map ( \m -> ( m.id |> toString, m.name ) )
-                |> (::) ( "-1", "-- Select a status --" )
+                |> (::) ( "-1", "-- Select a Status --" )
                 |> List.map ( editable.status |> toString |> Form.option )
         )
     , Form.text "Confirmation"

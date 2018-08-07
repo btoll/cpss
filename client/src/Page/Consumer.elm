@@ -930,7 +930,7 @@ unitsBlock fetchedServiceCodes consumer =
                     ] (
                         fetchedServiceCodes
                             |> List.map ( \m -> ( m.id |> toString, m.name ) )
-                            |> (::) ( "-1", "-- Select a service code --" )
+                            |> (::) ( "-1", "-- Select a Service code --" )
                             |> List.map ( serviceCode.serviceCode |> toString |> Form.option )
                     )
                 , Form.float "Units"
@@ -973,7 +973,7 @@ formRows ( editing, serviceCodes, dias, fundingSources, countyData ) =
             countyData
                 |> Tuple.first
                 |> List.map ( \m -> ( m.id |> toString, m.name ) )
-                |> (::) ( "-1", "-- Select a county --" )
+                |> (::) ( "-1", "-- Select a County --" )
                 |> List.map ( editable.county |> toString |> Form.option )
         )
     , div [ "unitsBlock" |> id ] (

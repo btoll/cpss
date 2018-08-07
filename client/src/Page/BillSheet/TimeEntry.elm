@@ -198,7 +198,7 @@ formRows viewLists model =
         ] (
             consumers
                 |> List.map ( \m -> ( m.id |> toString, ( m.lastname ++ ", " ++ m.firstname ) ) )
-                |> (::) ( "-1", "-- Select a consumer --" )
+                |> (::) ( "-1", "-- Select a Consumer --" )
                 |> List.map ( editable.consumer |> toString |> Form.option )
         )
     , div []
@@ -212,7 +212,7 @@ formRows viewLists model =
         ] (
             serviceCodes
                 |> List.map ( \m -> ( m.id |> toString, m.name ) )
-                |> (::) ( "-1", "-- Select a service code --" )
+                |> (::) ( "-1", "-- Select a Service code --" )
                 |> List.map ( editable.serviceCode |> toString |> Form.option )
         )
     , Form.float "Hours"

@@ -445,7 +445,7 @@ formRows ( editable, counties ) =
         ] (
             counties
                 |> List.map ( \m -> ( m.id |> toString, m.name ) )
-                |> (::) ( "-1", "-- Select a county --" )
+                |> (::) ( "-1", "-- Select a County --" )
                 |> List.map ( editable.county |> toString |> Form.option )
         )
     ]

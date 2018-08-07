@@ -87,7 +87,7 @@ select name attrs =
 submit : Bool -> msg -> Html msg
 submit isDisabled toMsg =
     div [] [
-        input [ disabled isDisabled, type_ "submit" ] []
+        input [ disabled isDisabled, type_ "submit", value "Submit" ] []
         , input [ onClick toMsg, type_ "button", value "Cancel" ] []
     ]
 

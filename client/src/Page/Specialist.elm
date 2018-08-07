@@ -681,7 +681,7 @@ formRows action editable =
         [ id "authLevelSelection"
         , onInput ( SetFormValue (\v -> { editable | authLevel = Form.toInt v } ) )
         ] (
-            [ ( "-1", "-- Select an auth level --" ), ( "1", "Admin" ), ( "2", "User" ) ]
+            [ ( "-1", "-- Select an Auth Level --" ), ( "1", "Admin" ), ( "2", "User" ) ]
                 |> List.map ( editable.authLevel |> toString |> Form.option )
         )
     ]
