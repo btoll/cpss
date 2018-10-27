@@ -46,7 +46,7 @@ app.ports.setSessionCredentials.subscribe(user => {
     localStorage.setItem('userID', user.userID);
     localStorage.setItem('sessionName', user.sessionName);
     localStorage.setItem('expiry', user.expiry);
-    localStorage.setItem('loginDate', d.getFullYear() + '-' + (month.length == 2 ? month : '0' + month) + '-' + (day.length == 2 ? day : '0' + day));
+    localStorage.setItem('loginDate', (month.length == 2 ? month : '0' + month) + '/' + (day.length == 2 ? day : '0' + day) + '/' + d.getFullYear().toString().slice(2));
 
     // Send back into Elm to set the populate the session upon a new login!
     app.ports.getSessionCredentials.send({

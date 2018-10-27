@@ -563,10 +563,10 @@ update url msg model =
                     else
                         Cmd.none
             in
-                { model |
-                    disabled = True
-                    , errors = errors
-                } ! [ subCmd ]
+            { model |
+                disabled = True
+                , errors = errors
+            } ! [ subCmd ]
 
         Posted ( Ok consumer ) ->
             let

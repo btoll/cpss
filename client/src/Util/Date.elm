@@ -98,7 +98,7 @@ simple date =
     let
         h = date |> parse
     in
-    h.year ++ "-" ++ h.month ++ "-" ++ h.day
+    h.month ++ "/" ++ h.day ++ "/" ++ ( h.year |> String.slice 2 4 ) -- Returns "10/19/18"
 
 
 -- http://package.elm-lang.org/packages/rluiten/elm-date-extra/latest

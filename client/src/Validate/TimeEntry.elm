@@ -12,7 +12,6 @@ errors model =
     , isSelected model.serviceCode "Please select a Service Code."
     , isZero model.units "Hours cannot be zero."
     , isBlank model.description "Description cannot be blank."
-    , isBlank model.billedCode "Billed Code cannot be blank."
     ]
         |> fold
 

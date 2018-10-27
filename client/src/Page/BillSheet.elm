@@ -26,6 +26,7 @@ import Request.Status
 import Search.BillSheet
 import Table exposing (defaultCustomizations)
 import Task exposing (Task)
+import Util.Date
 import Validate.BillSheet
 import Validate.TimeEntry
 import Views.Errors as Errors
@@ -195,9 +196,23 @@ update url msg model =
             } ! [ Cmd.map BillSheetBillSheetMsg cmd ]
 
         Cancel ->
+            let
+                today =
+                    case subModel.date of
+                        Nothing ->
+                            ""
+
+                        Just date ->
+                            date |> Util.Date.simple
+            in
             { model |
                 action = None
-                , subModel = { subModel | editing = Nothing }
+                , subModel =
+                    { subModel | editing =
+                        { new | serviceDate =   {- We always want a default date in case none is selected when adding a new Billsheet/Time Entry -}
+                            today
+                        } |> Just
+                    }
                 , errors = []
             } ! []
 
@@ -636,14 +651,6 @@ view session model =
 drawView : Model -> List ( Html Msg )
 drawView model =
     let
-        editable : BillSheet
-        editable = case model.subModel.editing of
-            Nothing ->
-                new
-
-            Just billsheet ->
-                billsheet
-
         showList =
             case model.viewLists.billsheets of
                 Nothing ->

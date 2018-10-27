@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS `billsheet` (
   `specialist` int DEFAULT -1,
   `consumer` int DEFAULT -1,
   `units` float DEFAULT 0.0,
-  `serviceDate` date DEFAULT NULL,
+  `serviceDate` CHAR(8) NOT NULL,
   `serviceCode` int DEFAULT -1,
   `contractType` varchar(100) DEFAULT NULL,
   `status` smallint DEFAULT -1,

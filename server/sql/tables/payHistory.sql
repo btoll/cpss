@@ -5,7 +5,7 @@ DROP TABLE IF EXISTS `pay_history` ;
 CREATE TABLE IF NOT EXISTS `pay_history` (
   `id` int(2) NOT NULL  AUTO_INCREMENT,
   `specialist` int DEFAULT -1,
-  `changeDate` date DEFAULT NULL,
+  `changeDate` CHAR(8) NOT NULL,
   `payrate` float DEFAULT 0.0,
   PRIMARY KEY (`id`),
   KEY `ID` (`id`)

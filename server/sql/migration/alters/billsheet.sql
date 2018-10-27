@@ -22,14 +22,12 @@ CREATE TABLE IF NOT EXISTS `billsheet` (
   `status` smallint DEFAULT -1,
   `billedCode` varchar(30) DEFAULT NULL,
   `billedAmount` float DEFAULT 0.0,
-  `county` int DEFAULT -1,
   `confirmation` varchar(50) DEFAULT NULL,
   `description` longtext DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `ID` (`id`)
   /*-CONSTRAINT `fkspecialist` FOREIGN KEY (`specialist`) REFERENCES `specialist` (`id`),
   CONSTRAINT `fkconsumer` FOREIGN KEY (`consumer`) REFERENCES `consumer` (`id`),
-  CONSTRAINT `fkcounty` FOREIGN KEY (`county`) REFERENCES `county` (`id`)*/
   /*CONSTRAINT `fkservicecode` FOREIGN KEY (`serviceCode`) REFERENCES `service_code` (`id`),*/
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 ;
 
@@ -94,7 +92,7 @@ update appTimeEntry set County=1001 where County="CPSS";
 update appTimeEntry set County = ifnull(County, 1002);
 update appTimeEntry set County=1002 where County='';
 
-insert into billsheet (specialist,consumer,units,serviceDate,serviceCode,contractType,status,county,confirmation,description) select specialistID,consumerID,Hours*4,RenderDate,ServiceCode,ContractType,Status,County,Confirmation,Description from appTimeEntry;
+insert into billsheet (specialist,consumer,units,serviceDate,serviceCode,contractType,status,confirmation,description) select specialistID,consumerID,Hours*4,RenderDate,ServiceCode,ContractType,Status,Confirmation,Description from appTimeEntry;
 
 update billsheet set units = ifnull(units, 0.0);
 update billsheet set status = ifnull(status, 0);

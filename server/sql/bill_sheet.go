@@ -77,6 +77,23 @@ func (s *BillSheet) Create(db *mysql.DB) (interface{}, error) {
 	if _, err := s.IsLegalDate(db, payload); err != nil {
 		return nil, err
 	}
+	// Check to see if this is a duplicate entry!
+	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)", fmt.Sprintf("WHERE consumer=%d AND serviceCode=%d AND serviceDate='%s'", payload.Consumer, payload.ServiceCode, payload.ServiceDate)))
+	if err != nil {
+		return nil, err
+	}
+	var count int
+	for rows.Next() {
+		err = rows.Scan(&count)
+		if err != nil {
+			return nil, err
+		}
+	}
+	fmt.Println("count", count)
+	if count > 0 {
+		return false, errors.New("Duplicate entry: There is already an entry for this Consumer and ServiceCode on this ServiceDate!")
+	}
+
 	// For now, don't update the billsheet table if the unit rate lookup fails!
 	unitRate, err := s.GetUnitRate(db, payload.ServiceCode)
 	if err != nil {
@@ -151,21 +168,20 @@ func (s *BillSheet) IsLegalDate(db *mysql.DB, payload *app.BillSheetPayload) (bo
 	} else if id == 1 {
 		return true, nil
 	}
-	parts := strings.Split(payload.ServiceDate, "-")
-	year, err := strconv.Atoi(parts[0])
-	if err != nil {
-		return false, errors.New("Bad date: year is incorrect")
-	}
-	month, err := strconv.Atoi(parts[1])
+	parts := strings.Split(payload.ServiceDate, "/")
+	month, err := strconv.Atoi(parts[0])
 	if err != nil {
 		return false, errors.New("Bad date: month is incorrect")
 	}
-	day, err := strconv.Atoi(parts[2])
+	day, err := strconv.Atoi(parts[1])
 	if err != nil {
 		return false, errors.New("Bad date: day is incorrect")
 	}
-	userEntered := time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
+	//
+	// Note that since dates can't be backdated, it's safe to use the current year!
+	//
 	tyear, tmonth, tday := time.Now().Date()
+	userEntered := time.Date(tyear, time.Month(month), day, 0, 0, 0, 0, time.UTC)
 	today := time.Date(tyear, tmonth, tday, 0, 0, 0, 0, time.UTC)
 	// https://golang.org/pkg/time/#Time.Sub
 	// When the day before is selected, will appear as `-24h0m0s`.  -- Illegal!

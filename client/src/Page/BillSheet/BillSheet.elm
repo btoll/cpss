@@ -56,21 +56,22 @@ settings date =
         { commonSettings
             | placeholder = ""
             , isDisabled = isDisabled
+            , dateFormatter = Util.Date.simple
         }
 
 
 
 init : String -> ( Model, Cmd Msg )
-init date =
+init dateString =
     let
         ( datePicker, datePickerFx ) =
             DatePicker.init
     in
     (
         { tableState = Table.initialSort "ID"
-        , editing = { new | serviceDate = date } |> Just
+        , editing = { new | serviceDate = dateString } |> Just
         , disabled = True
-        , date = date |> Util.Date.unsafeFromString |> Just
+        , date = dateString |> Util.Date.unsafeFromString |> Just
         , datePicker = datePicker
         }
         , Cmd.map DatePicker datePickerFx
@@ -93,35 +94,32 @@ update msg model =
                 ( newDatePicker, datePickerFx, dateEvent ) =
                     DatePicker.update ( settings model.date ) subMsg model.datePicker
 
-                ( newDate, newBillSheet ) =
-                    let
-                        billsheet = Maybe.withDefault new model.editing
-                    in
+                newDate =
                     case dateEvent of
                         Changed newDate ->
-                            let
-                                dateString =
-                                    case dateEvent of
-                                        Changed date ->
-                                            case date of
-                                                Nothing ->
-                                                    ""
-
-                                                Just d ->
-                                                    d |> Util.Date.simple
-
-                                        _ ->
-                                            billsheet.serviceDate
-                            in
-                            ( newDate , { billsheet | serviceDate = dateString } )
+                            newDate
 
                         _ ->
-                            ( model.date, { billsheet | serviceDate = billsheet.serviceDate } )
+                            model.date
+
+                billsheet = Maybe.withDefault new model.editing
+                dateString =
+                    case dateEvent of
+                        Changed date ->
+                            case date of
+                                Nothing ->
+                                    ""
+
+                                Just d ->
+                                    d |> Util.Date.simple
+
+                        _ ->
+                            billsheet.serviceDate
             in
             { model
                 | date = newDate
                 , datePicker = newDatePicker
-                , editing = Just newBillSheet
+                , editing = Just { billsheet | serviceDate = dateString }
             } ! [ Cmd.map DatePicker datePickerFx ]
 
         Select selectType consumer selection ->

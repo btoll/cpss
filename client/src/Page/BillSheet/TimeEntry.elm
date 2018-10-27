@@ -1,6 +1,7 @@
 module Page.BillSheet.TimeEntry exposing (Model, Msg, formRows, init, tableColumns, update)
 
 
+
 import Data.BillSheet exposing (BillSheet, new)
 import Data.Consumer exposing (Consumer)
 import Data.Search exposing (ViewLists)
@@ -50,17 +51,18 @@ settings date =
                     \d ->
                         Date.toTime d
                             < Date.toTime date
-                            || ( commonSettings.isDisabled d )
+                            || ( d |> commonSettings.isDisabled )
     in
         { commonSettings
             | placeholder = ""
             , isDisabled = isDisabled
+            , dateFormatter = Util.Date.simple
         }
 
 
 
 init : String -> ( Model, Cmd Msg )
-init date =
+init dateString =
     let
         ( datePicker, datePickerFx ) =
             DatePicker.init
@@ -69,9 +71,9 @@ init date =
     in
     (
         { tableState = Table.initialSort "ID"
-        , editing = { new | serviceDate = date } |> Just
+        , editing = { new | serviceDate = dateString } |> Just
         , disabled = True
-        , date = date |> Util.Date.unsafeFromString |> Just
+        , date = dateString |> Util.Date.unsafeFromString |> Just
         , datePicker = datePicker
         }
         , Cmd.map DatePicker datePickerFx
@@ -95,35 +97,32 @@ update msg model =
                 ( newDatePicker, datePickerFx, dateEvent ) =
                     DatePicker.update ( settings model.date ) subMsg model.datePicker
 
-                ( newDate, newBillSheet ) =
-                    let
-                        billsheet = Maybe.withDefault new model.editing
-                    in
+                newDate =
                     case dateEvent of
                         Changed newDate ->
-                            let
-                                dateString =
-                                    case dateEvent of
-                                        Changed date ->
-                                            case date of
-                                                Nothing ->
-                                                    ""
-
-                                                Just d ->
-                                                    d |> Util.Date.simple
-
-                                        _ ->
-                                            billsheet.serviceDate
-                            in
-                            ( newDate , { billsheet | serviceDate = dateString } )
+                            newDate
 
                         _ ->
-                            ( model.date, { billsheet | serviceDate = billsheet.serviceDate } )
+                            model.date
+
+                billsheet = Maybe.withDefault new model.editing
+                dateString =
+                    case dateEvent of
+                        Changed date ->
+                            case date of
+                                Nothing ->
+                                    ""
+
+                                Just d ->
+                                    d |> Util.Date.simple
+
+                        _ ->
+                            billsheet.serviceDate
             in
             { model
                 | date = newDate
                 , datePicker = newDatePicker
-                , editing = Just newBillSheet
+                , editing = Just { billsheet | serviceDate = dateString }
             } ! [ Cmd.map DatePicker datePickerFx ]
 
         Select selectType consumer selection ->
@@ -222,16 +221,6 @@ formRows viewLists model =
         ,  "0.25" |> Html.Attributes.step
         ]
         []
---    , Form.text "Contract Type"
---        [ value editable.contractType
---        , True |> Html.Attributes.disabled
---        ]
---        []
-    , Form.text "Billed Code"
-        [ value editable.billedCode
-        , onInput ( SetFormValue ( \v -> { editable | billedCode = v } ) )
-        ]
-        []
     , Form.textarea "Description"
         [ value editable.description
         , onInput ( SetFormValue ( \v -> { editable | description = v } ) )
@@ -273,8 +262,6 @@ tableColumns customColumn viewButton editMsg deleteMsg viewLists =
         4.0 |> (/) m.units
     )
     , Table.stringColumn "Description" .description
-    , Table.stringColumn "Contract Type" .contractType
-    , Table.stringColumn "Billed Code" .billedCode
     , customColumn "" ( viewButton editMsg "Edit" )
     , customColumn "" ( viewButton deleteMsg "Delete" )
     ]

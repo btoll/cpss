@@ -142,14 +142,14 @@ view user query viewLists =
                     [ True |> autofocus
                     , ( "serviceDateFrom" |> setText q ) |> SetFormValue >> onInput
                     , "serviceDateFrom" |> getText q |> value
-                    , "YYYY-MM-DD" |> placeholder
+                    , "MM/DD/YY" |> placeholder
                     ]
                     []
                 , Form.text "Service Date To"
                     [ True |> autofocus
                     , ( "serviceDateTo" |> setText q ) |> SetFormValue >> onInput
                     , "serviceDateTo" |> getText q |> value
-                    , "YYYY-MM-DD" |> placeholder
+                    , "MM/DD/YY" |> placeholder
                     ]
                     []
                 , Form.submit ( q |> Dict.isEmpty ) Cancel
@@ -189,14 +189,14 @@ view user query viewLists =
                     [ True |> autofocus
                     , ( "serviceDateFrom" |> setText q ) |> SetFormValue >> onInput
                     , "serviceDateFrom" |> getText q |> value
-                    , "YYYY-MM-DD" |> placeholder
+                    , "MM/DD/YY" |> placeholder
                     ]
                     []
                 , Form.text "Service Date To"
                     [ True |> autofocus
                     , ( "serviceDateTo" |> setText q ) |> SetFormValue >> onInput
                     , "serviceDateTo" |> getText q |> value
-                    , "YYYY-MM-DD" |> placeholder
+                    , "MM/DD/YY" |> placeholder
                     ]
                     []
                 , Form.submit ( q |> Dict.isEmpty ) Cancel
