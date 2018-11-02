@@ -31,8 +31,6 @@ func main() {
 	app.MountStatusController(service, g)
 	h := NewCountyController(service)
 	app.MountCountyController(service, h)
-	i := NewCityController(service)
-	app.MountCityController(service, i)
 	j := NewServiceCodeController(service)
 	app.MountServiceCodeController(service, j)
 	k := NewDIAController(service)

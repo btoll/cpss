@@ -120,7 +120,7 @@ siteLinks user page =
                     , SiteLink Consumer Route.Consumer [ text "Consumer" ]
                     , SiteLink Specialist Route.Specialist [ text "Specialist" ]
                     , SiteLink Status Route.Status [ text "Status" ]
-                    , SiteLink County Route.County [ text "Cities / Counties" ]
+                    , SiteLink County Route.County [ text "Counties" ]
                     , SiteLink ServiceCode Route.ServiceCode [ text "Service Code" ]
                     , SiteLink DIA Route.DIA [ text "DIA" ]
                     , SiteLink FundingSource Route.FundingSource [ text "Funding Source" ]

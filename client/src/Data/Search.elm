@@ -2,9 +2,8 @@ module Data.Search exposing (SearchType(..), Query, ViewLists, fmtDates, fmtEqua
 
 
 import Data.BillSheet exposing (BillSheet, BillSheetWithPager)
-import Data.City exposing (City, CityWithPager)
 import Data.Consumer exposing (Consumer, ConsumerWithPager)
-import Data.County exposing (County)
+import Data.County exposing (County, CountyWithPager)
 import Data.ServiceCode exposing (ServiceCode)
 import Data.Status exposing (Status)
 import Data.User exposing (User, UserWithPager)
@@ -48,11 +47,10 @@ fmtFuzzyMatch k v acc =
 type SearchType
     = BillSheet
    -- | BillSheetWithPager
-    | City
-  --  | CityWithPager
     | Consumer
  --   | ConsumerWithPager
     | County
+--    | CountyWithPager
     | ServiceCode
     | Status
     | TimeEntry

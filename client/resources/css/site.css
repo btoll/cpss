@@ -181,7 +181,7 @@ form .unitBlock div + div label {
     width: 50px;
 }
 form .unitBlock div + div input {
-    width: 50px;
+    width: 100px;
 }
 div.unitBlock button {
     padding: 4px;

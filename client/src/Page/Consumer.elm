@@ -2,7 +2,7 @@ module Page.Consumer exposing (Model, Msg, init, update, view)
 
 import Bitwise
 import Data.Search exposing (Query, fmtFuzzyMatch)
-import Data.City exposing (City)
+import Data.County exposing (County)
 import Data.Consumer exposing (Consumer, ConsumerWithPager, new, newServiceCode)
 import Data.County exposing (County)
 import Data.DIA exposing (DIA)
@@ -14,7 +14,7 @@ import Html exposing (Html, Attribute, button, div, form, h1, input, label, node
 import Html.Attributes exposing (action, autofocus, checked, class, for, hidden, id, style, type_, value)
 import Html.Events exposing (onCheck, onClick, onInput, onSubmit)
 import Http
-import Request.City
+import Request.County
 import Request.Consumer
 import Request.County
 import Request.DIA
@@ -52,7 +52,7 @@ type alias Model =
 
 
 type alias CountyData
-    = ( List County, List City )
+    = ( List County, List County )
 
 
 type UB     -- UnitsBlock
@@ -92,8 +92,7 @@ init url =
 
 
 type FetchedData
-    = Cities ( Result Http.Error ( List City ) )
-    | Consumers ( Result Http.Error ConsumerWithPager )
+    = Consumers ( Result Http.Error ConsumerWithPager )
     | Counties ( Result Http.Error ( List County ) )
     | Dias ( Result Http.Error ( List DIA ) )
     | FundingSources ( Result Http.Error ( List FundingSource ) )
@@ -208,32 +207,10 @@ update url msg model =
                 , editing = Just consumer
                 , errors = []
             -- Fetch the county's zip codes to set the zip code drop-down to the correct value.
-            } ! [ consumer.county |> toString |> Request.City.get url |> Http.send ( Cities >> Fetch ) ]
+            } ! [ consumer.county |> toString |> Request.County.get url |> Http.send ( Counties >> Fetch ) ]
 
         Fetch result ->
             case result of
-                Cities ( Ok cities ) ->
-                    { model |
-                        countyData = ( model.countyData |> Tuple.first, cities )
-                        , tableState = Table.initialSort "ID"
-                    } ! []
-
-                Cities ( Err err ) ->
-                    let
-                        e =
-                            case err of
-                                Http.BadStatus e ->
-                                    e.body
-
-                                _ ->
-                                    "nop"
-                    in
-                    { model |
-                        countyData = ( model.countyData |> Tuple.first, [] )
-                        , errors = (::) e model.errors
-                        , tableState = Table.initialSort "ID"
-                    } ! []
-
                 Consumers ( Ok consumers ) ->
                     { model |
                         consumers = consumers.consumers
@@ -701,7 +678,7 @@ update url msg model =
             case selectType of
                 Form.CountyID ->
                     ( { consumer | county = selectionToInt } |> newModel ) ! [
-                        selectionString |> Request.City.get url |> Http.send ( Cities >> Fetch )
+                        selectionString |> Request.County.get url |> Http.send ( Counties >> Fetch )
                     ]
 
                 Form.DIAID ->

@@ -10,7 +10,6 @@ cat db.sql ../migration/full_dump.sql | mysql -u btoll -p
 #    status.sql \
 #    specialist.sql \
 #    county.sql \
-#    city.sql \
 #    consumer.sql \
 #    billsheet.sql \
 #    payHistory.sql \
