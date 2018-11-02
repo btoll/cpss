@@ -9,7 +9,6 @@ CREATE TABLE IF NOT EXISTS `consumer` (
   `active` tinyint DEFAULT 1,
   `county` mediumint DEFAULT -1,
   `fundingSource` int(11) DEFAULT NULL,
-  `zip` varchar(30) DEFAULT NULL,
   `bsu` varchar(30) DEFAULT NULL,
   `recipientID` varchar(30) DEFAULT NULL,
   `dia` int(1) DEFAULT NULL,

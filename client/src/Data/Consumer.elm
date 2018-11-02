@@ -27,7 +27,6 @@ type alias Consumer =
     , county : Int
     , serviceCodes : List ServiceCode
     , fundingSource : Int
-    , zip : String
     , bsu : String
     , recipientID : String
     , dia : Int
@@ -59,7 +58,6 @@ new =
     , county = -1
     , serviceCodes = []
     , fundingSource = -1
-    , zip = ""
     , bsu = ""
     , recipientID = ""
     , dia = -1
@@ -87,7 +85,6 @@ decoder =
         |> optional "county" int -1
         |> optional "serviceCodes" manyServiceCodeDecoder []
         |> optional "fundingSource" int -1
-        |> optional "zip" string ""
         |> optional "bsu" string ""
         |> optional "recipientID" string ""
         |> optional "dia" int -1
@@ -130,7 +127,6 @@ encoder consumer =
         , ( "county", Encode.int consumer.county )
         , ( "serviceCodes", consumer.serviceCodes |> manyServiceCodeEncoder >> Encode.list )
         , ( "fundingSource", Encode.int consumer.fundingSource )
-        , ( "zip", Encode.string consumer.zip )
         , ( "bsu", Encode.string consumer.bsu )
         , ( "recipientID", Encode.string consumer.recipientID )
         , ( "dia", Encode.int consumer.dia )

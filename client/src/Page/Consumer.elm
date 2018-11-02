@@ -206,7 +206,6 @@ update url msg model =
                 , disabled = True
                 , editing = Just consumer
                 , errors = []
-            -- Fetch the county's zip codes to set the zip code drop-down to the correct value.
             } ! [ consumer.county |> toString |> Request.County.get url |> Http.send ( Counties >> Fetch ) ]
 
         Fetch result ->
@@ -687,9 +686,6 @@ update url msg model =
                 Form.FundingSourceID ->
                     ( { consumer | fundingSource = selectionToInt } |> newModel ) ! []
 
-                Form.ZipID ->
-                    ( { consumer | zip = selectionString } |> newModel ) ! []
-
                 _ ->
                     model ! []
 
@@ -966,11 +962,6 @@ formRows ( editing, serviceCodes, dias, fundingSources, countyData ) =
                 |> (::) ( "-1", "-- Select a Funding Source --" )
                 |> List.map ( editable.fundingSource |> toString |> Form.option )
         )
-    , Form.text "Zip code"
-        [ value editable.zip
-        , onInput ( SetFormValue (\v -> { editable | zip = v } ) )
-        ]
-        []
     , Form.text "BSU"
         [ value editable.bsu
         , onInput ( SetFormValue (\v -> { editable | bsu = v } ) )
@@ -1035,7 +1026,6 @@ config model =
                 >> Maybe.withDefault { id = -1, name = "" }
                 >> .name
         )
-        , Table.stringColumn "Zip Code" .zip
         , Table.stringColumn "BSU" .bsu
         , Table.stringColumn "Recipient ID" .recipientID
         , Table.stringColumn "DIA" (

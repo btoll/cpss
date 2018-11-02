@@ -20,11 +20,11 @@ func NewConsumer(payload interface{}) *Consumer {
 		Stmt: map[string]string{
 			"DELETE":               "DELETE FROM consumer WHERE id=?",
 			"DELETE_SERVICE_CODE":  "DELETE FROM unit_block WHERE id=?",
-			"INSERT":               "INSERT consumer SET firstname=?,lastname=?,active=?,county=?,fundingSource=?,zip=?,bsu=?,recipientID=?,dia=?,other=?",
+			"INSERT":               "INSERT consumer SET firstname=?,lastname=?,active=?,county=?,fundingSource=?,bsu=?,recipientID=?,dia=?,other=?",
 			"INSERT_SERVICE_CODES": "INSERT unit_block SET consumer=?,serviceCode=?,units=?",
 			"SELECT":               "SELECT %s FROM consumer %s",
 			"SELECT_SERVICE_CODES": "SELECT %s FROM consumer INNER JOIN unit_block ON unit_block.consumer = consumer.id INNER JOIN service_code ON service_code.id = unit_block.serviceCode %s",
-			"UPDATE":               "UPDATE consumer SET firstname=?,lastname=?,active=?,county=?,fundingSource=?,zip=?,bsu=?,recipientID=?,dia=?,other=? WHERE id=?",
+			"UPDATE":               "UPDATE consumer SET firstname=?,lastname=?,active=?,county=?,fundingSource=?,bsu=?,recipientID=?,dia=?,other=? WHERE id=?",
 			"UPDATE_SERVICE_CODES": "UPDATE unit_block SET serviceCode=?,units=? WHERE id=?",
 		},
 	}
@@ -123,13 +123,12 @@ func (s *Consumer) CollectRows(db *mysql.DB, rows *mysql.Rows, coll []*app.Consu
 		var active bool
 		var county int
 		var fundingSource int
-		var zip string
 		var bsu string
 		var recipientID string
 		var dia int
 		var other string
 		var fullname string
-		err := rows.Scan(&id, &firstname, &lastname, &active, &county, &fundingSource, &zip, &bsu, &recipientID, &dia, &other, &fullname)
+		err := rows.Scan(&id, &firstname, &lastname, &active, &county, &fundingSource, &bsu, &recipientID, &dia, &other, &fullname)
 		if err != nil {
 			return err
 		}
@@ -146,7 +145,6 @@ func (s *Consumer) CollectRows(db *mysql.DB, rows *mysql.Rows, coll []*app.Consu
 			County:        county,
 			ServiceCodes:  serviceCodes,
 			FundingSource: fundingSource,
-			Zip:           zip,
 			Bsu:           bsu,
 			RecipientID:   recipientID,
 			Dia:           dia,
@@ -177,7 +175,7 @@ func (s *Consumer) Create(db *mysql.DB) (interface{}, error) {
 	if err != nil {
 		return -1, err
 	}
-	res, err := stmt.Exec(payload.Firstname, payload.Lastname, payload.Active, payload.County, payload.FundingSource, payload.Zip, payload.Bsu, payload.RecipientID, payload.Dia, payload.Other)
+	res, err := stmt.Exec(payload.Firstname, payload.Lastname, payload.Active, payload.County, payload.FundingSource, payload.Bsu, payload.RecipientID, payload.Dia, payload.Other)
 	if err != nil {
 		return -1, err
 	}
@@ -204,7 +202,7 @@ func (s *Consumer) Update(db *mysql.DB) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, err = stmt.Exec(payload.Firstname, payload.Lastname, payload.Active, payload.County, payload.FundingSource, payload.Zip, payload.Bsu, payload.RecipientID, payload.Dia, payload.Other, payload.ID)
+	_, err = stmt.Exec(payload.Firstname, payload.Lastname, payload.Active, payload.County, payload.FundingSource, payload.Bsu, payload.RecipientID, payload.Dia, payload.Other, payload.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -216,7 +214,6 @@ func (s *Consumer) Update(db *mysql.DB) (interface{}, error) {
 		County:        payload.County,
 		ServiceCodes:  serviceCodes,
 		FundingSource: payload.FundingSource,
-		Zip:           payload.Zip,
 		Bsu:           payload.Bsu,
 		RecipientID:   payload.RecipientID,
 		Dia:           payload.Dia,

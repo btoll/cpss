@@ -27,7 +27,6 @@ type Selection
     | ServiceCodeID
     | SpecialistID
     | StatusID
-    | ZipID
 
 
 
