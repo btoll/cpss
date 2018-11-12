@@ -129,7 +129,6 @@ insert into billsheet (specialist,consumer,hours,units,serviceDate,serviceCode,c
 update billsheet set contractType = ifnull(contractType, '');
 update billsheet set recipientID = ifnull(recipientID, '');
 update billsheet set recordNumber = ifnull(recordNumber, '');
-update billsheet set billedCode = ifnull(billedCode, '');
 update billsheet set confirmation = ifnull(confirmation, '');
 update billsheet set hours = ifnull(hours, 0.0);
 update billsheet set units = ifnull(units, 0.0);

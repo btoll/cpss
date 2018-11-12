@@ -11,7 +11,6 @@ CREATE TABLE IF NOT EXISTS `billsheet` (
   `serviceCode` int DEFAULT -1,
   `contractType` varchar(100) DEFAULT NULL,
   `status` smallint DEFAULT -1,
-  `billedCode` varchar(100) DEFAULT NULL,
   `billedAmount` float DEFAULT 0.0,
   `confirmation` varchar(100) DEFAULT NULL,
   `description` tinyblob DEFAULT NULL,

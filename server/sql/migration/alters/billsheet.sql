@@ -17,10 +17,8 @@ CREATE TABLE IF NOT EXISTS `billsheet` (
   `units` float DEFAULT 0.0,
   `serviceDate` date DEFAULT NULL,
   `serviceCode` int DEFAULT -1,
-  `hold` tinyint DEFAULT 0,
   `contractType` varchar(30) DEFAULT NULL,
   `status` smallint DEFAULT -1,
-  `billedCode` varchar(30) DEFAULT NULL,
   `billedAmount` float DEFAULT 0.0,
   `confirmation` varchar(50) DEFAULT NULL,
   `description` longtext DEFAULT NULL,
@@ -96,7 +94,6 @@ insert into billsheet (specialist,consumer,units,serviceDate,serviceCode,contrac
 
 update billsheet set units = ifnull(units, 0.0);
 update billsheet set status = ifnull(status, 0);
-update billsheet set billedCode = ifnull(billedCode, '');
 update billsheet set confirmation = ifnull(confirmation, '');
 update billsheet set serviceDate = ifnull(serviceDate, '');
 update billsheet set serviceCode = ifnull(serviceCode, 0);

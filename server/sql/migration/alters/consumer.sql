@@ -69,7 +69,6 @@ CREATE TABLE IF NOT EXISTS `consumer` (
   `active` tinyint DEFAULT 1,
   `county` mediumint DEFAULT -1,
   `fundingSource` int(11) DEFAULT NULL,
-  `zip` varchar(30) DEFAULT NULL,
   `bsu` varchar(30) DEFAULT NULL,
   `recipientID` varchar(30) DEFAULT NULL,
   `dia` int(1) DEFAULT NULL,
@@ -89,8 +88,9 @@ alter table appConsumer drop column MedAsst;
 alter table appConsumer drop column Other3rd;
 alter table appConsumer drop column RoomBoard;
 alter table appConsumer drop column unitsAllotment;
+alter table appConsumer drop column ZipCode;
 
-insert into consumer (id,firstname,lastname,active,zip,bsu,recipientID,dia,other) select ConsumerID,First,Last,Active,ZipCode,BSU,RecipientID,DiaCode,OtherDescribe from appConsumer;
+insert into consumer (id,firstname,lastname,active,bsu,recipientID,dia,other) select ConsumerID,First,Last,Active,BSU,RecipientID,DiaCode,OtherDescribe from appConsumer;
 
 update consumer set bsu = ifnull(bsu, '');
 update consumer set dia = ifnull(dia, -1);
@@ -99,7 +99,6 @@ update consumer set fundingSource=-1;
 update consumer set lastname = ifnull(lastname, '');
 update consumer set other = ifnull(other, '');
 update consumer set recipientID = ifnull(recipientID, '');
-update consumer set zip = ifnull(zip, '');
 
 -- MariaDB [cpss]> select distinct CountyName from appConsumer;
 -- +----------------------------+
