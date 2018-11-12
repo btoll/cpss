@@ -25,11 +25,11 @@ func NewBillSheet(payload interface{}) *BillSheet {
 			"DELETE":              "DELETE FROM billsheet WHERE id=?",
 			"GET_AUTH_LEVEL":      "SELECT authLevel FROM specialist WHERE id=%d",
 			"GET_UNIT_RATE":       "SELECT unitRate FROM service_code WHERE id=%d",
-			"INSERT":              "INSERT billsheet SET specialist=?,consumer=?,units=?,serviceDate=?,serviceCode=?,contractType=?,status=?,billedCode=?,billedAmount=?,confirmation=?,description=?",
+			"INSERT":              "INSERT billsheet SET specialist=?,consumer=?,units=?,serviceDate=?,serviceCode=?,contractType=?,status=?,billedAmount=?,confirmation=?,description=?",
 			"SELECT":              "SELECT %s FROM billsheet %s",
 			"SELECT_UNIT_BLOCK":   "SELECT %s FROM unit_block WHERE consumer=%d AND serviceCode=%d",
 			"UPDATE_UNIT_BLOCK":   "UPDATE unit_block SET units=? WHERE id=?",
-			"UPDATE":              "UPDATE billsheet SET specialist=?,consumer=?,units=?,serviceDate=?,serviceCode=?,contractType=?,status=?,billedCode=?,billedAmount=?,confirmation=?,description=? WHERE id=?",
+			"UPDATE":              "UPDATE billsheet SET specialist=?,consumer=?,units=?,serviceDate=?,serviceCode=?,contractType=?,status=?,billedAmount=?,confirmation=?,description=? WHERE id=?",
 		},
 	}
 }
@@ -45,11 +45,10 @@ func (s *BillSheet) CollectRows(rows *mysql.Rows, coll []*app.BillSheetItem) err
 		var serviceCode int
 		var contractType string
 		var status int
-		var billedCode string
 		var billedAmount float64
 		var confirmation string
 		var description string
-		err := rows.Scan(&id, &specialist, &consumer, &units, &serviceDate, &serviceCode, &contractType, &status, &billedCode, &billedAmount, &confirmation, &description)
+		err := rows.Scan(&id, &specialist, &consumer, &units, &serviceDate, &serviceCode, &contractType, &status, &billedAmount, &confirmation, &description)
 		if err != nil {
 			return err
 		}
@@ -62,7 +61,6 @@ func (s *BillSheet) CollectRows(rows *mysql.Rows, coll []*app.BillSheetItem) err
 			ServiceCode:  serviceCode,
 			ContractType: &contractType,
 			Status:       &status,
-			BilledCode:   &billedCode,
 			BilledAmount: &billedAmount,
 			Confirmation: &confirmation,
 			Description:  &description,
@@ -109,7 +107,7 @@ func (s *BillSheet) Create(db *mysql.DB) (interface{}, error) {
 	if err != nil {
 		return -1, err
 	}
-	res, err := stmt.Exec(payload.Specialist, payload.Consumer, payload.Units, payload.ServiceDate, payload.ServiceCode, payload.ContractType, payload.Status, payload.BilledCode, unitRate*(*payload.Units), payload.Confirmation, payload.Description)
+	res, err := stmt.Exec(payload.Specialist, payload.Consumer, payload.Units, payload.ServiceDate, payload.ServiceCode, payload.ContractType, payload.Status, unitRate*(*payload.Units), payload.Confirmation, payload.Description)
 	if err != nil {
 		return -1, err
 	}
@@ -292,7 +290,7 @@ func (s *BillSheet) Update(db *mysql.DB) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, err = stmt.Exec(payload.Specialist, payload.Consumer, payload.Units, payload.ServiceDate, payload.ServiceCode, payload.ContractType, payload.Status, payload.BilledCode, unitRate*(*payload.Units), payload.Confirmation, payload.Description, payload.ID)
+	_, err = stmt.Exec(payload.Specialist, payload.Consumer, payload.Units, payload.ServiceDate, payload.ServiceCode, payload.ContractType, payload.Status, unitRate*(*payload.Units), payload.Confirmation, payload.Description, payload.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -305,7 +303,6 @@ func (s *BillSheet) Update(db *mysql.DB) (interface{}, error) {
 		ServiceCode:  payload.ServiceCode,
 		ContractType: payload.ContractType,
 		Status:       payload.Status,
-		BilledCode:   payload.BilledCode,
 		BilledAmount: payload.BilledAmount,
 		Confirmation: payload.Confirmation,
 		Description:  payload.Description,

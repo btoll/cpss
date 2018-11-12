@@ -225,11 +225,6 @@ formRows viewLists model =
         , onInput ( SetFormValue (\v -> { editable | units = Form.toFloat v } ) )
         ]
         []
-     , Form.text "Billed Code"
-         [ value editable.billedCode
-         , onInput ( SetFormValue ( \v -> { editable | billedCode = v } ) )
-         ]
-         []
     , Form.select "Status"
         [ id "statusSelection"
         , editable |> Select Form.StatusID |> onInput
@@ -279,7 +274,6 @@ tableColumns customColumn viewButton editMsg deleteMsg viewLists =
     )
     , Table.floatColumn "Units" .units
     , Table.floatColumn "Billed Amount" .billedAmount
-    , Table.stringColumn "Billed Code" .billedCode
     , Table.stringColumn "Consumer" (
         .consumer
             >> ( \id ->
