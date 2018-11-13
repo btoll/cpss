@@ -48,22 +48,24 @@ func (s *BillSheet) CollectRows(rows *mysql.Rows, coll []*app.BillSheetItem) err
 		var billedAmount float64
 		var confirmation string
 		var description string
-		err := rows.Scan(&id, &specialist, &consumer, &units, &serviceDate, &serviceCode, &contractType, &status, &billedAmount, &confirmation, &description)
+		var formattedDate string
+		err := rows.Scan(&id, &specialist, &consumer, &units, &serviceDate, &serviceCode, &contractType, &status, &billedAmount, &confirmation, &description, &formattedDate)
 		if err != nil {
 			return err
 		}
 		coll[i] = &app.BillSheetItem{
-			ID:           id,
-			Specialist:   specialist,
-			Consumer:     consumer,
-			Units:        &units,
-			ServiceDate:  serviceDate,
-			ServiceCode:  serviceCode,
-			ContractType: &contractType,
-			Status:       &status,
-			BilledAmount: &billedAmount,
-			Confirmation: &confirmation,
-			Description:  &description,
+			ID:            id,
+			Specialist:    specialist,
+			Consumer:      consumer,
+			Units:         &units,
+			ServiceDate:   serviceDate,
+			ServiceCode:   serviceCode,
+			ContractType:  &contractType,
+			Status:        &status,
+			BilledAmount:  &billedAmount,
+			Confirmation:  &confirmation,
+			Description:   &description,
+			FormattedDate: &formattedDate,
 		}
 		i++
 	}
@@ -72,11 +74,13 @@ func (s *BillSheet) CollectRows(rows *mysql.Rows, coll []*app.BillSheetItem) err
 
 func (s *BillSheet) Create(db *mysql.DB) (interface{}, error) {
 	payload := s.Data.(*app.BillSheetPayload)
-	if _, err := s.IsLegalDate(db, payload); err != nil {
+	var formattedDate string
+	isLegal, formattedDate, err := s.IsLegalDate(db, payload)
+	if isLegal == false {
 		return nil, err
 	}
 	// Check to see if this is a duplicate entry!
-	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)", fmt.Sprintf("WHERE consumer=%d AND serviceCode=%d AND serviceDate='%s'", payload.Consumer, payload.ServiceCode, payload.ServiceDate)))
+	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)", fmt.Sprintf("WHERE consumer=%d AND serviceCode=%d AND serviceDate='%s'", payload.Consumer, payload.ServiceCode, formattedDate)))
 	if err != nil {
 		return nil, err
 	}
@@ -87,11 +91,9 @@ func (s *BillSheet) Create(db *mysql.DB) (interface{}, error) {
 			return nil, err
 		}
 	}
-	fmt.Println("count", count)
 	if count > 0 {
 		return false, errors.New("Duplicate entry: There is already an entry for this Consumer and ServiceCode on this ServiceDate!")
 	}
-
 	// For now, don't update the billsheet table if the unit rate lookup fails!
 	unitRate, err := s.GetUnitRate(db, payload.ServiceCode)
 	if err != nil {
@@ -107,7 +109,7 @@ func (s *BillSheet) Create(db *mysql.DB) (interface{}, error) {
 	if err != nil {
 		return -1, err
 	}
-	res, err := stmt.Exec(payload.Specialist, payload.Consumer, payload.Units, payload.ServiceDate, payload.ServiceCode, payload.ContractType, payload.Status, unitRate*(*payload.Units), payload.Confirmation, payload.Description)
+	res, err := stmt.Exec(payload.Specialist, payload.Consumer, payload.Units, formattedDate, payload.ServiceCode, payload.ContractType, payload.Status, unitRate*(*payload.Units), payload.Confirmation, payload.Description)
 	if err != nil {
 		return -1, err
 	}
@@ -159,21 +161,21 @@ func (s *BillSheet) GetUnitRate(db *mysql.DB, serviceCode int) (float64, error) 
 	return unitRate, nil
 }
 
-func (s *BillSheet) IsLegalDate(db *mysql.DB, payload *app.BillSheetPayload) (bool, error) {
+func (s *BillSheet) IsLegalDate(db *mysql.DB, payload *app.BillSheetPayload) (bool, string, error) {
 	// If admin, always pass as legal!
 	if id, err := s.GetAuthLevel(db, payload.Specialist); err != nil {
-		return false, err
+		return false, "", err
 	} else if id == 1 {
-		return true, nil
+		return true, "", nil
 	}
-	parts := strings.Split(payload.ServiceDate, "/")
+	parts := strings.Split(*payload.FormattedDate, "/")
 	month, err := strconv.Atoi(parts[0])
 	if err != nil {
-		return false, errors.New("Bad date: month is incorrect")
+		return false, "", errors.New("Bad date: month is incorrect")
 	}
 	day, err := strconv.Atoi(parts[1])
 	if err != nil {
-		return false, errors.New("Bad date: day is incorrect")
+		return false, "", errors.New("Bad date: day is incorrect")
 	}
 	//
 	// Note that since dates can't be backdated, it's safe to use the current year!
@@ -186,9 +188,11 @@ func (s *BillSheet) IsLegalDate(db *mysql.DB, payload *app.BillSheetPayload) (bo
 	// For the same day, will appear as `0s`.                       -- Legal!
 	// When the day after is selected, will appear as `-24h0m0s`.   -- Legal!
 	if userEntered.Sub(today) < 0 {
-		return false, errors.New("Bad date: Service Date cannot be in the past")
+		return false, "", errors.New("Bad date: Service Date cannot be in the past")
 	}
-	return true, nil
+	var formattedDate strings.Builder
+	fmt.Fprintf(&formattedDate, "20%s-%s-%s", parts[2], parts[0], parts[1])
+	return true, formattedDate.String(), nil
 }
 
 func (s *BillSheet) List(db *mysql.DB) (interface{}, error) {
@@ -203,7 +207,7 @@ func (s *BillSheet) List(db *mysql.DB) (interface{}, error) {
 			return nil, err
 		}
 	}
-	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*", ""))
+	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*,DATE_FORMAT(serviceDate, '%m/%d/%y') AS formattedDate", ""))
 	if err != nil {
 		return nil, err
 	}
@@ -236,7 +240,7 @@ func (s *BillSheet) Page(db *mysql.DB) (interface{}, error) {
 			return nil, err
 		}
 	}
-	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "billsheet.*", fmt.Sprintf("%s WHERE active.id = 1 %s ORDER BY billsheet.serviceDate DESC LIMIT %d,%d", s.Stmt["CONSUMER_INNER_JOIN"], whereClause, limit, RecordsPerPage)))
+	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "billsheet.*,DATE_FORMAT(billsheet.serviceDate, '%m/%d/%y') AS formattedDate", fmt.Sprintf("%s WHERE active.id = 1 %s ORDER BY billsheet.serviceDate DESC LIMIT %d,%d", s.Stmt["CONSUMER_INNER_JOIN"], whereClause, limit, RecordsPerPage)))
 	if err != nil {
 		return nil, err
 	}
@@ -264,7 +268,9 @@ func (s *BillSheet) Page(db *mysql.DB) (interface{}, error) {
 
 func (s *BillSheet) Update(db *mysql.DB) (interface{}, error) {
 	payload := s.Data.(*app.BillSheetPayload)
-	if _, err := s.IsLegalDate(db, payload); err != nil {
+	var formattedDate string
+	isLegal, formattedDate, err := s.IsLegalDate(db, payload)
+	if isLegal == false {
 		return nil, err
 	}
 	// For now, don't update the billsheet table if the unit rate lookup fails!
@@ -290,7 +296,7 @@ func (s *BillSheet) Update(db *mysql.DB) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, err = stmt.Exec(payload.Specialist, payload.Consumer, payload.Units, payload.ServiceDate, payload.ServiceCode, payload.ContractType, payload.Status, unitRate*(*payload.Units), payload.Confirmation, payload.Description, payload.ID)
+	_, err = stmt.Exec(payload.Specialist, payload.Consumer, payload.Units, formattedDate, payload.ServiceCode, payload.ContractType, payload.Status, unitRate*(*payload.Units), payload.Confirmation, payload.Description, payload.ID)
 	if err != nil {
 		return nil, err
 	}

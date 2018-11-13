@@ -24,6 +24,7 @@ type alias BillSheet =
     , consumer : Int
     , units : Float
     , serviceDate : String
+    , formattedDate : String
     , serviceCode : Int
     , contractType : String
     , status : Int
@@ -46,6 +47,7 @@ new =
     , consumer = -1
     , units = 0.0
     , serviceDate = ""
+    , formattedDate = ""
     , serviceCode = -1
     , contractType = ""
     , status = 1            -- Default to `Billed` status.
@@ -63,6 +65,7 @@ decoder =
         |> optional "consumer" int -1
         |> optional "units" float 0.0
         |> optional "serviceDate" string ""
+        |> optional "formattedDate" string ""
         |> optional "serviceCode" int -1
         |> optional "contractType" string ""
         |> optional "status" int -1
@@ -91,6 +94,7 @@ encoder billsheet =
         , ( "consumer", Encode.int billsheet.consumer )
         , ( "units", Encode.float billsheet.units )
         , ( "serviceDate", Encode.string billsheet.serviceDate )
+        , ( "formattedDate", Encode.string billsheet.formattedDate )
         , ( "serviceCode", Encode.int billsheet.serviceCode )
         , ( "contractType", Encode.string billsheet.contractType )
         , ( "status", Encode.int billsheet.status )

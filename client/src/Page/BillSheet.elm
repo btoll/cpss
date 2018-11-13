@@ -214,7 +214,7 @@ update url msg model =
                 action = None
                 , subModel =
                     { subModel | editing =
-                        { new | serviceDate =   {- We always want a default date in case none is selected when adding a new Billsheet/Time Entry -}
+                        { new | formattedDate =   {- We always want a default date in case none is selected when adding a new Billsheet/Time Entry -}
                             today
                         } |> Just
                     }
@@ -379,7 +379,7 @@ update url msg model =
                                 |> Request.BillSheet.delete url
                                 |> Http.toTask
                                 |> Task.attempt Deleted
-                            )
+                                )
 
                         {- Search Modal -}
                         ( False, Just query ) ->
@@ -393,10 +393,42 @@ update url msg model =
                                         _ ->
                                             fmtEquality k v acc
 
+                                {-
+                                    Formats "01/22/2018" -> "2018-01-22"
+                                    NOTE that we're formatting the date here but also on the server...
+                                        this was done for expediency but should be revisited!
+                                -}
+                                formatDate : String -> String
+                                formatDate s =
+                                    let
+                                        getDay : String
+                                        getDay =
+                                            (++)
+                                                "-"
+                                                ( String.slice 3 5 s )
+
+                                        getMonth : String
+                                        getMonth =
+                                            (++)
+                                                "-"
+                                                ( String.slice 0 2 s )
+
+                                        getYear : String
+                                        getYear =
+                                            (++)
+                                                "20"
+                                                ( String.slice 6 8 s )
+                                    in
+                                    (
+                                        (++)
+                                            getYear
+                                            ( (++) getMonth getDay )
+                                    )
+
                                 -- This function swaps out random key strings for key strings that are in a type!!
                                 --
                                 -- Make sure to remove date entries at each `case` stage! The `foldFn` should only be switching on
-                                -- "billsheet.serviceDate", which is the only date entry that should be in the dict!
+                                -- "billsheet.formattedDate", which is the only date entry that should be in the dict!
                                 -- (Note that the key values are NOT type fields and MUST be replaced by an actual field in the
                                 -- BillSheet type!)
                                 maybeInsertDates : Query -> Query
@@ -419,9 +451,9 @@ update url msg model =
                                                     |> Dict.insert
                                                         "billsheet.serviceDate"
                                                         ( "( billsheet.serviceDate between '"
-                                                        ++ dateFrom
+                                                        ++ ( dateFrom |> formatDate )
                                                         ++ "' and '"
-                                                        ++ dateTo
+                                                        ++ ( dateTo |> formatDate )
                                                         ++ "')"
                                                         )
 
@@ -441,6 +473,8 @@ update url msg model =
                                         << maybeInsertDates
                                         << maybeInsertSpecialist
                                         <| query
+
+                                qq = (Debug.log "q" q)
                             in
                             ( True
                             , Modal.Spinner |> Just
@@ -501,8 +535,14 @@ update url msg model =
                             ( None, Cmd.none )
 
                         Just billsheet ->
+--                            let
+--                                bs =
+--                                    if model.user.authLevel == 1
+--                                    then { billsheet | specialist = model.user.id }
+--                                    else billsheet
+--                            in
                             ( Adding    -- Keep on Adding view in case server returns an error, i.e., trying to backdate a Service Date.
-                            , { billsheet | specialist = model.user.id }
+                            , billsheet
                                 |> Request.BillSheet.post url
                                 |> Http.toTask
                                 |> Task.attempt Posted
