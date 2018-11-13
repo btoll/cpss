@@ -206,7 +206,7 @@ update url msg model =
                 , disabled = True
                 , editing = Just consumer
                 , errors = []
-            } ! [ consumer.county |> toString |> Request.County.get url |> Http.send ( Counties >> Fetch ) ]
+            } ! []
 
         Fetch result ->
             case result of
