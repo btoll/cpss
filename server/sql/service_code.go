@@ -30,7 +30,7 @@ func (s *ServiceCode) Create(db *mysql.DB) (interface{}, error) {
 	if err != nil {
 		return -1, err
 	}
-	res, err := stmt.Exec(payload.Name)
+	res, err := stmt.Exec(payload.Name, payload.UnitRate, payload.Description)
 	if err != nil {
 		return -1, err
 	}

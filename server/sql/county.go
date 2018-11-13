@@ -18,10 +18,10 @@ func NewCounty(payload interface{}) *County {
 		Data: payload,
 		Stmt: map[string]string{
 			"DELETE":       "DELETE FROM county WHERE id=?",
-			"INSERT":       "INSERT county SET name=?,zip=?,county_id=?,state=?",
+			"INSERT":       "INSERT county SET name=?",
 			"SELECT":       "SELECT %s FROM county ORDER BY name %s",
-			"GET_COUNTIES": "SELECT %s FROM county WHERE county_id=%d",
-			"UPDATE":       "UPDATE county SET name=?,zip=?,county_id=?,state=? WHERE id=?",
+			"GET_COUNTIES": "SELECT %s FROM county WHERE id=%d",
+			"UPDATE":       "UPDATE county SET name=? WHERE id=?",
 		},
 	}
 }
@@ -65,10 +65,7 @@ func (c *County) Read(db *mysql.DB) (interface{}, error) {
 	for rows.Next() {
 		var id int
 		var name string
-		var zip string
-		var county int
-		var state string
-		err := rows.Scan(&id, &name, &zip, &county, &state)
+		err := rows.Scan(&id, &name)
 		if err != nil {
 			return nil, err
 		}
