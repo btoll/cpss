@@ -676,9 +676,11 @@ update url msg model =
             in
             case selectType of
                 Form.CountyID ->
-                    ( { consumer | county = selectionToInt } |> newModel ) ! [
-                        selectionString |> Request.County.get url |> Http.send ( Counties >> Fetch )
-                    ]
+--                    ( { consumer | county = selectionToInt } |> newModel ) ! [
+--                        selectionString |> Request.County.get url |> Http.send ( Counties >> Fetch )
+--                    ]
+--                  Not sure why I was making a request here, but it resulted in a bug! 20181114.
+                    ( { consumer | county = selectionToInt } |> newModel ) ! []
 
                 Form.DIAID ->
                     ( { consumer | dia = selectionToInt } |> newModel ) ! []
