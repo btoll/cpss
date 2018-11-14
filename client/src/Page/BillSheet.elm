@@ -1,10 +1,11 @@
 module Page.BillSheet exposing (Model, Msg, init, update, view)
 
-import Data.Search exposing (Query, ViewLists, fmtDates, fmtEquality)
 import Data.BillSheet exposing (BillSheet, BillSheetWithPager, new)
+import Data.Build exposing (Build)
 import Data.Consumer exposing (Consumer)
 import Data.County exposing (County)
 import Data.Pager exposing (Pager)
+import Data.Search exposing (Query, ViewLists, fmtDates, fmtEquality)
 import Data.ServiceCode exposing (ServiceCode)
 import Data.Session exposing (Session)
 import Data.Status exposing (Status)
@@ -62,9 +63,12 @@ type alias Model =
 
 
 
-init : String -> Session -> ( Model, Cmd Msg )
-init url session =
+init : Build -> Session -> ( Model, Cmd Msg )
+init build session =
     let
+        url =
+            build.url
+
         user =
             Maybe.withDefault Data.User.new session.user
 
@@ -82,7 +86,7 @@ init url session =
                 1 ->
                     let
                         ( model, subCmd ) =
-                            Page.BillSheet.BillSheet.init session.loginDate
+                            Page.BillSheet.BillSheet.init build.today
                     in
                     (
                         model
@@ -99,7 +103,7 @@ init url session =
                 _ ->
                     let
                         ( model, subCmd ) =
-                            Page.BillSheet.TimeEntry.init session.loginDate
+                            Page.BillSheet.TimeEntry.init build.today
                     in
                     (
                         model
@@ -591,12 +595,6 @@ update url msg model =
                             ( None, Cmd.none )
 
                         Just billsheet ->
---                            let
---                                bs =
---                                    if model.user.authLevel == 1
---                                    then { billsheet | specialist = model.user.id }
---                                    else billsheet
---                            in
                             ( Adding    -- Keep on Adding view in case server returns an error, i.e., trying to backdate a Service Date.
                             , billsheet
                                 |> Request.BillSheet.post url
@@ -626,7 +624,11 @@ update url msg model =
 
                                 Just billsheets ->
                                     billsheets
-                                        |> (::) { newBillSheet | id = billsheet.id }
+                                        |> (::)
+                                            { newBillSheet |
+                                                id = billsheet.id
+                                                , formattedDate = newBillSheet.serviceDate
+                                            }
                                         |> Just
             in
             { model |

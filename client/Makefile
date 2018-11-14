@@ -2,7 +2,7 @@ SHELL 		= /bin/sh
 CC      	= elm make
 
 NATIVE  	= Native.js
-SNIPPET		= "const app = Elm.Main.fullscreen({ env: '{{BUILD}}' })"
+SNIPPET		= "const getFormattedDate = () => { const date = new Date(); let day = date.getDate(); let month = date.getMonth() + 1; let year = date.getFullYear().toString().slice(2)*1; if (day.toString().length === 1) { day = '0' + day; } if (month.toString().length === 1) { month = '0' + month; } return month + '/' + day + '/' + year; }; const app = Elm.Main.fullscreen({ env: '{{BUILD}}', today: getFormattedDate() })"
 PORT		= 1975
 TARGET  	= elm.js
 WEBSERVER	= elm reactor

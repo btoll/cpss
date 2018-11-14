@@ -168,7 +168,7 @@ func (s *BillSheet) IsLegalDate(db *mysql.DB, payload *app.BillSheetPayload) (bo
 	} else if id == 1 {
 		return true, "", nil
 	}
-	parts := strings.Split(*payload.FormattedDate, "/")
+	parts := strings.Split(payload.ServiceDate, "/")
 	month, err := strconv.Atoi(parts[0])
 	if err != nil {
 		return false, "", errors.New("Bad date: month is incorrect")

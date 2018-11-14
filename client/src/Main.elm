@@ -1,6 +1,7 @@
 module Main exposing (..)
 
 import Data.BillSheet exposing (BillSheet)
+import Data.Build exposing (Build)
 import Data.Consumer exposing (Consumer)
 import Data.County exposing (County)
 import Data.DIA exposing (DIA)
@@ -31,13 +32,9 @@ import Views.Page as Page exposing (ActivePage)
 
 
 
-type alias Build =
-    { url : String
-    }
-
-
 type alias Flags =
     { env : Maybe String
+    , today : Maybe String
     }
 
 
@@ -84,7 +81,11 @@ init flags location =
             , expiry = ""
             , loginDate = ""
             }
-        , build = { url = url }
+        , build =
+            { url = url
+            , today =
+                flags.today |> Maybe.withDefault "00/00/00"
+            }
         , page = Blank
         , onLogin = Nothing
         }
@@ -139,7 +140,7 @@ setRoute maybeRoute model =
 
                     let
                         ( subModel, subMsg ) =
-                            BillSheet.init model.build.url model.session
+                            BillSheet.init model.build model.session
                     in
                     { model |
                         page = BillSheet subModel
