@@ -214,7 +214,7 @@ update url msg model =
                 action = None
                 , subModel =
                     { subModel | editing =
-                        { new | formattedDate =   {- We always want a default date in case none is selected when adding a new Billsheet/Time Entry -}
+                        { new | serviceDate =   {- We always want a default date in case none is selected when adding a new Billsheet/Time Entry -}
                             today
                         } |> Just
                     }
@@ -428,7 +428,7 @@ update url msg model =
                                 -- This function swaps out random key strings for key strings that are in a type!!
                                 --
                                 -- Make sure to remove date entries at each `case` stage! The `foldFn` should only be switching on
-                                -- "billsheet.formattedDate", which is the only date entry that should be in the dict!
+                                -- "billsheet.serviceDate", which is the only date entry that should be in the dict!
                                 -- (Note that the key values are NOT type fields and MUST be replaced by an actual field in the
                                 -- BillSheet type!)
                                 maybeInsertDates : Query -> Query
@@ -473,8 +473,6 @@ update url msg model =
                                         << maybeInsertDates
                                         << maybeInsertSpecialist
                                         <| query
-
-                                qq = (Debug.log "q" q)
                             in
                             ( True
                             , Modal.Spinner |> Just
@@ -499,15 +497,73 @@ update url msg model =
 
         NewPage page ->
             let
-                fn : String -> String -> String -> String
-                fn k v acc =
-                    k ++ "=" ++ v ++ " AND "
-                        |> (++) acc
+                formatDate : String -> String
+                formatDate s =
+                    let
+                        getDay : String
+                        getDay =
+                            (++)
+                                "-"
+                                ( String.slice 3 5 s )
+
+                        getMonth : String
+                        getMonth =
+                            (++)
+                                "-"
+                                ( String.slice 0 2 s )
+
+                        getYear : String
+                        getYear =
+                            (++)
+                                "20"
+                                ( String.slice 6 8 s )
+                    in
+                    (
+                        (++)
+                            getYear
+                            ( (++) getMonth getDay )
+                    )
+
+                maybeInsertDates : Query -> Query
+                maybeInsertDates query =
+                    case query |> Dict.get "serviceDateFrom" of
+                        Nothing ->
+                            query
+                                |> Dict.remove "serviceDateTo"
+
+                        Just dateFrom ->
+                            case query |> Dict.get "serviceDateTo" of
+                                Nothing ->
+                                    query
+                                        |> Dict.remove "serviceDateFrom"
+
+                                Just dateTo ->
+                                    query
+                                    |> Dict.remove "serviceDateTo"
+                                    |> Dict.remove "serviceDateFrom"
+                                    |> Dict.insert
+                                        "billsheet.serviceDate"
+                                        ( "( billsheet.serviceDate between '"
+                                        ++ ( dateFrom |> formatDate )
+                                        ++ "' and '"
+                                        ++ ( dateTo |> formatDate )
+                                        ++ "')"
+                                        )
+
+                foldFn : String -> String -> String -> String
+                foldFn k v acc =
+                    case k of
+                        "billsheet.serviceDate" ->
+                            fmtDates v acc
+
+                        _ ->
+                            fmtEquality k v acc
 
                 s =
                     model.query
                         |> Maybe.withDefault Dict.empty
-                        |> Dict.foldl fn ""
+                        |> maybeInsertDates
+                        |> Dict.foldl foldFn ""
                         |> String.dropRight 5   -- Remove the trailing " AND ".
             in
             model !

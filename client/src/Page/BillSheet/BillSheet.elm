@@ -69,7 +69,7 @@ init dateString =
     in
     (
         { tableState = Table.initialSort "ID"
-        , editing = { new | formattedDate = dateString } |> Just
+        , editing = { new | serviceDate = dateString } |> Just
         , disabled = True
         , date = dateString |> Util.Date.unsafeFromString |> Just
         , datePicker = datePicker
@@ -114,12 +114,12 @@ update msg model =
                                     d |> Util.Date.simple
 
                         _ ->
-                            billsheet.formattedDate
+                            billsheet.serviceDate
             in
             { model
                 | date = newDate
                 , datePicker = newDatePicker
-                , editing = Just { billsheet | formattedDate = dateString }
+                , editing = Just { billsheet | serviceDate = dateString }
             } ! [ Cmd.map DatePicker datePickerFx ]
 
         Select selectType consumer selection ->
@@ -177,9 +177,9 @@ formRows viewLists model =
 
         focusedDate : Maybe Date
         focusedDate =
-            case (/=) editable.formattedDate "" of
+            case (/=) editable.serviceDate "" of
                 True ->
-                    editable.formattedDate |> Util.Date.unsafeFromString |> Just
+                    editable.serviceDate |> Util.Date.unsafeFromString |> Just
                 False ->
                     model.date
 
