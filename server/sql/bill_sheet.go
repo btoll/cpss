@@ -165,7 +165,7 @@ func (s *BillSheet) IsLegalDate(db *mysql.DB, payload *app.BillSheetPayload) (bo
 	// If admin, always pass as legal!
 	if id, err := s.GetAuthLevel(db, payload.Specialist); err != nil {
 		return false, "", err
-	} else if id == 1 {
+	} else if id == 2 {
 		return true, "", nil
 	}
 	parts := strings.Split(payload.ServiceDate, "/")
