@@ -595,8 +595,26 @@ update url msg model =
                             ( None, Cmd.none )
 
                         Just billsheet ->
+                            let
+                                -- Note that the specialist is inserted into the model via a drop-down selection box
+                                -- in the Admin billsheet view!
+                                --
+                                -- The `realSpecialist` is needed b/c the server needs to know who the real user is who
+                                -- performed the action (analogous to linux' real user id).  This is b/c the server must
+                                -- allow an Admin to back date any billsheet, and the specialist field cannot be used for
+                                -- the check since the Admin can assign any specialist to the billsheet just created.
+                                bs =
+                                    if model.user.authLevel == 2
+                                    then { billsheet |
+                                        specialist = model.user.id
+                                        , realSpecialist = model.user.id
+                                        }
+                                    else { billsheet |
+                                        realSpecialist = model.user.id
+                                        }
+                            in
                             ( Adding    -- Keep on Adding view in case server returns an error, i.e., trying to backdate a Service Date.
-                            , billsheet
+                            , bs
                                 |> Request.BillSheet.post url
                                 |> Http.toTask
                                 |> Task.attempt Posted

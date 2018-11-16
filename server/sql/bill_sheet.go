@@ -162,11 +162,10 @@ func (s *BillSheet) GetUnitRate(db *mysql.DB, serviceCode int) (float64, error) 
 }
 
 func (s *BillSheet) IsLegalDate(db *mysql.DB, payload *app.BillSheetPayload) (bool, string, error) {
-	// If admin, always pass as legal!
-	if id, err := s.GetAuthLevel(db, payload.Specialist); err != nil {
+	var id int
+	id, err := s.GetAuthLevel(db, *payload.RealSpecialist)
+	if err != nil {
 		return false, "", err
-	} else if id == 2 {
-		return true, "", nil
 	}
 	parts := strings.Split(payload.ServiceDate, "/")
 	month, err := strconv.Atoi(parts[0])
@@ -187,7 +186,9 @@ func (s *BillSheet) IsLegalDate(db *mysql.DB, payload *app.BillSheetPayload) (bo
 	// When the day before is selected, will appear as `-24h0m0s`.  -- Illegal!
 	// For the same day, will appear as `0s`.                       -- Legal!
 	// When the day after is selected, will appear as `-24h0m0s`.   -- Legal!
-	if userEntered.Sub(today) < 0 {
+	//
+	// Note that admins (id == 1) can back date!
+	if userEntered.Sub(today) < 0 && id == 2 {
 		return false, "", errors.New("Bad date: Service Date cannot be in the past")
 	}
 	var formattedDate strings.Builder

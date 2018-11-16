@@ -74,6 +74,10 @@ var BillSheetPayload = Type("BillSheetPayload", func() {
 		Metadata("struct:tag:datastore", "specialist,noindex")
 		Metadata("struct:tag:json", "specialist")
 	})
+	Attribute("realSpecialist", Integer, "Analogous to linux' real user id", func() {
+		Metadata("struct:tag:datastore", "realSpecialist,noindex")
+		Metadata("struct:tag:json", "realSpecialist")
+	})
 	Attribute("consumer", Integer, "BillSheet consumer", func() {
 		Metadata("struct:tag:datastore", "consumer,noindex")
 		Metadata("struct:tag:json", "consumer")

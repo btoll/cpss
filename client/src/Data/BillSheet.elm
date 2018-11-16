@@ -21,6 +21,7 @@ import Json.Encode as Encode
 type alias BillSheet =
     { id : Int
     , specialist : Int
+    , realSpecialist : Int -- Some actions may have the actual user send a different specialist, so we need to be able to know who the user actually is.
     , consumer : Int
     , units : Float
     , serviceDate : String
@@ -44,6 +45,7 @@ new : BillSheet
 new =
     { id = -1
     , specialist = -1
+    , realSpecialist = -1
     , consumer = -1
     , units = 0.0
     , serviceDate = ""
@@ -62,6 +64,7 @@ decoder =
     decode BillSheet
         |> required "id" int
         |> optional "specialist" int -1
+        |> optional "realSpecialist" int -1
         |> optional "consumer" int -1
         |> optional "units" float 0.0
         |> optional "serviceDate" string ""
@@ -91,6 +94,7 @@ encoder billsheet =
     Encode.object
         [ ( "id", Encode.int billsheet.id )
         , ( "specialist", Encode.int billsheet.specialist )
+        , ( "realSpecialist", Encode.int billsheet.realSpecialist )
         , ( "consumer", Encode.int billsheet.consumer )
         , ( "units", Encode.float billsheet.units )
         , ( "serviceDate", Encode.string billsheet.serviceDate )
