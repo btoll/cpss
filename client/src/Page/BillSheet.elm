@@ -646,6 +646,7 @@ update url msg model =
                                             { newBillSheet |
                                                 id = billsheet.id
                                                 , formattedDate = newBillSheet.serviceDate
+                                                , billedAmount = billsheet.billedAmount
                                             }
                                         |> Just
             in

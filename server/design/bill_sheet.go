@@ -15,10 +15,7 @@ var _ = Resource("BillSheet", func() {
 		Routing(POST("/"))
 		Description("Create a new billsheet.")
 		Payload(BillSheetPayload)
-		Response(OK, func() {
-			Status(200)
-			Media(BillSheetMedia, "tiny")
-		})
+		Response(OK, BillSheetMedia)
 	})
 
 	Action("update", func() {

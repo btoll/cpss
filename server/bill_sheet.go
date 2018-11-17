@@ -20,11 +20,11 @@ func NewBillSheetController(service *goa.Service) *BillSheetController {
 func (c *BillSheetController) Create(ctx *app.CreateBillSheetContext) error {
 	// BillSheetController_Create: start_implement
 
-	id, err := sql.Create(sql.NewBillSheet(ctx.Payload))
+	rec, err := sql.Create(sql.NewBillSheet(ctx.Payload))
 	if err != nil {
 		return err
 	}
-	return ctx.OKTiny(&app.BillSheetMediaTiny{id.(int)})
+	return ctx.OK(rec.(*app.BillSheetMedia))
 
 	// BillSheetController_Create: end_implement
 }

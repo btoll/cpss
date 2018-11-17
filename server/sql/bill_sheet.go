@@ -96,7 +96,8 @@ func (s *BillSheet) Create(db *mysql.DB) (interface{}, error) {
 	if err != nil {
 		return -1, err
 	}
-	res, err := stmt.Exec(payload.Specialist, payload.Consumer, payload.Units, formattedDate, payload.ServiceCode, payload.ContractType, payload.Status, unitRate*(*payload.Units), payload.Confirmation, payload.Description)
+	f := unitRate * (*payload.Units)
+	res, err := stmt.Exec(payload.Specialist, payload.Consumer, payload.Units, formattedDate, payload.ServiceCode, payload.ContractType, payload.Status, f, payload.Confirmation, payload.Description)
 	if err != nil {
 		return -1, err
 	}
@@ -105,7 +106,19 @@ func (s *BillSheet) Create(db *mysql.DB) (interface{}, error) {
 	if err != nil {
 		return -1, err
 	}
-	return int(lastID), nil
+	return &app.BillSheetMedia{
+		ID:           int(lastID),
+		Specialist:   payload.Specialist,
+		Consumer:     payload.Consumer,
+		Units:        payload.Units,
+		ServiceDate:  payload.ServiceDate,
+		ServiceCode:  payload.ServiceCode,
+		ContractType: payload.ContractType,
+		Status:       payload.Status,
+		BilledAmount: &f,
+		Confirmation: payload.Confirmation,
+		Description:  payload.Description,
+	}, nil
 }
 
 func (s *BillSheet) Delete(db *mysql.DB) error {
