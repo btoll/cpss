@@ -686,8 +686,12 @@ update url msg model =
                             ( None, Cmd.none )
 
                         Just billsheet ->
+                            let
+                                bs =
+                                    { billsheet | serviceDate = billsheet.formattedDate }
+                            in
                             ( Editing    -- Keep on Adding view in case server returns an error, i.e., trying to backdate a Service Date.
-                            , Request.BillSheet.put url billsheet
+                            , Request.BillSheet.put url bs
                                 |> Http.toTask
                                 |> Task.attempt Putted
                             )
@@ -718,7 +722,8 @@ update url msg model =
                                         |> (::)
                                             { newBillSheet |
                                                 id = billsheet.id
-                                                , specialist = model.user.id
+                                                -- Remember, if Admin the `specialist` field will be different than the Admin (model.user.id)!
+                                                , specialist = if model.user.authLevel == 1 then billsheet.specialist else model.user.id
                                             }
                                         |> Just
             in
