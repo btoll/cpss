@@ -79,22 +79,9 @@ func (s *BillSheet) Create(db *mysql.DB) (interface{}, error) {
 	if isLegal == false {
 		return nil, err
 	}
-	// Check to see if this is a duplicate entry!
-	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)", fmt.Sprintf("WHERE consumer=%d AND serviceCode=%d AND serviceDate='%s'", payload.Consumer, payload.ServiceCode, formattedDate)))
-	if err != nil {
+	if isDuplicate, err := s.IsDuplicateEntry(db, payload, formattedDate); isDuplicate == true {
 		return nil, err
 	}
-	var count int
-	for rows.Next() {
-		err = rows.Scan(&count)
-		if err != nil {
-			return nil, err
-		}
-	}
-	if count > 0 {
-		return false, errors.New("Duplicate entry: There is already an entry for this Consumer and ServiceCode on this ServiceDate!")
-	}
-	// For now, don't update the billsheet table if the unit rate lookup fails!
 	unitRate, err := s.GetUnitRate(db, payload.ServiceCode)
 	if err != nil {
 		return nil, err
@@ -159,6 +146,25 @@ func (s *BillSheet) GetUnitRate(db *mysql.DB, serviceCode int) (float64, error) 
 		}
 	}
 	return unitRate, nil
+}
+
+func (s *BillSheet) IsDuplicateEntry(db *mysql.DB, payload *app.BillSheetPayload, formattedDate string) (bool, error) {
+	// Check to see if this is a duplicate entry!
+	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)", fmt.Sprintf("WHERE specialist=%d AND consumer=%d AND serviceCode=%d AND serviceDate='%s'", payload.Specialist, payload.Consumer, payload.ServiceCode, formattedDate)))
+	if err != nil {
+		return true, err
+	}
+	var count int
+	for rows.Next() {
+		err = rows.Scan(&count)
+		if err != nil {
+			return true, err
+		}
+	}
+	if count > 0 {
+		return true, errors.New("Duplicate entry: This Specialist already has an entry for this Consumer and ServiceCode on this ServiceDate!")
+	}
+	return false, nil
 }
 
 func (s *BillSheet) IsLegalDate(db *mysql.DB, payload *app.BillSheetPayload) (bool, string, error) {
