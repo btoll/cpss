@@ -722,6 +722,7 @@ update url msg model =
                                         |> (::)
                                             { newBillSheet |
                                                 id = billsheet.id
+                                                , billedAmount = billsheet.billedAmount
                                                 -- Remember, if Admin the `specialist` field will be different than the Admin (model.user.id)!
                                                 , specialist = if model.user.authLevel == 1 then billsheet.specialist else model.user.id
                                             }

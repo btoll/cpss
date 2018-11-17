@@ -97,6 +97,9 @@ func (s *BillSheet) Create(db *mysql.DB) (interface{}, error) {
 		return -1, err
 	}
 	f := unitRate * (*payload.Units)
+	// Round to the second decimal place.
+	// https://yourbasic.org/golang/round-float-2-decimal-places/
+	f = math.Ceil(f*100) / 100
 	res, err := stmt.Exec(payload.Specialist, payload.Consumer, payload.Units, formattedDate, payload.ServiceCode, payload.ContractType, payload.Status, f, payload.Confirmation, payload.Description)
 	if err != nil {
 		return -1, err
@@ -316,7 +319,11 @@ func (s *BillSheet) Update(db *mysql.DB) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, err = stmt.Exec(payload.Specialist, payload.Consumer, payload.Units, formattedDate, payload.ServiceCode, payload.ContractType, payload.Status, unitRate*(*payload.Units), payload.Confirmation, payload.Description, payload.ID)
+	f := unitRate * (*payload.Units)
+	// Round to the second decimal place.
+	// https://yourbasic.org/golang/round-float-2-decimal-places/
+	f = math.Ceil(f*100) / 100
+	_, err = stmt.Exec(payload.Specialist, payload.Consumer, payload.Units, formattedDate, payload.ServiceCode, payload.ContractType, payload.Status, f, payload.Confirmation, payload.Description, payload.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -329,7 +336,7 @@ func (s *BillSheet) Update(db *mysql.DB) (interface{}, error) {
 		ServiceCode:  payload.ServiceCode,
 		ContractType: payload.ContractType,
 		Status:       payload.Status,
-		BilledAmount: payload.BilledAmount,
+		BilledAmount: &f,
 		Confirmation: payload.Confirmation,
 		Description:  payload.Description,
 	}, nil
