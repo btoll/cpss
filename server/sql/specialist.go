@@ -216,7 +216,7 @@ func (s *Specialist) Delete(db *mysql.DB) error {
 }
 
 func (s *Specialist) List(db *mysql.DB) (interface{}, error) {
-	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)", ""))
+	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)", "WHERE active=1"))
 	if err != nil {
 		return nil, err
 	}
@@ -227,7 +227,7 @@ func (s *Specialist) List(db *mysql.DB) (interface{}, error) {
 			return nil, err
 		}
 	}
-	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*, CONCAT(lastname,', ',firstname) AS fullname", "ORDER BY fullname ASC"))
+	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*, CONCAT(lastname,', ',firstname) AS fullname", "WHERE active=1 ORDER BY fullname ASC"))
 	if err != nil {
 		return nil, err
 	}
