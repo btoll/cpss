@@ -41,23 +41,10 @@ commonSettings =
 -- Disable all dates before current date (taken from localStorage session).
 settings : Maybe Date -> DatePicker.Settings
 settings date =
-    let
-        isDisabled =
-            case date of
-                Nothing ->
-                    commonSettings.isDisabled
-
-                Just date ->
-                    \d ->
-                        Date.toTime d
-                            < Date.toTime date
-                            || (commonSettings.isDisabled d)
-    in
-        { commonSettings
-            | placeholder = ""
-            , isDisabled = isDisabled
-            , dateFormatter = Util.Date.simple
-        }
+    { commonSettings
+        | placeholder = ""
+        , dateFormatter = Util.Date.simple
+    }
 
 
 
