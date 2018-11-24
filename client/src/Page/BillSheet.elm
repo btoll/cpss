@@ -13,8 +13,8 @@ import Data.User exposing (User)
 import Date exposing (Date, Day(..), day, dayOfWeek, month, year)
 import DatePicker exposing (defaultSettings, DateEvent(..))
 import Dict exposing (Dict)
-import Html exposing (Html, Attribute, button, div, form, h1, input, label, section, text)
-import Html.Attributes exposing (action, autofocus, checked, class, for, hidden, id, style, type_, value)
+import Html exposing (Html, Attribute, button, div, form, h1, input, label, th, td, tr, section, text)
+import Html.Attributes exposing (action, autofocus, checked, class, colspan, for, hidden, id, style, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Http
 import Modal.Search
@@ -29,6 +29,7 @@ import Request.Status
 import Search.BillSheet
 import Table exposing (defaultCustomizations)
 import Task exposing (Task)
+import Util.Currency
 import Util.Date
 import Validate.BillSheet
 import Validate.TimeEntry
@@ -802,7 +803,7 @@ drawView model =
                             div [] []
                         _ ->
                             billsheets
-                                |> Table.view ( model |> config ) model.tableState
+                                |> Table.view ( model |> config billsheets ) model.tableState
 
         showPager =
             model.pagerState |> Views.Pager.view NewPage
@@ -869,8 +870,8 @@ drawView model =
 
 
 
-config : Model -> Table.Config BillSheet Msg
-config model =
+config : List BillSheet -> Model -> Table.Config BillSheet Msg
+config billsheets model =
     let
         tableColumns =
             case model.user.authLevel of
@@ -879,14 +880,48 @@ config model =
 
                 _ ->
                     Page.BillSheet.TimeEntry.tableColumns
+
+        customizations =
+            if (==) model.user.authLevel 1
+            then{ defaultCustomizations | tfoot = billsheets |> toTFoot }
+            else defaultCustomizations
     in
     Table.customConfig
     { toId = .id >> toString
     , toMsg = SetTableState
     , columns = model.viewLists |> tableColumns customColumn viewButton Edit Delete
-    , customizations = defaultCustomizations
+    , customizations = customizations
     }
 
+toTFoot : List BillSheet -> Maybe ( Table.HtmlDetails msg )
+toTFoot billsheets =
+    let
+        billedAmount =
+            billsheets |>
+                List.foldl
+                    ( \b acc ->
+                        b.billedAmount |> (+) acc
+                    )
+                    0.0
+
+        units =
+            billsheets |>
+                List.foldl
+                    ( \b acc ->
+                        b.units |> (+) acc
+                    )
+                    0.0
+    in
+    Table.HtmlDetails []
+        [ tr [ "totals" |> class ]
+            [ th [] [ "Totals" |> text]
+            , td [ 2 |> colspan] []
+            , td [] [ units |> toString |> text ]
+            , td [] [ billedAmount |> Util.Currency.format |> text ]
+            , td [ 6 |> colspan] []
+            ]
+        ]
+    |> Just
 
 customColumn : String -> ( BillSheet -> Table.HtmlDetails Msg ) -> Table.Column BillSheet Msg
 customColumn colName viewElement =
