@@ -10,6 +10,7 @@ import Http
 import Request.County
 import Table exposing (defaultCustomizations)
 import Task exposing (Task)
+import Util.String
 import Validate.County
 import Views.Errors as Errors
 import Views.Form as Form
@@ -305,7 +306,7 @@ update url msg model =
 
         SelectCounty county countyID ->
             { model |
-                editing = { county | id = countyID |> Form.toInt } |> Just
+                editing = { county | id = countyID |> Util.String.toInt } |> Just
                 , disabled = False
             } ! []
 

@@ -31,6 +31,7 @@ import Table exposing (defaultCustomizations)
 import Task exposing (Task)
 import Util.Currency
 import Util.Date
+import Util.String
 import Validate.BillSheet
 import Validate.TimeEntry
 import Views.Errors as Errors
@@ -609,6 +610,10 @@ update url msg model =
                                     then { billsheet |
                                         specialist = model.user.id
                                         , realSpecialist = model.user.id
+                                        -- Convert hours to units for ICs!
+                                        , units = (
+                                            (*) 4 ( billsheet.units |> Util.String.toFloat )
+                                            ) |> toString
                                         }
                                     else { billsheet |
                                         realSpecialist = model.user.id
@@ -648,6 +653,7 @@ update url msg model =
                                                 id = billsheet.id
                                                 , formattedDate = newBillSheet.serviceDate
                                                 , billedAmount = billsheet.billedAmount
+                                                , units = billsheet.units
                                             }
                                         |> Just
             in
@@ -908,7 +914,7 @@ toTFoot billsheets =
             billsheets |>
                 List.foldl
                     ( \b acc ->
-                        b.units |> (+) acc
+                        b.units |> Util.String.toFloat |> (+) acc
                     )
                     0.0
     in

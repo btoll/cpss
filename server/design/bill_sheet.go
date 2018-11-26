@@ -79,7 +79,7 @@ var BillSheetPayload = Type("BillSheetPayload", func() {
 		Metadata("struct:tag:datastore", "consumer,noindex")
 		Metadata("struct:tag:json", "consumer")
 	})
-	Attribute("units", Number, "Units units", func() {
+	Attribute("units", String, "Units units", func() {
 		Metadata("struct:tag:datastore", "units,noindex")
 		Metadata("struct:tag:json", "units")
 	})

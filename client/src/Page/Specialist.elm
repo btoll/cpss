@@ -15,6 +15,7 @@ import Request.Specialist
 import Search.Specialist
 import Table exposing (defaultCustomizations)
 import Task exposing (Task)
+import Util.String
 import Validate.Specialist
 import Views.Errors as Errors
 import Views.Form as Form
@@ -673,13 +674,13 @@ formRows action editable =
         []
     , Form.float "Pay Rate"
         [ editable.payrate |> toString |> value
-        , onInput ( SetFormValue (\v -> { editable | payrate = Form.toFloat v } ) )
+        , onInput ( SetFormValue (\v -> { editable | payrate = Util.String.toFloat v } ) )
         , step "0.01"
         ]
         []
     , Form.select "Auth Level"
         [ id "authLevelSelection"
-        , onInput ( SetFormValue (\v -> { editable | authLevel = Form.toInt v } ) )
+        , onInput ( SetFormValue (\v -> { editable | authLevel = Util.String.toInt v } ) )
         ] (
             [ ( "-1", "-- Select an Auth Level --" ), ( "1", "Admin" ), ( "2", "User" ) ]
                 |> List.map ( editable.authLevel |> toString |> Form.option )

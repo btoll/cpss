@@ -23,7 +23,7 @@ type alias BillSheet =
     , specialist : Int
     , realSpecialist : Int -- Some actions may have the actual user send a different specialist, so we need to be able to know who the user actually is.
     , consumer : Int
-    , units : Float
+    , units : String
     , serviceDate : String
     , formattedDate : String
     , serviceCode : Int
@@ -47,7 +47,7 @@ new =
     , specialist = -1
     , realSpecialist = -1
     , consumer = -1
-    , units = 0.0
+    , units = ""
     , serviceDate = ""
     , formattedDate = ""
     , serviceCode = -1
@@ -66,7 +66,7 @@ decoder =
         |> optional "specialist" int -1
         |> optional "realSpecialist" int -1
         |> optional "consumer" int -1
-        |> optional "units" float 0.0
+        |> optional "units" string ""
         |> optional "serviceDate" string ""
         |> optional "formattedDate" string ""
         |> optional "serviceCode" int -1
@@ -96,7 +96,7 @@ encoder billsheet =
         , ( "specialist", Encode.int billsheet.specialist )
         , ( "realSpecialist", Encode.int billsheet.realSpecialist )
         , ( "consumer", Encode.int billsheet.consumer )
-        , ( "units", Encode.float billsheet.units )
+        , ( "units", Encode.string billsheet.units )
         , ( "serviceDate", Encode.string billsheet.serviceDate )
         , ( "formattedDate", Encode.string billsheet.formattedDate )
         , ( "serviceCode", Encode.int billsheet.serviceCode )

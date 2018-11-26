@@ -24,6 +24,7 @@ import Search.Consumer
 import Table exposing (defaultCustomizations)
 import Task exposing (Task)
 import Validate.Consumer
+import Util.String
 import Views.Errors as Errors
 import Views.Form as Form
 import Views.Modal as Modal
@@ -666,7 +667,7 @@ update url msg model =
         Select selectType consumer selectionString ->
             let
                 selectionToInt =
-                    selectionString |> Form.toInt
+                    selectionString |> Util.String.toInt
 
                 newModel a =
                     { model |
@@ -747,7 +748,7 @@ update url msg model =
                 SelectServiceCode ->
                     let
                         selectionToInt =
-                            inputString |> Form.toInt
+                            inputString |> Util.String.toInt
 
                         getNewServiceCode oldServiceCode =
                             Data.Consumer.ServiceCode oldServiceCode.id selectionToInt oldServiceCode.units
@@ -760,7 +761,7 @@ update url msg model =
                 SetUnits ->
                     let
                         unitsToFloat =
-                            inputString |> Form.toFloat
+                            inputString |> Util.String.toFloat
 
                         getNewServiceCode oldServiceCode =
                             Data.Consumer.ServiceCode oldServiceCode.id oldServiceCode.serviceCode unitsToFloat

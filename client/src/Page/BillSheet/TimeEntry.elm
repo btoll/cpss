@@ -18,6 +18,7 @@ import Http
 import Table exposing (defaultCustomizations)
 import Task exposing (Task)
 import Util.Date
+import Util.String
 import Views.Form as Form
 
 
@@ -128,7 +129,7 @@ update msg model =
         Select selectType consumer selection ->
             let
                 selectionToInt =
-                    selection |> Form.toInt
+                    selection |> Util.String.toInt
 
                 newModel a =
                     { model |
@@ -214,10 +215,9 @@ formRows viewLists model =
                 |> (::) ( "-1", "-- Select a Service code --" )
                 |> List.map ( editable.serviceCode |> toString |> Form.option )
         )
-    , Form.float "Hours"
-        -- Recall that everything is now in units, so conversion to hours is done here!
-        [ 4.0 |> (/) editable.units |> toString |> value
-        , onInput ( SetFormValue (\v -> { editable | units = 4.0 |> (*) ( v |> Form.toFloat ) } ) )
+    , Form.text "Hours"
+        [ editable.units |> value
+        , onInput ( SetFormValue (\v -> { editable | units = v } ) )
         ,  "0.25" |> Html.Attributes.step
         ]
         []
@@ -257,9 +257,11 @@ tableColumns customColumn viewButton editMsg deleteMsg viewLists =
             >> Maybe.withDefault Data.ServiceCode.new
             >> .name
     )
-    , Table.floatColumn "Hours" ( \m ->
-        -- Recall that everything is now in units, so conversion to hours is done here!
-        4.0 |> (/) m.units
+    , Table.stringColumn "Hours" (
+        .units
+            >> Util.String.toFloat
+            >> ( \f -> (/) f 4.0 )
+            >> toString
     )
     , Table.stringColumn "Description" .description
     , customColumn "" ( viewButton editMsg "Edit" )

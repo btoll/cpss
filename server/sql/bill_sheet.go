@@ -34,13 +34,18 @@ func NewBillSheet(payload interface{}) *BillSheet {
 	}
 }
 
+func floatToString(f float64) string {
+	// func FormatFloat(f float64, fmt byte, prec, bitSize int) string
+	return strconv.FormatFloat(f, 'f', 2, 64)
+}
+
 func (s *BillSheet) CollectRows(rows *mysql.Rows, coll []*app.BillSheetItem) error {
 	i := 0
 	for rows.Next() {
 		var id int
 		var specialist int
 		var consumer int
-		var units float64
+		var units string
 		var serviceDate string
 		var serviceCode int
 		var contractType string
@@ -94,13 +99,17 @@ func (s *BillSheet) Create(db *mysql.DB) (interface{}, error) {
 	}
 	stmt, err := db.Prepare(s.Stmt["INSERT"])
 	if err != nil {
-		return -1, err
+		return nil, err
 	}
-	f := unitRate * (*payload.Units)
+	units, err := strconv.ParseFloat(*payload.Units, 64)
+	if err != nil {
+		return nil, err
+	}
+	f := unitRate * (units)
 	// Round to the second decimal place.
 	// https://yourbasic.org/golang/round-float-2-decimal-places/
 	f = math.Ceil(f*100) / 100
-	res, err := stmt.Exec(payload.Specialist, payload.Consumer, payload.Units, formattedDate, payload.ServiceCode, payload.ContractType, payload.Status, f, payload.Confirmation, payload.Description)
+	res, err := stmt.Exec(payload.Specialist, payload.Consumer, units, formattedDate, payload.ServiceCode, payload.ContractType, payload.Status, f, payload.Confirmation, payload.Description)
 	if err != nil {
 		return -1, err
 	}
@@ -109,11 +118,12 @@ func (s *BillSheet) Create(db *mysql.DB) (interface{}, error) {
 	if err != nil {
 		return -1, err
 	}
+	toStr := floatToString(units)
 	return &app.BillSheetMedia{
 		ID:           int(lastID),
 		Specialist:   payload.Specialist,
 		Consumer:     payload.Consumer,
-		Units:        payload.Units,
+		Units:        &toStr,
 		ServiceDate:  payload.ServiceDate,
 		ServiceCode:  payload.ServiceCode,
 		ContractType: payload.ContractType,
@@ -319,19 +329,24 @@ func (s *BillSheet) Update(db *mysql.DB) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	f := unitRate * (*payload.Units)
-	// Round to the second decimal place.
-	// https://yourbasic.org/golang/round-float-2-decimal-places/
-	f = math.Ceil(f*100) / 100
-	_, err = stmt.Exec(payload.Specialist, payload.Consumer, payload.Units, formattedDate, payload.ServiceCode, payload.ContractType, payload.Status, f, payload.Confirmation, payload.Description, payload.ID)
+	unitsFromString, err := strconv.ParseFloat(*payload.Units, 64)
 	if err != nil {
 		return nil, err
 	}
+	f := unitRate * (unitsFromString)
+	// Round to the second decimal place.
+	// https://yourbasic.org/golang/round-float-2-decimal-places/
+	f = math.Ceil(f*100) / 100
+	_, err = stmt.Exec(payload.Specialist, payload.Consumer, unitsFromString, formattedDate, payload.ServiceCode, payload.ContractType, payload.Status, f, payload.Confirmation, payload.Description, payload.ID)
+	if err != nil {
+		return nil, err
+	}
+	toStr := floatToString(unitsFromString)
 	return &app.BillSheetMedia{
 		ID:           *payload.ID,
 		Specialist:   payload.Specialist,
 		Consumer:     payload.Consumer,
-		Units:        payload.Units,
+		Units:        &toStr,
 		ServiceDate:  payload.ServiceDate,
 		ServiceCode:  payload.ServiceCode,
 		ContractType: payload.ContractType,
@@ -377,11 +392,12 @@ func (s *BillSheet) UpdateUnitBlock(db *mysql.DB, payload *app.BillSheetPayload,
 		}
 		// New hours - current hours * 4 units per hour.
 		//		newUnits := currentUnits - (currentHours * 4.0)
-		newUnits := currentBlockUnits + (currentRecordUnits - *payload.Units)
-		// TODO: What happens if it's drawn down below zero?
-		if newUnits < 0 {
-			newUnits = 0
+		units, err := strconv.ParseFloat(*payload.Units, 64)
+		if err != nil {
+			return err
 		}
+		newUnits := currentBlockUnits + (currentRecordUnits - units)
+		// TODO: What happens if it's drawn down below zero? For now, we're just entering it as-is with no reporting.
 		_, err = stmt.Exec(newUnits, id)
 		if err != nil {
 			return err

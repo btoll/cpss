@@ -17,6 +17,7 @@ import Http
 import Table exposing (defaultCustomizations)
 import Task exposing (Task)
 import Util.Date
+import Util.String
 import Views.Form as Form
 
 
@@ -112,7 +113,7 @@ update msg model =
         Select selectType consumer selection ->
             let
                 selectionToInt =
-                    selection |> Form.toInt
+                    selection |> Util.String.toInt
 
                 newModel a =
                     { model |
@@ -208,8 +209,8 @@ formRows viewLists model =
                 |> List.map ( editable.serviceCode |> toString |> Form.option )
         )
     , Form.float "Units"
-        [ editable.units |> toString |> value
-        , onInput ( SetFormValue (\v -> { editable | units = Form.toFloat v } ) )
+        [ editable.units |> value
+        , onInput ( SetFormValue (\v -> { editable | units = v } ) )
         ]
         []
     , Form.select "Status"
@@ -259,7 +260,7 @@ tableColumns customColumn viewButton editMsg deleteMsg viewLists =
             >> Maybe.withDefault Data.ServiceCode.new
             >> .name
     )
-    , Table.floatColumn "Units" .units
+    , Table.stringColumn "Units" .units
     , Table.floatColumn "Billed Amount" .billedAmount
     , Table.stringColumn "Consumer" (
         .consumer

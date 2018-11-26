@@ -8,8 +8,6 @@ module Views.Form exposing (
     , submit
     , text
     , textarea
-    , toFloat
-    , toInt
     )
 
 
@@ -99,17 +97,5 @@ text name attrs =
 textarea : String -> List ( Attribute msg ) -> List ( Html msg ) -> Html msg
 textarea name attrs =
     control name Html.textarea attrs
-
-
-toFloat : String -> Float
-toFloat v =
-    String.toFloat v
-        |> Result.withDefault 0.00
-
-
-toInt : String -> Int
-toInt v =
-    String.toInt v
-        |> Result.withDefault 0
 
 

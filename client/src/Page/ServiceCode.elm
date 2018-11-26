@@ -11,6 +11,7 @@ import Request.ServiceCode
 import Table exposing (defaultCustomizations)
 import Task exposing (Task)
 import Validate.ServiceCode
+import Util.String
 import Views.Errors as Errors
 import Views.Form as Form
 import Views.Modal as Modal
@@ -372,7 +373,7 @@ formRows editable =
         []
     , Form.float "Unit Rate"
         [ editable.unitRate |> toString |> value
-        , onInput ( SetFormValue ( \v -> { editable | unitRate = v |> Form.toFloat } ) )
+        , onInput ( SetFormValue ( \v -> { editable | unitRate = v |> Util.String.toFloat } ) )
         ]
         []
     , Form.textarea "Description"
