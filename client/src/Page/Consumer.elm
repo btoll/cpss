@@ -838,7 +838,7 @@ drawView model =
     in
     case model.action of
         None ->
-            [ div [ "buttons" |> class ]
+            [ div [ "pageMenu" |> class ]
                 [ button [ Add |> onClick ] [ text "Add Consumer" ]
                 , button [ Search |> onClick ] [ text "Search" ]
                 , button [ hideClearTextButton |> hidden, ClearSearch |> onClick ] [ text "Clear Search" ]

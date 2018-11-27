@@ -337,7 +337,7 @@ drawView (
     in
     case action of
         None ->
-            [ div [ "buttons" |> class ]
+            [ div [ "pageMenu" |> class ]
                 [ button [ onClick Add ] [ text "Add Status" ]
                 ]
             , showList

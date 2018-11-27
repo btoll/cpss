@@ -560,7 +560,7 @@ drawView (
     in
     case action of
         None ->
-            [ div [ "buttons" |> class ]
+            [ div [ "pageMenu" |> class ]
                 [ button [ onClick Add ] [ text "Add Specialist" ]
                 , button [ Search |> onClick ] [ text "Search" ]
                 , button [ hideClearTextButton |> hidden, ClearSearch |> onClick ] [ text "Clear Search" ]

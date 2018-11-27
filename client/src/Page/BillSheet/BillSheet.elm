@@ -234,14 +234,18 @@ formRows viewLists model =
 -- TABLE CONFIGURATION
 
 
-tableColumns customColumn viewButton editMsg deleteMsg viewLists =
+tableColumns customColumn viewButton viewCheckbox checkMsg editMsg deleteMsg model =
     let
+        viewLists =
+            model.viewLists
+
         consumers = Maybe.withDefault [] viewLists.consumers
         serviceCodes = Maybe.withDefault [] viewLists.serviceCodes
         specialists = Maybe.withDefault [] viewLists.specialists
         status = Maybe.withDefault [] viewLists.status
     in
-    [ Table.stringColumn "Recipient ID" (
+    [ customColumn "" ( viewCheckbox model.checked checkMsg )
+    , Table.stringColumn "Recipient ID" (
         .consumer
             >> ( \id ->
                 consumers |> List.filter ( \m -> m.id |> (==) id )

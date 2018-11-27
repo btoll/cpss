@@ -233,10 +233,10 @@ formRows viewLists model =
 -- TABLE CONFIGURATION
 
 
-tableColumns customColumn viewButton editMsg deleteMsg viewLists =
+tableColumns customColumn viewButton viewCheckbox checkMsg editMsg deleteMsg model =
     let
-        consumers = Maybe.withDefault [] viewLists.consumers
-        serviceCodes = Maybe.withDefault [] viewLists.serviceCodes
+        consumers = Maybe.withDefault [] model.viewLists.consumers
+        serviceCodes = Maybe.withDefault [] model.viewLists.serviceCodes
     in
     [ Table.stringColumn "Consumer" (
         .consumer

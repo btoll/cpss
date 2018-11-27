@@ -14,7 +14,7 @@ import Date exposing (Date, Day(..), day, dayOfWeek, month, year)
 import DatePicker exposing (defaultSettings, DateEvent(..))
 import Dict exposing (Dict)
 import Html exposing (Html, Attribute, button, div, form, h1, input, label, th, td, tr, section, text)
-import Html.Attributes exposing (action, autofocus, checked, class, colspan, for, hidden, id, style, type_, value)
+import Html.Attributes exposing (action, autofocus, checked, class, colspan, for, hidden, id, placeholder, style, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Http
 import Modal.Search
@@ -51,6 +51,7 @@ type alias Model =
     , disabled : Bool
     , showModal : ( Bool, Maybe Modal.Modal )
     , viewLists : ViewLists
+    , checked : List Int
     , query : Maybe Query
     , pagerState : Pager
     , subModel :
@@ -130,6 +131,7 @@ init build session =
         , specialists = Nothing
         , status = Nothing
         }
+    , checked = []
     , query = defaultQuery
     , pagerState = Data.Pager.new
     , subModel = subModel
@@ -152,6 +154,7 @@ type FetchedData
 type Msg
     = Add
     | Cancel
+    | Check BillSheet
     | ClearSearch
     | Delete BillSheet
     | Deleted ( Result Http.Error Int )
@@ -182,6 +185,7 @@ update url msg model =
                 action = Adding
                 , disabled = True
                 , errors = []
+                , checked = []
             } ! []
 
         BillSheetTimeEntryMsg subMsg ->
@@ -226,6 +230,21 @@ update url msg model =
                     }
                 , errors = []
             } ! []
+
+        Check billsheet ->
+            let
+                c =
+                    if model.checked |> List.member billsheet.id
+                    then model.checked
+                        |> List.filter (\id -> (/=) id billsheet.id)
+                        |> List.sort
+                    else model.checked
+                        |> (::) billsheet.id
+                        |> List.sort
+
+                cc = (Debug.log "c" c)
+            in
+            { model | checked = c } ! []
 
         ClearSearch ->
             let
@@ -285,6 +304,7 @@ update url msg model =
                 action = Editing
                 , disabled = True
                 , errors = []
+                , checked = []
                 , subModel = { subModel | editing = billsheet |> Just }
             } ! []
 
@@ -499,6 +519,7 @@ update url msg model =
             { model |
                 query = query
                 , showModal = ( showModal, whichModal )
+                , checked = []      -- For now, just remove any checkboxes that were checked prior to doing a search.
             } ! [ cmd ]
 
         NewPage page ->
@@ -572,7 +593,7 @@ update url msg model =
                         |> Dict.foldl foldFn ""
                         |> String.dropRight 5   -- Remove the trailing " AND ".
             in
-            model !
+            { model | checked = [] } ! -- Clear the list of checked items when paging!
             [ page
                 |> Maybe.withDefault -1
                 |> Request.BillSheet.page url s
@@ -809,10 +830,28 @@ drawView model =
                             div [] []
                         _ ->
                             billsheets
-                                |> Table.view ( model |> config billsheets ) model.tableState
+                                |> Table.view ( model |> config ) model.tableState
 
         showPager =
             model.pagerState |> Views.Pager.view NewPage
+
+        showConfirmationMenu =
+            let
+                status = Maybe.withDefault [] model.viewLists.status
+            in
+            if not <| List.isEmpty <| model.checked
+            then form [ "inline" |> class ]
+                [ Form.text "" [ "Confirmation number" |> placeholder ] []
+                , Form.select "" [
+                    ] (
+                        status
+                            |> List.map ( \m -> ( m.id |> toString, m.name ) )
+                            |> (::) ( "-1", "-- Select a Status --" )
+                            |> List.map ( "" |> Form.option )
+                    )
+                , Form.submit model.disabled Cancel
+                ]
+            else div [] []
 
         hideClearTextButton =
             case model.query of
@@ -824,10 +863,11 @@ drawView model =
     in
     case model.action of
         None ->
-            [ div [ "buttons" |> class ]
+            [ div [ "pageMenu" |> class ]
                 [ button [ Add |> onClick ] [ ( if (==) model.user.authLevel 1 then "Add Bill Sheet" else "Add Time Entry" ) |> text ]
                 , button [ model.viewLists |> Search |> onClick ] [ text "Search" ]
                 , button [ hideClearTextButton |> hidden, ClearSearch |> onClick ] [ text "Clear Search" ]
+                , showConfirmationMenu
                 ]
             , showPager
             , showList
@@ -876,8 +916,8 @@ drawView model =
 
 
 
-config : List BillSheet -> Model -> Table.Config BillSheet Msg
-config billsheets model =
+config : Model -> Table.Config BillSheet Msg
+config model =
     let
         tableColumns =
             case model.user.authLevel of
@@ -889,19 +929,28 @@ config billsheets model =
 
         customizations =
             if (==) model.user.authLevel 1
-            then{ defaultCustomizations | tfoot = billsheets |> toTFoot }
+            then{ defaultCustomizations | tfoot = model.viewLists.billsheets |> toTFoot }
             else defaultCustomizations
     in
     Table.customConfig
     { toId = .id >> toString
     , toMsg = SetTableState
-    , columns = model.viewLists |> tableColumns customColumn viewButton Edit Delete
+    , columns = model |> tableColumns customColumn viewButton viewCheckbox Check Edit Delete
     , customizations = customizations
     }
 
-toTFoot : List BillSheet -> Maybe ( Table.HtmlDetails msg )
-toTFoot billsheets =
+
+toTFoot : Maybe ( List BillSheet ) -> Maybe ( Table.HtmlDetails msg )
+toTFoot maybeBillsheets =
     let
+        billsheets =
+            case maybeBillsheets of
+                Nothing ->
+                    []
+
+                Just billsheets ->
+                    billsheets
+
         billedAmount =
             billsheets |>
                 List.foldl
@@ -921,13 +970,14 @@ toTFoot billsheets =
     Table.HtmlDetails []
         [ tr [ "totals" |> class ]
             [ th [] [ "Totals" |> text]
-            , td [ 2 |> colspan] []
+            , td [ 3 |> colspan] []
             , td [] [ units |> toString |> text ]
             , td [] [ billedAmount |> Util.Currency.format |> text ]
             , td [ 6 |> colspan] []
             ]
         ]
     |> Just
+
 
 customColumn : String -> ( BillSheet -> Table.HtmlDetails Msg ) -> Table.Column BillSheet Msg
 customColumn colName viewElement =
@@ -943,5 +993,12 @@ viewButton msg name billsheet =
     Table.HtmlDetails []
         [ button [ onClick <| msg <| billsheet ] [ text name ]
         ]
+
+
+viewCheckbox : List Int -> ( BillSheet -> msg ) -> BillSheet -> Table.HtmlDetails msg
+viewCheckbox checkedList msg billsheet =
+  Table.HtmlDetails []
+    [ input [ checkedList |> List.member billsheet.id |> checked, type_ "checkbox", onClick <| msg <| billsheet ] []
+    ]
 
 

@@ -201,7 +201,7 @@ drawView (
     case action of
         None ->
             [ div [] [
-                div [ "buttons" |> class ]
+                div [ "pageMenu" |> class ]
                     [ button [ editable |> ChangePassword |> onClick ] [ text "Change Password" ]
                     ]
                 , div []

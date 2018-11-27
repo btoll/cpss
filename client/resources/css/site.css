@@ -67,12 +67,12 @@ main#login nav + div > div + div {
 main#login nav + div form {
     padding: 2% 0;
 }
-main#home section div.buttons + div {
+main#home section div.pageMenu + div {
     background: #fff url(/resources/images/lighthouse.png) top right no-repeat;
     min-height: 600px;
     padding: 20px;
 }
-main#home section div.buttons + div > div {     /* Text on Home page under CPSS header. */
+main#home section div.pageMenu + div > div {     /* Text on Home page under CPSS header. */
     background-color: antiquewhite;
     border: 1px solid #969696;
     border-radius: 10px;
@@ -87,14 +87,14 @@ section {
     margin: 2%;
     padding: 1% 2% 2%;
 }
-section div.buttons {               /* `Add*` and `Search` buttons */
+section div.pageMenu {               /* `Add*` and `Search` buttons */
     background-color: darkseagreen;
     border: 1px solid #000;
     border-left-width: 0;
     border-right-width: 0;
     padding: 1% 0 1% 1%;
 }
-section div.buttons button {
+section div.pageMenu button {
     margin: 0 .4%;
 }
 div.error {
@@ -187,8 +187,39 @@ form .unitBlock div + div label {
 form .unitBlock div + div input {
     width: 100px;
 }
-div.unitBlock button {
+form div.unitBlock button {
     padding: 4px;
+}
+form.inline {
+    background-color: inherit;
+    border-width: 0;
+    display: inline-block;
+    margin-left: 200px;
+    padding: 0;
+}
+form.inline > div {
+    display: inline-block;
+    margin: 0 5px;
+    padding: 0;
+}
+form.inline > div label {
+    display: none;
+}
+form.inline input[type="submit"] {
+    align-items: flex-start;
+    text-align: center;
+    cursor: default;
+    color: buttontext;
+    background-color: buttonface;
+    box-sizing: border-box;
+    padding: 2px 6px 3px;
+    border-width: 2px;
+    border-style: outset;
+    border-color: buttonface;
+    border-image: initial;
+}
+form.inline > div:last-child input:last-child {     /* Hide the "Cancel" button. */
+    display: none;
 }
 /* Reset for the Image form. */
 #image form > div:last-child {
