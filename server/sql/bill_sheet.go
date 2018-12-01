@@ -25,11 +25,11 @@ func NewBillSheet(payload interface{}) *BillSheet {
 			"DELETE":              "DELETE FROM billsheet WHERE id=?",
 			"GET_AUTH_LEVEL":      "SELECT authLevel FROM specialist WHERE id=%d",
 			"GET_UNIT_RATE":       "SELECT unitRate FROM service_code WHERE id=%d",
-			"INSERT":              "INSERT billsheet SET specialist=?,consumer=?,units=?,serviceDate=?,serviceCode=?,contractType=?,status=?,billedAmount=?,confirmation=?,description=?",
+			"INSERT":              "INSERT billsheet SET specialist=?,consumer=?,units=?,serviceDate=?,serviceCode=?,status=?,billedAmount=?,confirmation=?,description=?",
 			"SELECT":              "SELECT %s FROM billsheet %s",
 			"SELECT_UNIT_BLOCK":   "SELECT %s FROM unit_block WHERE consumer=%d AND serviceCode=%d",
 			"UPDATE_UNIT_BLOCK":   "UPDATE unit_block SET units=? WHERE id=?",
-			"UPDATE":              "UPDATE billsheet SET specialist=?,consumer=?,units=?,serviceDate=?,serviceCode=?,contractType=?,status=?,billedAmount=?,confirmation=?,description=? WHERE id=?",
+			"UPDATE":              "UPDATE billsheet SET specialist=?,consumer=?,units=?,serviceDate=?,serviceCode=?,status=?,billedAmount=?,confirmation=?,description=? WHERE id=?",
 		},
 	}
 }
@@ -48,12 +48,11 @@ func (s *BillSheet) CollectRows(rows *mysql.Rows, coll []*app.BillSheetItem) err
 		var units string
 		var serviceDate string
 		var serviceCode int
-		var contractType string
 		var status int
 		var billedAmount float64
 		var confirmation string
 		var description string
-		err := rows.Scan(&id, &specialist, &consumer, &units, &serviceDate, &serviceCode, &contractType, &status, &billedAmount, &confirmation, &description)
+		err := rows.Scan(&id, &specialist, &consumer, &units, &serviceDate, &serviceCode, &status, &billedAmount, &confirmation, &description)
 		if err != nil {
 			return err
 		}
@@ -64,7 +63,6 @@ func (s *BillSheet) CollectRows(rows *mysql.Rows, coll []*app.BillSheetItem) err
 			Units:        &units,
 			ServiceDate:  serviceDate,
 			ServiceCode:  serviceCode,
-			ContractType: &contractType,
 			Status:       &status,
 			BilledAmount: &billedAmount,
 			Confirmation: &confirmation,
@@ -107,7 +105,7 @@ func (s *BillSheet) Create(db *mysql.DB) (interface{}, error) {
 	// Round to the second decimal place.
 	// https://yourbasic.org/golang/round-float-2-decimal-places/
 	f = math.Ceil(f*100) / 100
-	res, err := stmt.Exec(payload.Specialist, payload.Consumer, units, formattedDate, payload.ServiceCode, payload.ContractType, payload.Status, f, payload.Confirmation, payload.Description)
+	res, err := stmt.Exec(payload.Specialist, payload.Consumer, units, formattedDate, payload.ServiceCode, payload.Status, f, payload.Confirmation, payload.Description)
 	if err != nil {
 		return -1, err
 	}
@@ -124,7 +122,6 @@ func (s *BillSheet) Create(db *mysql.DB) (interface{}, error) {
 		Units:        &toStr,
 		ServiceDate:  payload.ServiceDate,
 		ServiceCode:  payload.ServiceCode,
-		ContractType: payload.ContractType,
 		Status:       payload.Status,
 		BilledAmount: &f,
 		Confirmation: payload.Confirmation,
@@ -238,7 +235,7 @@ func (s *BillSheet) List(db *mysql.DB) (interface{}, error) {
 			return nil, err
 		}
 	}
-	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "id,specialist,consumer,units,DATE_FORMAT(serviceDate, '%m/%d/%y') AS serviceDate,serviceCode,contractType,status,billedAmount,confirmation,description", ""))
+	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "id,specialist,consumer,units,DATE_FORMAT(serviceDate, '%m/%d/%y') AS serviceDate,serviceCode,status,billedAmount,confirmation,description", ""))
 	if err != nil {
 		return nil, err
 	}
@@ -271,7 +268,7 @@ func (s *BillSheet) Page(db *mysql.DB) (interface{}, error) {
 			return nil, err
 		}
 	}
-	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "billsheet.id,billsheet.specialist,billsheet.consumer,billsheet.units,DATE_FORMAT(billsheet.serviceDate, '%m/%d/%y') AS serviceDate,billsheet.serviceCode,billsheet.contractType,billsheet.status,billsheet.billedAmount,billsheet.confirmation,billsheet.description", fmt.Sprintf("%s WHERE active.id = 1 %s ORDER BY billsheet.serviceDate DESC LIMIT %d,%d", s.Stmt["CONSUMER_INNER_JOIN"], whereClause, limit, RecordsPerPage)))
+	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "billsheet.id,billsheet.specialist,billsheet.consumer,billsheet.units,DATE_FORMAT(billsheet.serviceDate, '%m/%d/%y') AS serviceDate,billsheet.serviceCode,billsheet.status,billsheet.billedAmount,billsheet.confirmation,billsheet.description", fmt.Sprintf("%s WHERE active.id = 1 %s ORDER BY billsheet.serviceDate DESC LIMIT %d,%d", s.Stmt["CONSUMER_INNER_JOIN"], whereClause, limit, RecordsPerPage)))
 	if err != nil {
 		return nil, err
 	}
@@ -335,7 +332,7 @@ func (s *BillSheet) Update(db *mysql.DB) (interface{}, error) {
 	// Round to the second decimal place.
 	// https://yourbasic.org/golang/round-float-2-decimal-places/
 	f = math.Ceil(f*100) / 100
-	_, err = stmt.Exec(payload.Specialist, payload.Consumer, unitsFromString, formattedDate, payload.ServiceCode, payload.ContractType, payload.Status, f, payload.Confirmation, payload.Description, payload.ID)
+	_, err = stmt.Exec(payload.Specialist, payload.Consumer, unitsFromString, formattedDate, payload.ServiceCode, payload.Status, f, payload.Confirmation, payload.Description, payload.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -347,7 +344,6 @@ func (s *BillSheet) Update(db *mysql.DB) (interface{}, error) {
 		Units:        &toStr,
 		ServiceDate:  payload.ServiceDate,
 		ServiceCode:  payload.ServiceCode,
-		ContractType: payload.ContractType,
 		Status:       payload.Status,
 		BilledAmount: &f,
 		Confirmation: payload.Confirmation,

@@ -109,7 +109,6 @@ update appTimeEntry set ServiceCode=19 where ServiceCode="007";
 update appTimeEntry set ServiceCode=18 where ServiceCode="006";
 update appTimeEntry set ServiceCode = ifnull(ServiceCode, -1);
 alter table appTimeEntry change column ServiceCode serviceCode int(11) default -1 after serviceDate;
-alter table appTimeEntry change column ContractType contractType varchar(100) default '';
 update appTimeEntry set Status=10 where Status="Archived";
 update appTimeEntry set Status=7 where Status="Audited";
 update appTimeEntry set Status=3 where Status="Authorization Issues";
@@ -124,9 +123,8 @@ update appTimeEntry set Status=6 where Status="Re-Bill";
 update appTimeEntry set Status = ifnull(Status, -1);
 alter table appTimeEntry change column Status status smallint(6) default -1;
 update appTimeEntry set consumer = ifnull(consumer, -1);
-insert into billsheet (specialist,consumer,hours,units,serviceDate,serviceCode,contractType,status,county,description) select specialist,consumer,hours,units,serviceDate,serviceCode,contractType,status,county,description from appTimeEntry;
+insert into billsheet (specialist,consumer,hours,units,serviceDate,serviceCode,status,county,description) select specialist,consumer,hours,units,serviceDate,serviceCode,status,county,description from appTimeEntry;
 
-update billsheet set contractType = ifnull(contractType, '');
 update billsheet set recipientID = ifnull(recipientID, '');
 update billsheet set recordNumber = ifnull(recordNumber, '');
 update billsheet set confirmation = ifnull(confirmation, '');

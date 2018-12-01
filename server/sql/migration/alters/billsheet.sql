@@ -17,7 +17,6 @@ CREATE TABLE IF NOT EXISTS `billsheet` (
   `units` float DEFAULT 0.0,
   `serviceDate` date NOT NULL,
   `serviceCode` int DEFAULT -1,
-  `contractType` varchar(30) DEFAULT NULL,
   `status` smallint DEFAULT -1,
   `billedAmount` float DEFAULT 0.0,
   `confirmation` varchar(50) DEFAULT NULL,
@@ -90,14 +89,13 @@ update appTimeEntry set County=1001 where County="CPSS";
 update appTimeEntry set County = ifnull(County, 1002);
 update appTimeEntry set County=1002 where County='';
 
-insert into billsheet (specialist,consumer,units,serviceDate,serviceCode,contractType,status,confirmation,description) select specialistID,consumerID,Hours*4,RenderDate,ServiceCode,ContractType,Status,Confirmation,Description from appTimeEntry;
+insert into billsheet (specialist,consumer,units,serviceDate,serviceCode,status,confirmation,description) select specialistID,consumerID,Hours*4,RenderDate,ServiceCode,Status,Confirmation,Description from appTimeEntry;
 
 update billsheet set units = ifnull(units, 0.0);
 update billsheet set status = ifnull(status, 0);
 update billsheet set confirmation = ifnull(confirmation, '');
 update billsheet set serviceDate = ifnull(serviceDate, '');
 update billsheet set serviceCode = ifnull(serviceCode, 0);
-update billsheet set contractType = ifnull(contractType, '');
 update billsheet set description = ifnull(description, '');
 
 update billsheet join service_code sc on billsheet.serviceCode = sc.id set billsheet.billedAmount=billsheet.units*sc.unitRate;
