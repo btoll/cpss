@@ -53,24 +53,22 @@ func (s *BillSheet) CollectRows(rows *mysql.Rows, coll []*app.BillSheetItem) err
 		var billedAmount float64
 		var confirmation string
 		var description string
-		var formattedDate string
-		err := rows.Scan(&id, &specialist, &consumer, &units, &serviceDate, &serviceCode, &contractType, &status, &billedAmount, &confirmation, &description, &formattedDate)
+		err := rows.Scan(&id, &specialist, &consumer, &units, &serviceDate, &serviceCode, &contractType, &status, &billedAmount, &confirmation, &description)
 		if err != nil {
 			return err
 		}
 		coll[i] = &app.BillSheetItem{
-			ID:            id,
-			Specialist:    specialist,
-			Consumer:      consumer,
-			Units:         &units,
-			ServiceDate:   serviceDate,
-			ServiceCode:   serviceCode,
-			ContractType:  &contractType,
-			Status:        &status,
-			BilledAmount:  &billedAmount,
-			Confirmation:  &confirmation,
-			Description:   &description,
-			FormattedDate: &formattedDate,
+			ID:           id,
+			Specialist:   specialist,
+			Consumer:     consumer,
+			Units:        &units,
+			ServiceDate:  serviceDate,
+			ServiceCode:  serviceCode,
+			ContractType: &contractType,
+			Status:       &status,
+			BilledAmount: &billedAmount,
+			Confirmation: &confirmation,
+			Description:  &description,
 		}
 		i++
 	}
@@ -240,7 +238,7 @@ func (s *BillSheet) List(db *mysql.DB) (interface{}, error) {
 			return nil, err
 		}
 	}
-	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*,DATE_FORMAT(serviceDate, '%m/%d/%y') AS formattedDate", ""))
+	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "id,specialist,consumer,units,DATE_FORMAT(serviceDate, '%m/%d/%y') AS serviceDate,serviceCode,contractType,status,billedAmount,confirmation,description", ""))
 	if err != nil {
 		return nil, err
 	}
@@ -273,7 +271,7 @@ func (s *BillSheet) Page(db *mysql.DB) (interface{}, error) {
 			return nil, err
 		}
 	}
-	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "billsheet.*,DATE_FORMAT(billsheet.serviceDate, '%m/%d/%y') AS formattedDate", fmt.Sprintf("%s WHERE active.id = 1 %s ORDER BY billsheet.serviceDate DESC LIMIT %d,%d", s.Stmt["CONSUMER_INNER_JOIN"], whereClause, limit, RecordsPerPage)))
+	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "billsheet.id,billsheet.specialist,billsheet.consumer,billsheet.units,DATE_FORMAT(billsheet.serviceDate, '%m/%d/%y') AS serviceDate,billsheet.serviceCode,billsheet.contractType,billsheet.status,billsheet.billedAmount,billsheet.confirmation,billsheet.description", fmt.Sprintf("%s WHERE active.id = 1 %s ORDER BY billsheet.serviceDate DESC LIMIT %d,%d", s.Stmt["CONSUMER_INNER_JOIN"], whereClause, limit, RecordsPerPage)))
 	if err != nil {
 		return nil, err
 	}

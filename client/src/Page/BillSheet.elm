@@ -672,7 +672,6 @@ update url msg model =
                                         |> (::)
                                             { newBillSheet |
                                                 id = billsheet.id
-                                                , formattedDate = newBillSheet.serviceDate
                                                 , billedAmount = billsheet.billedAmount
                                                 , units = billsheet.units
                                             }
@@ -716,7 +715,7 @@ update url msg model =
                         Just billsheet ->
                             let
                                 bs =
-                                    { billsheet | serviceDate = billsheet.formattedDate }
+                                    { billsheet | serviceDate = billsheet.serviceDate }
                             in
                             ( Editing    -- Keep on Adding view in case server returns an error, i.e., trying to backdate a Service Date.
                             , Request.BillSheet.put url bs

@@ -247,7 +247,7 @@ tableColumns customColumn viewButton viewCheckbox checkMsg editMsg deleteMsg mod
             >> Maybe.withDefault Data.Consumer.new
             >> ( \m -> m.lastname ++ ", " ++  m.firstname )
     )
-    , Table.stringColumn "Service Date" .formattedDate
+    , Table.stringColumn "Service Date" .serviceDate
     , Table.stringColumn "ServiceCode" (
         .serviceCode
             >> ( \id ->
