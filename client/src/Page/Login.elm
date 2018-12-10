@@ -2,8 +2,8 @@ module Page.Login exposing (ExternalMsg(..), Model, Msg, init, update, view)
 
 import Data.Session as Session exposing (Session)
 import Data.User as User exposing (User)
-import Html exposing (Html, div, form, h1, p, text)
-import Html.Attributes exposing (autofocus, class, src, value)
+import Html exposing (Html, div, form, h1, input, label, p, text)
+import Html.Attributes exposing (autofocus, class, disabled, src, type_, value)
 import Html.Events exposing (onInput, onSubmit)
 import Http
 import Request.Session
@@ -80,11 +80,17 @@ view model =
             if model.error |> (==) ""
             then "hide error"
             else "error"
+
+        isDisabled =
+           ( (||)
+               ( model.username |> String.isEmpty )
+               ( model.password |> String.isEmpty )
+           )
     in
-    div []
-        [ div [ cls |> class ] [ model.error |> text ]
-        , div []
-            [ h1 [] [ "Central Pennsylvania Supportive Services, Inc. (CPSS)" |> text ]
+    div [] [
+        div []
+            [ div [ cls |> class ] [ model.error |> text ]
+            , h1 [] [ "Central Pennsylvania Supportive Services, Inc. (CPSS)" |> text ]
             , form [ onSubmit Authenticate ] [
                 Form.text "Username"
                     [ value model.username
@@ -97,12 +103,11 @@ view model =
                     , onInput ( SetFormValue ( \v -> { model | password = v } ) )
                     ]
                     []
-               , Form.submit
-                   ( (||)
-                       ( model.username |> String.isEmpty )
-                       ( model.password |> String.isEmpty )
-                   )
-                   Cancel
+                -- We're not using Form.submit b/c the Login page needs a different HTML structure here.
+                , div [] [
+                    label [] []
+                    , input [ isDisabled |> disabled , type_ "submit", value "Submit" ] []
+                    ]
             ]
         ]
     ]

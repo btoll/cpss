@@ -67,6 +67,19 @@ main#login nav + div > div + div {
 main#login nav + div form {
     padding: 2% 0;
 }
+main#login form > div label {
+    margin-right: 2%;
+    text-align: right;
+    width: 25%;
+}
+main#login form > div input[type=text],
+main#login form > div input[type=password] {
+    width: 25%;
+}
+/* The last child contains the form buttons. */
+main#login form > div:last-child {
+    margin: 0;
+}
 main#home section div.pageMenu + div {
     background: #fff url(/resources/images/lighthouse.png) top right no-repeat;
     min-height: 600px;
