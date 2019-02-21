@@ -48,6 +48,9 @@ func cleanup(db *mysql.DB) error {
 }
 
 func connect() (*mysql.DB, error) {
+	return mysql.Open("", "")
+}
+
 func getToday() string {
 	today := time.Now()
 	year, month, day := today.Date()
