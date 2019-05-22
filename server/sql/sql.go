@@ -2,6 +2,7 @@ package sql
 
 import (
 	mysql "database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -166,6 +167,9 @@ func VerifyPassword(username, password string) (interface{}, error) {
 	err = row.Scan(&id, &username, &saltedHash, &firstname, &lastname, &active, &email, &payrate, &authLevel)
 	if err != nil {
 		return nil, err
+	}
+	if !active {
+		return nil, errors.New("This account has been deactivated.")
 	}
 	err = bcrypt.CompareHashAndPassword([]byte(saltedHash), []byte(password))
 	if err != nil {

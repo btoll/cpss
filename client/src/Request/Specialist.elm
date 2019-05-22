@@ -27,10 +27,10 @@ delete url specialist =
         }
 
 
-get : String -> String -> Http.Request User
+get : String -> Int -> Http.Request User
 get url specialistID =
     decoder
-        |> Http.get ( url ++ "/specialist/" ++ specialistID )
+        |> Http.get ( url ++ "/specialist/" ++ ( specialistID |> toString ) )
 
 
 list : String -> Http.Request ( List User )

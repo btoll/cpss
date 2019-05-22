@@ -12,7 +12,8 @@ type alias Session =
     { user : Maybe User
     , sessionName : String
     , expiry : String
-    , loginDate : String
+    , lastLogin : Int
+    , currentLogin : Int
     }
 
 

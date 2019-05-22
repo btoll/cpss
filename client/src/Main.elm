@@ -79,7 +79,8 @@ init flags location =
             { user = Nothing
             , sessionName = ""
             , expiry = ""
-            , loginDate = ""
+            , lastLogin = 0
+            , currentLogin = 0
             }
         , build =
             { url = url
@@ -273,16 +274,17 @@ setRoute maybeRoute model =
                         user = Nothing
                         , sessionName = ""
                         , expiry = ""
-                        , loginDate = ""
+                        , lastLogin = 0
                         }
                     , page = Login Login.init
                     , onLogin = Just Route.Home
                 } ! [ Route.Login |> Route.modifyUrl
                     , setSessionCredentials             -- Send session credentials to JavaScript to be put into local storage to complete logout.
-                        { userID = ""
+                        { userID = -1
                         , sessionName = ""
                         , expiry = ""
-                        , loginDate = ""
+                        , lastLogin = 0
+                        , currentLogin = 0
                         }
                     ]
 
@@ -374,7 +376,17 @@ update msg model =
     in
     case ( msg, model.page ) of
         ( SetRoute route, _ ) ->
-            setRoute route model
+            case model.session.user of
+                Nothing ->
+                    { model | page = Login Login.init } ! []
+
+                Just user ->
+                    { model |
+                        onLogin = route
+                    } ! [ user.id
+                            |> Request.Specialist.get model.build.url
+                            |> Http.send FetchedUserSession
+                        ]
 
         ( BillSheetMsg subMsg, BillSheet subModel ) ->
             toPage BillSheet BillSheetMsg BillSheet.update subMsg subModel
@@ -388,9 +400,6 @@ update msg model =
         ( DIAMsg subMsg, DIA subModel ) ->
             toPage DIA DIAMsg DIA.update subMsg subModel
 
-        ( FundingSourceMsg subMsg, FundingSource subModel ) ->
-            toPage FundingSource FundingSourceMsg FundingSource.update subMsg subModel
-
         ( FetchedUserSession ( Ok user ), _ ) ->
             let
                 oldSession = model.session
@@ -398,12 +407,15 @@ update msg model =
             { model |
                 session =
                     { oldSession |
-                        user = user |> Just
+                        user = if user.active then ( user |> Just ) else Nothing
                     }
             } |> setRoute model.onLogin
 
         ( FetchedUserSession ( Err err ), _ ) ->
             model ! []
+
+        ( FundingSourceMsg subMsg, FundingSource subModel ) ->
+            toPage FundingSource FundingSourceMsg FundingSource.update subMsg subModel
 
         ( HomeMsg subMsg, Home subModel ) ->
             toPage Home HomeMsg Home.update subMsg subModel
@@ -429,7 +441,8 @@ update msg model =
                                             { user = Just user
                                             , sessionName = ""
                                             , expiry = ""
-                                            , loginDate = session.loginDate
+                                            , lastLogin = session.lastLogin
+                                            , currentLogin = session.currentLogin
                                             }
                                         , page = Blank
                                         , onLogin = model.onLogin
@@ -437,10 +450,11 @@ update msg model =
                             in
                             m ! [ routeCmd
                                 , setSessionCredentials                 -- Send session credentials to JavaScript to be put into local storage.
-                                    { userID = user.id |> toString
+                                    { userID = user.id
                                     , sessionName = "derp"              -- TODO
                                     , expiry = "?"                      -- TODO
-                                    , loginDate = session.loginDate
+                                    , lastLogin = session.lastLogin
+                                    , currentLogin = session.currentLogin
                                     }
                                 ]
             in
@@ -449,20 +463,25 @@ update msg model =
         ( ReadSessionCredentials session, _ ) ->
             let
                 oldSession = model.session
+                diff = (-) session.currentLogin session.lastLogin
+                oneHour = 3600000 -- 1 hour == 3,600,000 milliseconds
 
                 cmd =
-                    if (/=) session.userID "" then
-                        session.userID
-                            |> Request.Specialist.get model.build.url
-                            |> Http.send FetchedUserSession
-                    else Cmd.none
+                    if (
+                        ((>) diff oneHour) ||
+                        ((==) session.userID -1)
+                    ) then Cmd.none
+                    else session.userID
+                        |> Request.Specialist.get model.build.url
+                        |> Http.send FetchedUserSession
             in
             { model |
                 session =
                     { oldSession |
                         sessionName = session.sessionName
                         , expiry = session.expiry
-                        , loginDate = session.loginDate
+                        , lastLogin = session.lastLogin
+                        , currentLogin = session.currentLogin
                     }
             } ! [ cmd ]
 
