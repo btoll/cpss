@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS `specialist` (
   `email` varchar(100) DEFAULT NULL,
   `payrate` float DEFAULT 0.0,
   `authLevel` int DEFAULT 2,
+  `loginTime` int(25) DEFAULT 0,
   PRIMARY KEY (`id`),
   KEY `ID` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 ;

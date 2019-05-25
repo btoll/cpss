@@ -1,6 +1,8 @@
 package main
 
 import (
+	"time"
+
 	"github.com/btoll/cpss/server/app"
 	"github.com/btoll/cpss/server/sql"
 	"github.com/goadesign/goa"
@@ -21,6 +23,22 @@ func (c *SessionController) Auth(ctx *app.AuthSessionContext) error {
 	// SessionController_Auth: start_implement
 
 	rec, err := sql.VerifyPassword(*ctx.Payload.Username, ctx.Payload.Password)
+	if err != nil {
+		return err
+	}
+	r := rec.(*app.SessionMedia)
+	_, err = sql.Update(sql.NewSpecialist(&app.SpecialistPayload{
+		ID:        &r.ID,
+		Username:  r.Username,
+		Password:  r.Password,
+		Firstname: r.Firstname,
+		Lastname:  r.Lastname,
+		Active:    r.Active,
+		Email:     r.Email,
+		Payrate:   r.Payrate,
+		AuthLevel: r.AuthLevel,
+		LoginTime: int(time.Now().Unix()),
+	}))
 	if err != nil {
 		return err
 	}

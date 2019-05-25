@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"time"
 
 	"github.com/btoll/cpss/server/app"
 )
@@ -22,7 +23,7 @@ func NewSpecialist(payload interface{}) *Specialist {
 			"INSERT":             "INSERT specialist SET username=?,password=?,firstname=?,lastname=?,active=?,email=?,payrate=?,authLevel=?",
 			"INSERT_PAY_HISTORY": "INSERT pay_history VALUES (NULL, ?, ?, ?)",
 			"SELECT":             "SELECT %s FROM specialist %s",
-			"UPDATE":             "UPDATE specialist SET username=?,password=?,firstname=?,lastname=?,active=?,email=?,payrate=?,authLevel=? WHERE id=?",
+			"UPDATE":             "UPDATE specialist SET username=?,password=?,firstname=?,lastname=?,active=?,email=?,payrate=?,authLevel=?,loginTime=? WHERE id=?",
 		},
 	}
 }
@@ -52,21 +53,24 @@ func (s *Specialist) CollectRows(rows *mysql.Rows, coll []*app.SpecialistItem) e
 		var email string
 		var payrate float64
 		var authLevel int
+		var loginTime int
 		var fullname string
-		err := rows.Scan(&id, &username, &password, &firstname, &lastname, &active, &email, &payrate, &authLevel, &fullname)
+		err := rows.Scan(&id, &username, &password, &firstname, &lastname, &active, &email, &payrate, &authLevel, &loginTime, &fullname)
 		if err != nil {
 			return err
 		}
 		coll[i] = &app.SpecialistItem{
-			ID:        id,
-			Username:  username,
-			Password:  password,
-			Firstname: firstname,
-			Lastname:  lastname,
-			Active:    active,
-			Email:     email,
-			Payrate:   payrate,
-			AuthLevel: authLevel,
+			ID:          id,
+			Username:    username,
+			Password:    password,
+			Firstname:   firstname,
+			Lastname:    lastname,
+			Active:      active,
+			Email:       email,
+			Payrate:     payrate,
+			AuthLevel:   authLevel,
+			LoginTime:   loginTime,
+			CurrentTime: int(time.Now().Unix()),
 		}
 		i++
 	}
@@ -147,20 +151,23 @@ func (s *Specialist) Read(db *mysql.DB) (interface{}, error) {
 		var email string
 		var payrate float64
 		var authLevel int
-		err := row.Scan(&id, &username, &password, &firstname, &lastname, &active, &email, &payrate, &authLevel)
+		var loginTime int
+		err := row.Scan(&id, &username, &password, &firstname, &lastname, &active, &email, &payrate, &authLevel, &loginTime)
 		if err != nil {
 			return nil, err
 		}
 		specialist = &app.SpecialistMedia{
-			ID:        id,
-			Username:  username,
-			Password:  password,
-			Firstname: firstname,
-			Lastname:  lastname,
-			Active:    active,
-			Email:     email,
-			Payrate:   payrate,
-			AuthLevel: authLevel,
+			ID:          id,
+			Username:    username,
+			Password:    password,
+			Firstname:   firstname,
+			Lastname:    lastname,
+			Active:      active,
+			Email:       email,
+			Payrate:     payrate,
+			AuthLevel:   authLevel,
+			LoginTime:   loginTime,
+			CurrentTime: int(time.Now().Unix()),
 		}
 	}
 	return specialist, nil
@@ -188,7 +195,7 @@ func (s *Specialist) Update(db *mysql.DB) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, err = stmt.Exec(payload.Username, payload.Password, payload.Firstname, payload.Lastname, payload.Active, payload.Email, payload.Payrate, payload.AuthLevel, payload.ID)
+	_, err = stmt.Exec(payload.Username, payload.Password, payload.Firstname, payload.Lastname, payload.Active, payload.Email, payload.Payrate, payload.AuthLevel, payload.LoginTime, payload.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -202,6 +209,7 @@ func (s *Specialist) Update(db *mysql.DB) (interface{}, error) {
 		Email:     payload.Email,
 		Payrate:   payload.Payrate,
 		AuthLevel: payload.AuthLevel,
+		LoginTime: payload.LoginTime,
 	}, nil
 }
 

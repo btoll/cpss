@@ -108,8 +108,16 @@ var SpecialistPayload = Type("SpecialistPayload", func() {
 		Metadata("struct:tag:datastore", "authLevel,noindex")
 		Metadata("struct:tag:json", "authLevel")
 	})
+	Attribute("loginTime", Integer, "Specialist loginTime", func() {
+		Metadata("struct:tag:datastore", "loginTime,noindex")
+		Metadata("struct:tag:json", "loginTime")
+	})
+	Attribute("currentTime", Integer, "Specialist currentTime of latest read", func() {
+		Metadata("struct:tag:datastore", "currentTime,noindex")
+		Metadata("struct:tag:json", "currentTime")
+	})
 
-	Required("username", "password", "firstname", "lastname", "active", "email", "payrate", "authLevel")
+	Required("username", "password", "firstname", "lastname", "active", "email", "payrate", "authLevel", "loginTime")
 })
 
 var SpecialistQueryPayload = Type("SpecialistQueryPayload", func() {
@@ -133,8 +141,10 @@ var SpecialistItem = Type("specialistItem", func() {
 	Attribute("email")
 	Attribute("payrate")
 	Attribute("authLevel")
+	Attribute("loginTime")
+	Attribute("currentTime")
 
-	Required("id", "username", "password", "firstname", "lastname", "active", "email", "payrate", "authLevel")
+	Required("id", "username", "password", "firstname", "lastname", "active", "email", "payrate", "authLevel", "loginTime", "currentTime")
 
 })
 
@@ -154,10 +164,12 @@ var SpecialistMedia = MediaType("application/specialistapi.specialistentity", fu
 		Attribute("email")
 		Attribute("payrate")
 		Attribute("authLevel")
+		Attribute("loginTime")
+		Attribute("currentTime")
 		Attribute("users", ArrayOf("specialistItem"))
 		Attribute("pager", Pager)
 
-		Required("id", "username", "password", "firstname", "lastname", "active", "email", "payrate", "authLevel", "users", "pager")
+		Required("id", "username", "password", "firstname", "lastname", "active", "email", "payrate", "authLevel", "loginTime", "currentTime", "users", "pager")
 	})
 
 	View("default", func() {
@@ -170,6 +182,8 @@ var SpecialistMedia = MediaType("application/specialistapi.specialistentity", fu
 		Attribute("email")
 		Attribute("payrate")
 		Attribute("authLevel")
+		Attribute("loginTime")
+		Attribute("currentTime")
 	})
 
 	View("paging", func() {

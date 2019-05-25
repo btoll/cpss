@@ -8,6 +8,18 @@ import (
 	"github.com/goadesign/goa/middleware"
 )
 
+/*
+func CheckSession() goa.Middleware {
+	return func(h goa.Handler) goa.Handler {
+		return func(ctx context.Context, rw http.ResponseWriter, req *http.Request) error {
+            // Do stuff here.
+			err := h(ctx, rw, req)
+			return err
+		}
+	}
+}
+*/
+
 func main() {
 	// Create service
 	service := goa.New("cpss")
@@ -17,6 +29,7 @@ func main() {
 	service.Use(middleware.LogRequest(true))
 	service.Use(middleware.ErrorHandler(service, true))
 	service.Use(middleware.Recover())
+	//	service.Use(CheckSession())
 
 	// Mount "Specialist" controller
 	c := NewSpecialistController(service)
