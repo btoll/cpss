@@ -10,10 +10,6 @@ import Date exposing (Date)
 
 type alias Session =
     { user : Maybe User
-    , sessionName : String
-    , expiry : String
-    , lastLogin : Int
-    , currentLogin : Int
     }
 
 

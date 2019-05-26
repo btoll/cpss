@@ -30,6 +30,8 @@ type alias User =
     , email : String
     , payrate : Float
     , authLevel : Int
+    , loginTime : Int
+    , currentTime : Int
     }
 
 
@@ -50,6 +52,8 @@ new =
     , email = ""
     , payrate = 0.00
     , authLevel = -1
+    , loginTime = -1
+    , currentTime = -1
     }
 
 
@@ -65,6 +69,8 @@ decoder =
         |> optional "email" string ""
         |> optional "payrate" float 0.00
         |> optional "authLevel" int 1
+        |> optional "loginTime" int 0
+        |> optional "currentTime" int 0
 
 
 manyDecoder : Decoder ( List User )
@@ -99,6 +105,8 @@ encoder user =
         , ( "email", Encode.string user.email )
         , ( "payrate", Encode.float user.payrate )
         , ( "authLevel", Encode.int user.authLevel )
+        , ( "loginTime", Encode.int user.loginTime )
+        , ( "currentTime", Encode.int user.currentTime )
         ]
 
 

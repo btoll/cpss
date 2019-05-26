@@ -75,13 +75,7 @@ init flags location =
             else "http://localhost:8080/cpss"
     in
     setRoute ( Route.fromLocation location )
-        { session =
-            { user = Nothing
-            , sessionName = ""
-            , expiry = ""
-            , lastLogin = 0
-            , currentLogin = 0
-            }
+        { session = { user = Nothing }
         , build =
             { url = url
             , today =
@@ -102,14 +96,14 @@ type Msg
     | ConsumerMsg Consumer.Msg
     | CountyMsg County.Msg
     | DIAMsg DIA.Msg
+    | FetchedUserSession ( Result Http.Error User )
     | FundingSourceMsg FundingSource.Msg
     | HomeMsg Home.Msg
     | LoginMsg Login.Msg
+    | ReadSessionCredentials SessionCredentials
     | ServiceCodeMsg ServiceCode.Msg
     | SpecialistMsg Specialist.Msg
     | StatusMsg Status.Msg
-    | ReadSessionCredentials SessionCredentials
-    | FetchedUserSession ( Result Http.Error User )
 
 
 
@@ -270,21 +264,12 @@ setRoute maybeRoute model =
                 session = model.session
             in
                 { model |
-                    session = { session |
-                        user = Nothing
-                        , sessionName = ""
-                        , expiry = ""
-                        , lastLogin = 0
-                        }
+                    session = { session | user = Nothing }
                     , page = Login Login.init
                     , onLogin = Just Route.Home
                 } ! [ Route.Login |> Route.modifyUrl
                     , setSessionCredentials             -- Send session credentials to JavaScript to be put into local storage to complete logout.
-                        { userID = -1
-                        , sessionName = ""
-                        , expiry = ""
-                        , lastLogin = 0
-                        , currentLogin = 0
+                        { user = -1
                         }
                     ]
 
@@ -403,13 +388,19 @@ update msg model =
         ( FetchedUserSession ( Ok user ), _ ) ->
             let
                 oldSession = model.session
+                sessionDuration =
+                    (-) user.currentTime user.loginTime
             in
             { model |
                 session =
                     { oldSession |
                         user = if user.active then ( user |> Just ) else Nothing
                     }
-            } |> setRoute model.onLogin
+            } |> setRoute (
+                    if (>) sessionDuration 3600000
+                    then Just Route.Logout
+                    else model.onLogin
+                    )
 
         ( FetchedUserSession ( Err err ), _ ) ->
             model ! []
@@ -437,53 +428,28 @@ update msg model =
 
                                 ( m, routeCmd ) =
                                     { model |
-                                        session =
-                                            { user = Just user
-                                            , sessionName = ""
-                                            , expiry = ""
-                                            , lastLogin = session.lastLogin
-                                            , currentLogin = session.currentLogin
-                                            }
+                                        session = { user = Just user }
                                         , page = Blank
                                         , onLogin = model.onLogin
                                     } |> setRoute model.onLogin         -- Redirect after logging in.
                             in
                             m ! [ routeCmd
                                 , setSessionCredentials                 -- Send session credentials to JavaScript to be put into local storage.
-                                    { userID = user.id
-                                    , sessionName = "derp"              -- TODO
-                                    , expiry = "?"                      -- TODO
-                                    , lastLogin = session.lastLogin
-                                    , currentLogin = session.currentLogin
-                                    }
+                                    { user = user.id }
                                 ]
             in
             ( newModel, newCmd )
 
         ( ReadSessionCredentials session, _ ) ->
             let
-                oldSession = model.session
-                diff = (-) session.currentLogin session.lastLogin
-                oneHour = 3600000 -- 1 hour == 3,600,000 milliseconds
-
                 cmd =
-                    if (
-                        ((>) diff oneHour) ||
-                        ((==) session.userID -1)
-                    ) then Cmd.none
-                    else session.userID
-                        |> Request.Specialist.get model.build.url
-                        |> Http.send FetchedUserSession
+                    if (/=) session.user -1 then
+                        session.user
+                            |> Request.Specialist.get model.build.url
+                            |> Http.send FetchedUserSession
+                    else Cmd.none
             in
-            { model |
-                session =
-                    { oldSession |
-                        sessionName = session.sessionName
-                        , expiry = session.expiry
-                        , lastLogin = session.lastLogin
-                        , currentLogin = session.currentLogin
-                    }
-            } ! [ cmd ]
+            model ! [ cmd ]
 
         ( ServiceCodeMsg subMsg, ServiceCode subModel ) ->
             toPage ServiceCode ServiceCodeMsg ServiceCode.update subMsg subModel

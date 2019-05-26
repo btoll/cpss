@@ -7,11 +7,7 @@ port module Ports exposing
 
 
 type alias SessionCredentials =
-    { sessionName : String
-    , expiry : String
-    , userID : Int
-    , lastLogin : Int
-    , currentLogin : Int
+    { user : Int
     }
 
 
