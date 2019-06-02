@@ -3,10 +3,28 @@ package sql
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/btoll/cpss/server/app"
 	"golang.org/x/crypto/bcrypt"
 )
+
+var SessionLength = 3600
+
+func CheckSession(userID int) error {
+	rec, err := Read(NewSpecialist(userID))
+	if err != nil {
+		return err
+	}
+	record := rec.(*app.SpecialistMedia)
+	if !record.Active {
+		return errors.New("Bad session")
+	}
+	if (int(time.Now().Unix()) - record.LoginTime) > SessionLength {
+		return errors.New("Session expired")
+	}
+	return nil
+}
 
 func SaltAndHash(pwd string) []byte {
 	byteHash, err := bcrypt.GenerateFromPassword([]byte(pwd), bcrypt.DefaultCost)
@@ -44,7 +62,7 @@ func VerifyPassword(username, password string) (interface{}, error) {
 		return nil, err
 	}
 	if !active {
-		return nil, errors.New("This account has been deactivated.")
+		return nil, errors.New("This account has been deactivated")
 	}
 	err = bcrypt.CompareHashAndPassword([]byte(saltedHash), []byte(password))
 	if err != nil {

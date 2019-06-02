@@ -63,6 +63,7 @@ type alias Model =
     , build : Build
     , page : Page
     , onLogin : Maybe Route     -- Capture the route with which to redirect the user after login.
+    , subCmd: Cmd Msg
     }
 
 
@@ -83,6 +84,7 @@ init flags location =
             }
         , page = Blank
         , onLogin = Nothing
+        , subCmd = Cmd.none
         }
 
 
@@ -300,6 +302,7 @@ setRoute maybeRoute model =
                 Nothing ->
                     { model |
                         page = Login Login.init
+                        , subCmd = Cmd.none
                         , onLogin = maybeRoute
                     } ! []
 
@@ -356,22 +359,25 @@ update msg model =
                 ( newModel, newCmd ) =
                     subUpdate model.build.url subMsg subModel
             in
-                -- Mapping the newCmd to SpecialistMsg causes the Elm runtime to call `update` again with the subsequent newCmd!
-                { model | page = toModel newModel } ! [ Cmd.map toMsg newCmd ]
+                case model.session.user of
+                    Nothing ->
+                        { model | page = Login Login.init } ! []
+
+                    Just user ->
+                        { model |
+                            page = toModel newModel
+                            -- Mapping the newCmd to SpecialistMsg causes the Elm runtime
+                            -- to call `update` again with the subsequent newCmd!
+                            , subCmd = Cmd.map toMsg newCmd
+                        } !
+                            [ user.id
+                                |> Request.Specialist.get model.build.url
+                                |> Http.send FetchedUserSession
+                            ]
     in
     case ( msg, model.page ) of
         ( SetRoute route, _ ) ->
-            case model.session.user of
-                Nothing ->
-                    { model | page = Login Login.init } ! []
-
-                Just user ->
-                    { model |
-                        onLogin = route
-                    } ! [ user.id
-                            |> Request.Specialist.get model.build.url
-                            |> Http.send FetchedUserSession
-                        ]
+            setRoute route model
 
         ( BillSheetMsg subMsg, BillSheet subModel ) ->
             toPage BillSheet BillSheetMsg BillSheet.update subMsg subModel
@@ -388,22 +394,24 @@ update msg model =
         ( FetchedUserSession ( Ok user ), _ ) ->
             let
                 oldSession = model.session
-                sessionDuration =
-                    (-) user.currentTime user.loginTime
-            in
-            { model |
-                session =
-                    { oldSession |
-                        user = if user.active then ( user |> Just ) else Nothing
+                newModel =
+                    { model |
+                        session =
+                            { oldSession |
+                                user = if user.active then ( user |> Just ) else Nothing
+                            }
                     }
-            } |> setRoute (
-                    if (>) sessionDuration 3600000
-                    then Just Route.Logout
-                    else model.onLogin
-                    )
+            in
+            case model.session.user of
+                Nothing ->
+                    -- Page was refreshed.
+                    newModel |> setRoute model.onLogin
+
+                Just user ->
+                    newModel ! [ model.subCmd ]
 
         ( FetchedUserSession ( Err err ), _ ) ->
-            model ! []
+            model |> setRoute ( Route.Logout |> Just )
 
         ( FundingSourceMsg subMsg, FundingSource subModel ) ->
             toPage FundingSource FundingSourceMsg FundingSource.update subMsg subModel
@@ -554,6 +562,7 @@ main =
         , update = update
         , view = view
         , subscriptions = ( \m -> ReadSessionCredentials |> getSessionCredentials )
+--        , subscriptions = \m -> Sub.none
         }
 
 
